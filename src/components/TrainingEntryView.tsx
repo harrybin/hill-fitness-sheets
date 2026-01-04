@@ -23,7 +23,7 @@ export function TrainingEntryView({
   onComplete,
   onCancel
 }: TrainingEntryViewProps) {
-  const [sessions] = useKV<Session[]>('sessions', [])
+  const [sessions, setSessions] = useKV<Session[]>('sessions', [])
   
   const existingEntry = currentSession?.entries.find(e => e.exerciseId === exercise.id)
   
@@ -105,6 +105,41 @@ export function TrainingEntryView({
     }))
     setSets(renumberedSets)
     setCurrentSetIndex(renumberedSets.length)
+    
+    const today = new Date().toISOString().split('T')[0]
+    setSessions((prevSessions) => {
+      const existingSessions = prevSessions || []
+      const sessionIndex = existingSessions.findIndex(s => s.date === today)
+      
+      if (sessionIndex >= 0) {
+        const updatedSessions = [...existingSessions]
+        
+        if (renumberedSets.length === 0) {
+          updatedSessions[sessionIndex].entries = updatedSessions[sessionIndex].entries.filter(
+            e => e.exerciseId !== exercise.id
+          )
+        } else {
+          const entry: TrainingEntry = {
+            id: `${exercise.id}-${Date.now()}`,
+            exerciseId: exercise.id,
+            date: today,
+            sets: renumberedSets
+          }
+          
+          const entryIndex = updatedSessions[sessionIndex].entries.findIndex(
+            e => e.exerciseId === exercise.id
+          )
+          
+          if (entryIndex >= 0) {
+            updatedSessions[sessionIndex].entries[entryIndex] = entry
+          }
+        }
+        
+        return updatedSessions
+      }
+      
+      return existingSessions
+    })
   }
   
   const progressPercentage = ((currentSetIndex) / totalSets) * 100
