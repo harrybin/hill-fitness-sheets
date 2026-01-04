@@ -19,8 +19,8 @@ export function SessionHeader({ session }: SessionHeaderProps) {
     <div className="flex items-center gap-3">
       <Calendar size={24} weight="bold" className="text-primary" />
       <div>
-        <div className="text-sm font-semibold text-foreground">{today}</div>
-        <div className="text-xs text-muted-foreground">
+        <div className="text-sm font-semibold text-foreground leading-tight">{today}</div>
+        <div className="text-xs text-muted-foreground leading-tight mt-0.5">
           {completedCount} {completedCount === 1 ? 'Übung' : 'Übungen'} absolviert
         </div>
       </div>

@@ -49,7 +49,7 @@ export function ExerciseList({ exercises, currentSession, onSelectExercise }: Ex
   }
   
   return (
-    <div className="p-4 space-y-3">
+    <div className="p-3 space-y-3">
       {validExercises.map((exercise) => {
         const entry = getExerciseStatus(exercise.id)
         const isCompleted = !!entry
@@ -59,14 +59,14 @@ export function ExerciseList({ exercises, currentSession, onSelectExercise }: Ex
             key={exercise.id}
             onClick={() => onSelectExercise(exercise)}
             className={cn(
-              "p-6 cursor-pointer transition-all active:scale-[0.98]",
+              "p-4 cursor-pointer transition-all active:scale-[0.98]",
               "hover:border-primary/50",
               isCompleted && "bg-card/50 border-primary/30"
             )}
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-0.5">
                   <h3 className="text-lg font-bold truncate">{exercise.name}</h3>
                   {isCompleted && (
                     <CheckCircle size={20} weight="fill" className="text-primary flex-shrink-0" />
@@ -74,7 +74,7 @@ export function ExerciseList({ exercises, currentSession, onSelectExercise }: Ex
                 </div>
                 
                 {exercise.notes && (
-                  <p className="text-sm text-muted-foreground mb-3">{exercise.notes}</p>
+                  <p className="text-sm text-muted-foreground mb-2">{exercise.notes}</p>
                 )}
                 
                 {entry && (

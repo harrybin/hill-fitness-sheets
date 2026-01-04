@@ -51,13 +51,13 @@ function App() {
       <Toaster />
       
       <div className="sticky top-0 z-10 bg-background border-b border-border">
-        <div className="flex items-center justify-between p-4">
+        <div className="flex items-center justify-between p-3">
           <SessionHeader session={currentSession} />
           <Button
             variant="outline"
             size="icon"
             onClick={() => setSettingsOpen(true)}
-            className="h-10 w-10"
+            className="h-9 w-9"
           >
             <Gear size={20} />
           </Button>

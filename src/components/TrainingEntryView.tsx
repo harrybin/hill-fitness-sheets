@@ -102,25 +102,25 @@ export function TrainingEntryView({
   return (
     <div className="min-h-screen bg-background">
       <div className="sticky top-0 z-10 bg-background border-b border-border">
-        <div className="p-4">
+        <div className="p-3">
           <Button
             variant="ghost"
             size="sm"
             onClick={onCancel}
-            className="mb-4"
+            className="mb-2 h-8 px-2"
           >
-            <ArrowLeft size={20} className="mr-2" />
+            <ArrowLeft size={20} className="mr-1" />
             Zurück
           </Button>
           
-          <div className="mb-4">
-            <h1 className="text-2xl font-bold mb-1">{exercise.name}</h1>
+          <div className="mb-2">
+            <h1 className="text-2xl font-bold mb-0.5">{exercise.name}</h1>
             {exercise.notes && (
               <p className="text-sm text-muted-foreground">{exercise.notes}</p>
             )}
           </div>
           
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">
                 Satz {currentSetIndex + 1} von {totalSets}
@@ -136,9 +136,9 @@ export function TrainingEntryView({
         </div>
       </div>
       
-      <div className="p-4 space-y-6 pb-32">
+      <div className="p-3 space-y-3 pb-32">
         {sets.map((set, idx) => (
-          <Card key={idx} className="p-6 bg-card/50 border-primary/30">
+          <Card key={idx} className="p-3 bg-card/50 border-primary/30">
             <div className="flex items-center justify-between">
               <Badge variant="secondary" className="font-mono">
                 Satz {set.setNumber}
@@ -156,17 +156,17 @@ export function TrainingEntryView({
           </Card>
         ))}
         
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div>
-            <label className="text-sm font-semibold text-muted-foreground mb-3 block">
+            <label className="text-sm font-semibold text-muted-foreground mb-2 block">
               GEWICHT (KG)
             </label>
-            <div className="flex items-center justify-center gap-4">
+            <div className="flex items-center justify-center gap-3">
               <Button
                 size="lg"
                 variant="outline"
                 onClick={() => adjustWeight(-2.5)}
-                className="h-16 w-16 rounded-full"
+                className="h-14 w-14 rounded-full p-0"
               >
                 <Minus size={24} weight="bold" />
               </Button>
@@ -175,7 +175,7 @@ export function TrainingEntryView({
                 <div className="text-center font-mono font-bold text-5xl text-primary">
                   {currentWeight}
                 </div>
-                <div className="text-center text-sm text-muted-foreground mt-1">
+                <div className="text-center text-sm text-muted-foreground mt-0.5">
                   kg
                 </div>
               </div>
@@ -184,17 +184,18 @@ export function TrainingEntryView({
                 size="lg"
                 variant="outline"
                 onClick={() => adjustWeight(2.5)}
-                className="h-16 w-16 rounded-full"
+                className="h-14 w-14 rounded-full p-0"
               >
                 <Plus size={24} weight="bold" />
               </Button>
             </div>
             
-            <div className="flex gap-2 justify-center mt-4">
+            <div className="flex gap-2 justify-center mt-3">
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={() => adjustWeight(-5)}
+                className="h-8 px-3"
               >
                 -5kg
               </Button>
@@ -202,6 +203,7 @@ export function TrainingEntryView({
                 variant="secondary"
                 size="sm"
                 onClick={() => adjustWeight(5)}
+                className="h-8 px-3"
               >
                 +5kg
               </Button>
@@ -209,15 +211,15 @@ export function TrainingEntryView({
           </div>
           
           <div>
-            <label className="text-sm font-semibold text-muted-foreground mb-3 block">
+            <label className="text-sm font-semibold text-muted-foreground mb-2 block">
               WIEDERHOLUNGEN
             </label>
-            <div className="flex items-center justify-center gap-4">
+            <div className="flex items-center justify-center gap-3">
               <Button
                 size="lg"
                 variant="outline"
                 onClick={() => adjustReps(-1)}
-                className="h-16 w-16 rounded-full"
+                className="h-14 w-14 rounded-full p-0"
               >
                 <Minus size={24} weight="bold" />
               </Button>
@@ -226,7 +228,7 @@ export function TrainingEntryView({
                 <div className="text-center font-mono font-bold text-5xl text-primary">
                   {currentReps}
                 </div>
-                <div className="text-center text-sm text-muted-foreground mt-1">
+                <div className="text-center text-sm text-muted-foreground mt-0.5">
                   Wiederholungen
                 </div>
               </div>
@@ -235,13 +237,13 @@ export function TrainingEntryView({
                 size="lg"
                 variant="outline"
                 onClick={() => adjustReps(1)}
-                className="h-16 w-16 rounded-full"
+                className="h-14 w-14 rounded-full p-0"
               >
                 <Plus size={24} weight="bold" />
               </Button>
             </div>
             
-            <div className="grid grid-cols-3 gap-2 mt-4">
+            <div className="grid grid-cols-3 gap-2 mt-3">
               {[-3, -2, 2, 3].map((delta) => (
                 <Button
                   key={delta}
@@ -249,6 +251,7 @@ export function TrainingEntryView({
                   size="sm"
                   onClick={() => adjustReps(delta)}
                   className={cn(
+                    "h-8 px-3",
                     delta > 0 && "col-start-2"
                   )}
                 >
@@ -260,10 +263,10 @@ export function TrainingEntryView({
         </div>
       </div>
       
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border">
+      <div className="fixed bottom-0 left-0 right-0 p-3 bg-background border-t border-border">
         <Button
           size="lg"
-          className="w-full h-14 text-lg font-bold"
+          className="w-full h-12 text-lg font-bold"
           onClick={handleConfirmSet}
         >
           <Check size={24} weight="bold" className="mr-2" />
