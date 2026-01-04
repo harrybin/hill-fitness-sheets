@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { AppSettings, Exercise } from '@/lib/types'
+import { AppSettings, Exercise, Session } from '@/lib/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -17,6 +17,7 @@ interface SettingsDialogProps {
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [settings, setSettings] = useKV<AppSettings>('settings', { defaultSetsPerExercise: 2 })
   const [, setExercises] = useKV<Exercise[]>('exercises', [])
+  const [, setSessions] = useKV<Session[]>('sessions', [])
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   const adjustSets = (delta: number) => {
@@ -79,17 +80,25 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     
     try {
       const arrayBuffer = base64ToArrayBuffer(settings.importedFile.data)
-      const { exercises: newExercises, metadata } = parseXLSX(arrayBuffer)
+      const { exercises: newExercises, metadata, sessions: loadedSessions } = parseXLSX(arrayBuffer)
       
       setExercises(() => newExercises)
+      
+      if (loadedSessions && loadedSessions.length > 0) {
+        setSessions(() => loadedSessions)
+      }
       
       setSettings((prev) => ({
         ...prev!,
         ...metadata
       }))
       
+      const sessionInfo = loadedSessions && loadedSessions.length > 0 
+        ? ` • ${loadedSessions.length} Sessions` 
+        : ''
+      
       toast.success('Neu synchronisiert', {
-        description: `${newExercises.length} Übungen geladen`,
+        description: `${newExercises.length} Übungen${sessionInfo}`,
         icon: <ArrowsClockwise size={20} weight="fill" />
       })
     } catch (error) {
@@ -99,7 +108,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     }
   }
   
-  const parseXLSX = (arrayBuffer: ArrayBuffer): { exercises: Exercise[], metadata: Partial<AppSettings> } => {
+  const parseXLSX = (arrayBuffer: ArrayBuffer): { exercises: Exercise[], metadata: Partial<AppSettings>, sessions?: Session[] } => {
     const workbook = XLSX.read(arrayBuffer, { type: 'array' })
     
     const sheetName = workbook.SheetNames.find(name => 
@@ -212,7 +221,61 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       }
     }
     
-    return { exercises, metadata }
+    const historySheetName = workbook.SheetNames.find(name => 
+      name === 'Training History' || 
+      name.toLowerCase().includes('history') ||
+      name.toLowerCase().includes('verlauf')
+    )
+    
+    let loadedSessions: Session[] | undefined
+    
+    if (historySheetName) {
+      const historyWorksheet = workbook.Sheets[historySheetName]
+      const historyData = XLSX.utils.sheet_to_json<any>(historyWorksheet, { header: 1 })
+      
+      if (historyData.length > 1) {
+        const sessionsMap = new Map<string, Session>()
+        
+        for (let i = 1; i < historyData.length; i++) {
+          const row = historyData[i]
+          if (!row || row.length < 5) continue
+          
+          const date = String(row[0] || '').trim()
+          const exerciseName = String(row[1] || '').trim()
+          const setNumber = Number(row[2])
+          const weight = Number(row[3])
+          const reps = Number(row[4])
+          
+          if (!date || !exerciseName || isNaN(setNumber) || isNaN(weight) || isNaN(reps)) continue
+          
+          const exercise = exercises.find(e => e.name === exerciseName)
+          if (!exercise) continue
+          
+          if (!sessionsMap.has(date)) {
+            sessionsMap.set(date, { date, entries: [] })
+          }
+          
+          const session = sessionsMap.get(date)!
+          let entry = session.entries.find(e => e.exerciseId === exercise.id)
+          
+          if (!entry) {
+            entry = {
+              id: `${exercise.id}-${date}`,
+              exerciseId: exercise.id,
+              date: date,
+              sets: []
+            }
+            session.entries.push(entry)
+          }
+          
+          entry.sets.push({ setNumber, weight, reps })
+        }
+        
+        loadedSessions = Array.from(sessionsMap.values())
+      }
+    }
+    
+    return { exercises, metadata, sessions: loadedSessions }
   }
   
   const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
@@ -230,7 +293,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     
     try {
       const arrayBuffer = await file.arrayBuffer()
-      const { exercises: newExercises, metadata } = parseXLSX(arrayBuffer)
+      const { exercises: newExercises, metadata, sessions: loadedSessions } = parseXLSX(arrayBuffer)
       
       if (newExercises.length === 0) {
         toast.error('Keine Übungen', {
@@ -240,6 +303,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       }
       
       setExercises(() => newExercises)
+      
+      if (loadedSessions && loadedSessions.length > 0) {
+        setSessions(() => loadedSessions)
+      }
       
       const fileData = arrayBufferToBase64(arrayBuffer)
       
@@ -258,6 +325,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       if (metadata.trainingGoal) metadataInfo.push('Trainingsziel')
       if (metadata.legalNotice) metadataInfo.push('Hinweise')
       if (metadata.notes) metadataInfo.push('Notizen')
+      if (loadedSessions && loadedSessions.length > 0) metadataInfo.push(`${loadedSessions.length} Sessions`)
       
       const description = metadataInfo.length > 0
         ? `${metadataInfo.join(', ')} gespeichert`
