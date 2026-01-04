@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useKV } from '@github/spark/hooks'
 import { Exercise, TrainingEntry, Session, TrainingSet, PreviousTraining } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -11,19 +10,22 @@ import { cn } from '@/lib/utils'
 interface TrainingEntryViewProps {
   exercise: Exercise
   currentSession?: Session
+  allSessions: Session[]
   defaultSets: number
   onComplete: (entry: TrainingEntry) => void
+  onUpdate: (entry: TrainingEntry) => void
   onCancel: () => void
 }
 
 export function TrainingEntryView({
   exercise,
   currentSession,
+  allSessions,
   defaultSets,
   onComplete,
+  onUpdate,
   onCancel
 }: TrainingEntryViewProps) {
-  const [sessions, setSessions] = useKV<Session[]>('sessions', [])
   
   const existingEntry = currentSession?.entries.find(e => e.exerciseId === exercise.id)
   
@@ -32,9 +34,9 @@ export function TrainingEntryView({
   const [isInitialized, setIsInitialized] = useState(false)
   
   const getPreviousTraining = (): PreviousTraining | null => {
-    if (!sessions || sessions.length === 0) return null
+    if (!allSessions || allSessions.length === 0) return null
     
-    const sortedSessions = [...sessions].sort((a, b) => b.date.localeCompare(a.date))
+    const sortedSessions = [...allSessions].sort((a, b) => b.date.localeCompare(a.date))
     
     for (const session of sortedSessions) {
       const entry = session.entries.find(e => e.exerciseId === exercise.id)
@@ -109,51 +111,14 @@ export function TrainingEntryView({
     setSets(renumberedSets)
     setCurrentSetIndex(renumberedSets.length)
     
-    const today = new Date().toISOString().split('T')[0]
+    const entry: TrainingEntry = {
+      id: existingEntry?.id || `${exercise.id}-${Date.now()}`,
+      exerciseId: exercise.id,
+      date: new Date().toISOString().split('T')[0],
+      sets: renumberedSets
+    }
     
-    setSessions((prevSessions) => {
-      const existingSessions = prevSessions || []
-      const sessionIndex = existingSessions.findIndex(s => s.date === today)
-      
-      if (sessionIndex >= 0) {
-        const updatedSessions = [...existingSessions]
-        
-        if (renumberedSets.length === 0) {
-          updatedSessions[sessionIndex].entries = updatedSessions[sessionIndex].entries.filter(
-            e => e.exerciseId !== exercise.id
-          )
-          
-          if (updatedSessions[sessionIndex].entries.length === 0) {
-            return existingSessions.filter(s => s.date !== today)
-          }
-        } else {
-          const currentEntry = updatedSessions[sessionIndex].entries.find(
-            e => e.exerciseId === exercise.id
-          )
-          
-          if (!currentEntry) return existingSessions
-          
-          const entry: TrainingEntry = {
-            id: currentEntry.id,
-            exerciseId: exercise.id,
-            date: today,
-            sets: renumberedSets
-          }
-          
-          const entryIndex = updatedSessions[sessionIndex].entries.findIndex(
-            e => e.exerciseId === exercise.id
-          )
-          
-          if (entryIndex >= 0) {
-            updatedSessions[sessionIndex].entries[entryIndex] = entry
-          }
-        }
-        
-        return updatedSessions
-      }
-      
-      return existingSessions
-    })
+    onUpdate(entry)
     
     if (renumberedSets.length === 0) {
       onCancel()

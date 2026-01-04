@@ -154,15 +154,6 @@ function App() {
   const today = new Date().toISOString().split('T')[0]
   const currentSession = (sessions || []).find(s => s.date === today)
   
-  useEffect(() => {
-    if (selectedExercise && currentSession) {
-      const updatedEntry = currentSession.entries.find(e => e.exerciseId === selectedExercise.id)
-      if (!updatedEntry || updatedEntry.sets.length === 0) {
-        setSelectedExercise(null)
-      }
-    }
-  }, [currentSession, selectedExercise])
-  
   const handleCompleteEntry = (entry: TrainingEntry) => {
     setSessions((prevSessions) => {
       const existingSessions = prevSessions || []
@@ -189,6 +180,43 @@ function App() {
     setSelectedExercise(null)
   }
   
+  const handleUpdateEntry = (entry: TrainingEntry) => {
+    setSessions((prevSessions) => {
+      const existingSessions = prevSessions || []
+      const sessionIndex = existingSessions.findIndex(s => s.date === today)
+      
+      if (sessionIndex >= 0) {
+        const updatedSessions = [...existingSessions]
+        
+        if (entry.sets.length === 0) {
+          updatedSessions[sessionIndex].entries = updatedSessions[sessionIndex].entries.filter(
+            e => e.exerciseId !== entry.exerciseId
+          )
+          
+          if (updatedSessions[sessionIndex].entries.length === 0) {
+            return existingSessions.filter(s => s.date !== today)
+          }
+        } else {
+          const entryIndex = updatedSessions[sessionIndex].entries.findIndex(
+            e => e.exerciseId === entry.exerciseId
+          )
+          
+          if (entryIndex >= 0) {
+            updatedSessions[sessionIndex].entries[entryIndex] = entry
+          }
+        }
+        
+        return updatedSessions
+      }
+      
+      return existingSessions
+    })
+  }
+  
+  const handleCancelEntry = () => {
+    setSelectedExercise(null)
+  }
+  
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Toaster />
@@ -212,9 +240,11 @@ function App() {
           <TrainingEntryView
             exercise={selectedExercise}
             currentSession={currentSession}
+            allSessions={sessions || []}
             defaultSets={settings?.defaultSetsPerExercise || 2}
             onComplete={handleCompleteEntry}
-            onCancel={() => setSelectedExercise(null)}
+            onUpdate={handleUpdateEntry}
+            onCancel={handleCancelEntry}
           />
         ) : (
           <ExerciseList
