@@ -1,12 +1,12 @@
 # Datenhaltung - Gym Tracker
 
-## Single Source of Truth: XLSX-Datei im Local Storage
+Die App verwendet die importierte XLSX-Datei im Local 
 
 Die App verwendet die importierte XLSX-Datei im Local Storage als **Single Source of Truth** für alle Daten.
 
 ## Architektur
 
-### 1. Import
+- **Historisc
 Beim Import einer XLSX-Datei:
 - Datei wird in Base64 kodiert und in `settings.importedFile` gespeichert
 - Übungen werden aus dem Hauptsheet extrahiert
@@ -14,21 +14,21 @@ Beim Import einer XLSX-Datei:
 - Alle Daten werden in den KV-Store geschrieben
 
 ### 2. Training erfassen
-Bei jeder Trainingserfassung:
-- Daten werden im KV-Store (`sessions`) aktualisiert
-- **Sofort danach** wird die XLSX-Datei im Local Storage aktualisiert
-- Ein "Training History" Sheet wird erstellt/aktualisiert mit allen Sessions
+## XLSX-Struktur
+### Sheet 1: Übungsliste (Original-Sheet)
+Nr. | Übungen          | Notizen
+2   | Kniebeugen       | ...
 
-### 3. Export
-Beim Export:
-- Die aktuelle XLSX-Datei aus dem Local Storage wird exportiert
-- Diese enthält **alle** aktuellen Übungen und Trainingsdaten
+```
+2024-01-15 |
+2024-01-15 | Kniebeugen     | 1    | 100         | 12
 
-### 4. Synchronisation
-Der "Sync" Button:
-- Lädt die Daten aus der XLSX-Datei im Local Storage
-- Überschreibt die aktuellen Übungen und Sessions im KV-Store
-- Nützlich für Reset oder Wiederherstellung
+
+Import XLSX
+Local Storage (Bas
+Parse → Übungen + History
+KV-Store (exercises + sessions)
+Training erfassen
 
 ## XLSX-Struktur
 
