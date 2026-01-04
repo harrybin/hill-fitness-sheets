@@ -77,7 +77,7 @@ export function ExerciseList({ exercises, currentSession, onSelectExercise }: Ex
                   <p className="text-sm text-muted-foreground mb-3">{exercise.notes}</p>
                 )}
                 
-                {entry ? (
+                {entry && (
                   <div className="flex gap-4 text-sm">
                     {entry.sets.map((set, idx) => (
                       <div key={idx} className="flex items-center gap-2">
@@ -89,10 +89,6 @@ export function ExerciseList({ exercises, currentSession, onSelectExercise }: Ex
                         </span>
                       </div>
                     ))}
-                  </div>
-                ) : (
-                  <div className="text-sm text-muted-foreground">
-                    Antippen um zu starten
                   </div>
                 )}
               </div>
