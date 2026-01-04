@@ -3,6 +3,7 @@ export interface Exercise {
   name: string;
   notes?: string;
   order: number;
+  suggestedWeight?: number;
 }
 
 export interface TrainingSet {

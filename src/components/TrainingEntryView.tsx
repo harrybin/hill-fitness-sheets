@@ -9,6 +9,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { SetInput } from "@/components/SetInput";
 import { ArrowLeft, Check, Trash, XCircle } from "@phosphor-icons/react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface TrainingEntryViewProps {
   exercise: Exercise;
@@ -17,6 +19,7 @@ interface TrainingEntryViewProps {
   defaultSets: number;
   onComplete: (entry: TrainingEntry) => void;
   onUpdate: (entry: TrainingEntry) => void;
+  onUpdateExercise: (exercise: Exercise) => void;
   onCancel: () => void;
 }
 
@@ -27,6 +30,7 @@ export function TrainingEntryView({
   defaultSets,
   onComplete,
   onUpdate,
+  onUpdateExercise,
   onCancel,
 }: TrainingEntryViewProps) {
   const existingEntry = currentSession?.entries.find(
@@ -61,13 +65,21 @@ export function TrainingEntryView({
 
   // State for weight (shared by both sets) and reps for each set
   const [weight, setWeight] = useState(
-    existingEntry?.sets[0]?.weight || previousTraining?.lastWeight || 10
+    existingEntry?.sets[0]?.weight ||
+      exercise.suggestedWeight ||
+      previousTraining?.lastWeight ||
+      10
   );
   const [repsSet1, setRepsSet1] = useState(
     existingEntry?.sets[0]?.reps || previousTraining?.lastReps || 10
   );
   const [repsSet2, setRepsSet2] = useState(
     existingEntry?.sets[1]?.reps || previousTraining?.lastReps || 10
+  );
+
+  // State for weight suggestion for next training
+  const [suggestedWeight, setSuggestedWeight] = useState(
+    exercise.suggestedWeight || weight
   );
 
   const handleComplete = () => {
@@ -83,6 +95,15 @@ export function TrainingEntryView({
       sets,
     };
 
+    // Update exercise with suggested weight if provided
+    if (suggestedWeight > 0) {
+      onUpdateExercise({
+        ...exercise,
+        suggestedWeight: suggestedWeight,
+      });
+    }
+
+    // Complete the entry
     onComplete(entry);
   };
 
@@ -114,6 +135,10 @@ export function TrainingEntryView({
 
   const adjustWeight = (delta: number) => {
     setWeight(Math.max(0, weight + delta));
+  };
+
+  const adjustSuggestedWeight = (delta: number) => {
+    setSuggestedWeight(Math.max(0, suggestedWeight + delta));
   };
 
   return (
@@ -157,6 +182,12 @@ export function TrainingEntryView({
             <div className="text-sm text-muted-foreground">
               Vorher: {previousTraining.lastWeight}kg ×{" "}
               {previousTraining.lastReps}
+            </div>
+          )}
+
+          {exercise.suggestedWeight && (
+            <div className="text-sm text-primary font-semibold">
+              Vorschlag: {exercise.suggestedWeight}kg
             </div>
           )}
         </div>
@@ -235,6 +266,79 @@ export function TrainingEntryView({
         <SetInput setNumber={1} reps={repsSet1} onRepsChange={setRepsSet1} />
 
         <SetInput setNumber={2} reps={repsSet2} onRepsChange={setRepsSet2} />
+
+        <div className="border-t border-border my-4"></div>
+
+        <div>
+          <label className="text-sm font-semibold text-muted-foreground mb-2 block uppercase tracking-wide">
+            Gewichtsvorschlag für nächstes Mal
+          </label>
+
+          <div className="flex items-center justify-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => adjustSuggestedWeight(-5)}
+              className="h-11 w-11 p-0 text-xs"
+            >
+              -5
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => adjustSuggestedWeight(-1)}
+              className="h-11 w-11 p-0 text-xs"
+            >
+              -1
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => adjustSuggestedWeight(-0.5)}
+              className="h-11 w-11 p-0 text-xs"
+            >
+              -0.5
+            </Button>
+
+            <div className="flex-1 max-w-[140px]">
+              <div className="text-center font-mono font-bold text-3xl text-primary">
+                {suggestedWeight}
+              </div>
+              <div className="text-center text-xs text-muted-foreground mt-0.5">
+                kg
+              </div>
+            </div>
+
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => adjustSuggestedWeight(0.5)}
+              className="h-11 w-11 p-0 text-xs"
+            >
+              +0.5
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => adjustSuggestedWeight(1)}
+              className="h-11 w-11 p-0 text-xs"
+            >
+              +1
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => adjustSuggestedWeight(5)}
+              className="h-11 w-11 p-0 text-xs"
+            >
+              +5
+            </Button>
+          </div>
+
+          <p className="text-xs text-muted-foreground mt-2 text-center">
+            Wird beim nächsten Training als Startwert verwendet
+          </p>
+        </div>
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 p-3 bg-background border-t border-border">

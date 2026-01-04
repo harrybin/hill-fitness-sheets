@@ -20,6 +20,7 @@ interface AppContextValue {
   ) => void;
   completeEntry: (entry: TrainingEntry) => void;
   updateEntry: (entry: TrainingEntry) => void;
+  updateExercise: (exercise: Exercise) => void;
   loadFromXLSX: (arrayBuffer: ArrayBuffer) => void;
 }
 
@@ -176,6 +177,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const updateExercise = (exercise: Exercise) => {
+    setExercises((prevExercises) => {
+      const prev = prevExercises || [];
+      const exerciseIndex = prev.findIndex((e) => e.id === exercise.id);
+
+      if (exerciseIndex >= 0) {
+        const updated = [...prev];
+        updated[exerciseIndex] = exercise;
+        return updated;
+      }
+
+      return prev;
+    });
+  };
+
   const value: AppContextValue = {
     exercises: exercises || [],
     sessions: sessions || [],
@@ -185,6 +201,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSettings,
     completeEntry,
     updateEntry,
+    updateExercise,
     loadFromXLSX,
   };
 

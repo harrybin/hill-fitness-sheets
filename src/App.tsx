@@ -10,7 +10,7 @@ import { Gear } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 
 function App() {
-  const { exercises, sessions, settings, completeEntry, updateEntry } =
+  const { exercises, sessions, settings, completeEntry, updateEntry, updateExercise } =
     useApp();
 
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(
@@ -68,6 +68,7 @@ function App() {
               defaultSets={2}
               onComplete={handleCompleteEntry}
               onUpdate={updateEntry}
+              onUpdateExercise={updateExercise}
               onCancel={handleCancelEntry}
             />
           ) : (
