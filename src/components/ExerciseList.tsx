@@ -1,7 +1,13 @@
 import { Exercise, Session } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Barbell, XCircle } from "@phosphor-icons/react";
+import {
+  CheckCircle,
+  Barbell,
+  XCircle,
+  ArrowUp,
+  ArrowDown,
+} from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 interface ExerciseListProps {
@@ -144,6 +150,28 @@ export function ExerciseList({
                         </span>
                       </div>
                     ))}
+                    {exercise.suggestedWeight &&
+                      exercise.suggestedWeight !== entry.sets[0]?.weight && (
+                        <>
+                          <span className="text-muted-foreground">|</span>
+                          {exercise.suggestedWeight > entry.sets[0]?.weight ? (
+                            <ArrowUp
+                              size={18}
+                              weight="bold"
+                              className="text-orange-500 shrink-0"
+                            />
+                          ) : (
+                            <ArrowDown
+                              size={18}
+                              weight="bold"
+                              className="text-blue-500 shrink-0"
+                            />
+                          )}
+                          <span className="font-mono text-sm text-muted-foreground">
+                            {exercise.suggestedWeight}kg
+                          </span>
+                        </>
+                      )}
                   </div>
                 )}
               </div>
@@ -153,6 +181,27 @@ export function ExerciseList({
                   <div className="text-base text-foreground font-mono font-bold">
                     {lastWeight}kg
                   </div>
+                  {exercise.suggestedWeight &&
+                    exercise.suggestedWeight !== lastWeight && (
+                      <div className="flex items-center justify-end gap-1 mt-1">
+                        {exercise.suggestedWeight > lastWeight ? (
+                          <ArrowUp
+                            size={16}
+                            weight="bold"
+                            className="text-orange-500"
+                          />
+                        ) : (
+                          <ArrowDown
+                            size={16}
+                            weight="bold"
+                            className="text-blue-500"
+                          />
+                        )}
+                        <span className="text-sm text-muted-foreground font-mono">
+                          {exercise.suggestedWeight}kg
+                        </span>
+                      </div>
+                    )}
                 </div>
               )}
             </div>
