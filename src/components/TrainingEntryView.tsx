@@ -128,6 +128,10 @@ export function TrainingEntryView({
           updatedSessions[sessionIndex].entries = updatedSessions[sessionIndex].entries.filter(
             e => e.exerciseId !== exercise.id
           )
+          
+          if (updatedSessions[sessionIndex].entries.length === 0) {
+            return existingSessions.filter(s => s.date !== today)
+          }
         } else {
           const currentEntry = updatedSessions[sessionIndex].entries.find(
             e => e.exerciseId === exercise.id
@@ -156,6 +160,10 @@ export function TrainingEntryView({
       
       return existingSessions
     })
+    
+    if (renumberedSets.length === 0) {
+      onCancel()
+    }
   }
   
   const progressPercentage = ((currentSetIndex) / totalSets) * 100
