@@ -77,7 +77,34 @@ export async function downloadFileFromDrive(
   fileId: string,
   accessToken: string
 ): Promise<ArrayBuffer> {
-  const url = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`;
+  // First, get file metadata to determine if it's a Google Sheets file or uploaded file
+  const metadataUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?fields=mimeType`;
+
+  const metadataResponse = await fetch(metadataUrl, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!metadataResponse.ok) {
+    throw new Error(
+      `Drive API Fehler: ${metadataResponse.status} ${metadataResponse.statusText}`
+    );
+  }
+
+  const metadata = await metadataResponse.json();
+  const mimeType = metadata.mimeType;
+
+  let url: string;
+
+  // Check if it's a Google Sheets file or an uploaded file
+  if (mimeType === "application/vnd.google-apps.spreadsheet") {
+    // Native Google Sheets - use export endpoint
+    url = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`;
+  } else {
+    // Uploaded file (e.g., .xlsx) - use direct download
+    url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+  }
 
   const response = await fetch(url, {
     headers: {
@@ -86,9 +113,8 @@ export async function downloadFileFromDrive(
   });
 
   if (!response.ok) {
-    throw new Error(
-      `Drive API Fehler: ${response.status} ${response.statusText}`
-    );
+    const errorText = await response.text();
+    throw new Error(`Drive API Fehler: ${response.status} - ${errorText}`);
   }
 
   return response.arrayBuffer();
