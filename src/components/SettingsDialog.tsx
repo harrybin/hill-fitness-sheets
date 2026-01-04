@@ -108,8 +108,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     const metadataKeywords = [
       'trainingsziel', 'training goal', 'ziel',
       'rechtliche hinweise', 'legal notice', 'hinweise', 'rechtlich',
-      'bemerkung', 'hinweis', 'info', 'information',
-      'beschreibung', 'description'
     ]
     
     const isMetadataRow = (text: string): boolean => {
@@ -168,16 +166,15 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       let exerciseName: string = ''
       let notes: string | undefined
       
-      if (isNumericId || hasEmptyCellA) {
-        if (cellBStr !== '') {
-          exerciseName = cellBStr
-          notes = cellCStr !== '' ? cellCStr : undefined
-        }
+      if (isNumericId) {
+        exerciseName = cellBStr
+        notes = cellCStr !== '' ? cellCStr : undefined
+      } else if (hasEmptyCellA) {
+        exerciseName = cellBStr
+        notes = cellCStr !== '' ? cellCStr : undefined
       } else {
-        if (cellAStr !== '') {
-          exerciseName = cellAStr
-          notes = cellBStr !== '' ? cellBStr : undefined
-        }
+        exerciseName = cellAStr
+        notes = cellBStr !== '' ? cellBStr : undefined
       }
       
       if (
