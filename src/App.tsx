@@ -158,44 +158,44 @@ function App() {
   }
   
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground p-2 sm:p-4 md:p-6">
       <Toaster />
       
-      <div className="sticky top-0 z-10 bg-background border-b border-border">
-        <div className="flex items-center justify-between p-3">
-          <SessionHeader session={currentSession} allSessions={sessions || []} />
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setSettingsOpen(true)}
-            className="h-9 w-9"
-          >
-            <Gear size={20} />
-          </Button>
+      <div className="max-w-2xl mx-auto bg-card border border-border rounded-lg shadow-lg overflow-hidden">
+        <div className="sticky top-0 z-10 bg-card border-b border-border">
+          <div className="flex items-center justify-between p-3">
+            <SessionHeader session={currentSession} allSessions={sessions || []} />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setSettingsOpen(true)}
+              className="h-9 w-9"
+            >
+              <Gear size={20} />
+            </Button>
+          </div>
+      
+        ="pb-20">
+        <div className="pb-20">
+          {selectedExercise ? (
+            <TrainingEntryView
+              exercise={selectedExercise}
+              currentSession={currentSession}
+              allSessions={sessions || []}
+              defaultSets={settings?.defaultSetsPerExercise || 2}
+              onComplete={handleCompleteEntry}
+              onUpdate={handleUpdateEntry}
+              onCancel={handleCancelEntry}
+            />
+          ) : (
+            <ExerciseList}
+              exercises={exercises || []}
+              currentSession={currentSession}
+              allSessions={sessions || []}
+              onSelectExercise={setSelectedExercise}
+            />
+          )}
         </div>
-      </div>
-      
-      <div className="pb-20">
-        {selectedExercise ? (
-          <TrainingEntryView
-            exercise={selectedExercise}
-            currentSession={currentSession}
-            allSessions={sessions || []}
-            defaultSets={settings?.defaultSetsPerExercise || 2}
-            onComplete={handleCompleteEntry}
-            onUpdate={handleUpdateEntry}
-            onCancel={handleCancelEntry}
-          />
-        ) : (
-          <ExerciseList
-            exercises={exercises || []}
-            currentSession={currentSession}
-            allSessions={sessions || []}
-            onSelectExercise={setSelectedExercise}
-          />
-        )}
-      </div>
-      
       <SettingsDialog
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
