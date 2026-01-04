@@ -1,5 +1,5 @@
 import { createContext, useContext, ReactNode, useEffect } from "react";
-import { useKV } from "@github/spark/hooks";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Exercise, Session, AppSettings, TrainingEntry } from "@/lib/types";
 import {
   parseXLSX,
@@ -26,9 +26,9 @@ interface AppContextValue {
 const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [exercises, setExercises] = useKV<Exercise[]>("exercises", []);
-  const [sessions, setSessions] = useKV<Session[]>("sessions", []);
-  const [settings, setSettings] = useKV<AppSettings>("settings", {
+  const [exercises, setExercises] = useLocalStorage<Exercise[]>("exercises", []);
+  const [sessions, setSessions] = useLocalStorage<Session[]>("sessions", []);
+  const [settings, setSettings] = useLocalStorage<AppSettings>("settings", {
     defaultSetsPerExercise: 2,
   });
 
@@ -88,13 +88,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [sessions, exercises, settings?.importedFile, setSettings]);
 
   const loadFromXLSX = (arrayBuffer: ArrayBuffer) => {
+    console.log("loadFromXLSX called");
     const {
       exercises: newExercises,
       sessions: loadedSessions,
       metadata,
     } = parseXLSX(arrayBuffer);
+    console.log("Parsed from XLSX:", {
+      exercisesCount: newExercises.length,
+      sessionsCount: loadedSessions?.length || 0,
+      sessions: loadedSessions,
+    });
     setExercises(newExercises);
     if (loadedSessions && loadedSessions.length > 0) {
+      console.log("Setting sessions to:", loadedSessions);
       setSessions(loadedSessions);
     }
     setSettings((prev) => ({

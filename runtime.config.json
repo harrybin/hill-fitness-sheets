@@ -1,3 +1,6 @@
 {
-  "app": "f8cb849364a8f34b68dc"
+  "app": "f8cb849364a8f34b68dc",
+  "kv": {
+    "mode": "local"
+  }
 }
