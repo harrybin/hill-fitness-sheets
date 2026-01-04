@@ -29,8 +29,8 @@ function App() {
   const viewDate = selectedDate || today;
   const currentSession = sessions.find((s) => s.date === viewDate);
 
-  const handleCompleteEntry = (entry: any) => {
-    completeEntry(entry);
+  const handleCompleteEntry = (entry: any, date: string) => {
+    completeEntry(entry, date);
     setSelectedExercise(null);
   };
 
@@ -72,6 +72,7 @@ function App() {
               currentSession={currentSession}
               allSessions={sessions}
               defaultSets={2}
+              selectedDate={viewDate}
               onComplete={handleCompleteEntry}
               onUpdate={updateEntry}
               onUpdateExercise={updateExercise}

@@ -18,8 +18,8 @@ interface AppContextValue {
   setSettings: (
     value: AppSettings | ((prev: AppSettings) => AppSettings)
   ) => void;
-  completeEntry: (entry: TrainingEntry) => void;
-  updateEntry: (entry: TrainingEntry) => void;
+  completeEntry: (entry: TrainingEntry, date: string) => void;
+  updateEntry: (entry: TrainingEntry, date: string) => void;
   updateExercise: (exercise: Exercise) => void;
   loadFromXLSX: (arrayBuffer: ArrayBuffer) => void;
 }
@@ -112,12 +112,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
   };
 
-  const completeEntry = (entry: TrainingEntry) => {
-    const today = new Date().toISOString().split("T")[0];
-
+  const completeEntry = (entry: TrainingEntry, date: string) => {
     setSessions((prevSessions) => {
       const prev = prevSessions || [];
-      const sessionIndex = prev.findIndex((s) => s.date === today);
+      const sessionIndex = prev.findIndex((s) => s.date === date);
       let updatedSessions: Session[];
 
       if (sessionIndex >= 0) {
@@ -132,19 +130,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
           updatedSessions[sessionIndex].entries.push(entry);
         }
       } else {
-        updatedSessions = [...prev, { date: today, entries: [entry] }];
+        updatedSessions = [...prev, { date: date, entries: [entry] }];
       }
 
       return updatedSessions;
     });
   };
 
-  const updateEntry = (entry: TrainingEntry) => {
-    const today = new Date().toISOString().split("T")[0];
-
+  const updateEntry = (entry: TrainingEntry, date: string) => {
     setSessions((prevSessions) => {
       const prev = prevSessions || [];
-      const sessionIndex = prev.findIndex((s) => s.date === today);
+      const sessionIndex = prev.findIndex((s) => s.date === date);
       let updatedSessions: Session[];
 
       if (sessionIndex >= 0) {
@@ -158,7 +154,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
           // Remove session if no entries
           if (updatedSessions[sessionIndex].entries.length === 0) {
-            updatedSessions = prev.filter((s) => s.date !== today);
+            updatedSessions = prev.filter((s) => s.date !== date);
           }
         } else {
           const entryIndex = updatedSessions[sessionIndex].entries.findIndex(

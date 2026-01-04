@@ -18,8 +18,9 @@ interface TrainingEntryViewProps {
   currentSession?: Session;
   allSessions: Session[];
   defaultSets: number;
-  onComplete: (entry: TrainingEntry) => void;
-  onUpdate: (entry: TrainingEntry) => void;
+  selectedDate: string;
+  onComplete: (entry: TrainingEntry, date: string) => void;
+  onUpdate: (entry: TrainingEntry, date: string) => void;
   onUpdateExercise: (exercise: Exercise) => void;
   onCancel: () => void;
 }
@@ -29,6 +30,7 @@ export function TrainingEntryView({
   currentSession,
   allSessions,
   defaultSets,
+  selectedDate,
   onComplete,
   onUpdate,
   onUpdateExercise,
@@ -92,7 +94,7 @@ export function TrainingEntryView({
     const entry: TrainingEntry = {
       id: existingEntry?.id || `${exercise.id}-${Date.now()}`,
       exerciseId: exercise.id,
-      date: new Date().toISOString().split("T")[0],
+      date: selectedDate,
       sets,
     };
 
@@ -105,7 +107,7 @@ export function TrainingEntryView({
     }
 
     // Complete the entry
-    onComplete(entry);
+    onComplete(entry, selectedDate);
   };
 
   const handleDelete = () => {
@@ -114,11 +116,11 @@ export function TrainingEntryView({
     const entry: TrainingEntry = {
       id: existingEntry.id,
       exerciseId: exercise.id,
-      date: new Date().toISOString().split("T")[0],
+      date: selectedDate,
       sets: [],
     };
 
-    onUpdate(entry);
+    onUpdate(entry, selectedDate);
     onCancel();
   };
 
@@ -126,12 +128,12 @@ export function TrainingEntryView({
     const entry: TrainingEntry = {
       id: existingEntry?.id || `${exercise.id}-${Date.now()}`,
       exerciseId: exercise.id,
-      date: new Date().toISOString().split("T")[0],
+      date: selectedDate,
       sets: [],
       skipped: true,
     };
 
-    onComplete(entry);
+    onComplete(entry, selectedDate);
   };
 
   return (
