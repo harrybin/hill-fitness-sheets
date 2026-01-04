@@ -20,9 +20,23 @@ export function ExerciseList({ exercises, currentSession, onSelectExercise }: Ex
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center">
         <Barbell size={64} className="text-muted-foreground mb-4" />
         <h2 className="text-xl font-bold mb-2">Keine Übungen vorhanden</h2>
-        <p className="text-muted-foreground mb-6 max-w-md">
-          Importieren Sie Ihre Trainingsübungen aus Google Sheets über die Synchronisierung.
+        <p className="text-muted-foreground mb-4 max-w-md">
+          Importieren Sie Ihre Trainingsübungen aus Google Sheets über den Sync-Button oben rechts.
         </p>
+        <div className="bg-card border border-border rounded-lg p-6 max-w-md text-left space-y-3">
+          <h3 className="font-bold text-sm">Schnellstart:</h3>
+          <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+            <li>Erstellen Sie ein Google Spreadsheet</li>
+            <li>Fügen Sie ein Sheet namens "Übungen" hinzu</li>
+            <li>Spalte A: Übungsname, Spalte B: Notizen</li>
+            <li>Kopieren Sie die Spreadsheet-ID aus der URL</li>
+            <li>Öffnen Sie Einstellungen (⚙️) und fügen Sie die ID ein</li>
+            <li>Klicken Sie auf Sync (🔄) und melden Sie sich an</li>
+          </ol>
+          <p className="text-xs text-muted-foreground pt-2 border-t border-border">
+            Alternativ können Sie auch eine CSV-Datei in den Einstellungen hochladen.
+          </p>
+        </div>
       </div>
     )
   }

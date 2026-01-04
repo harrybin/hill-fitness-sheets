@@ -1,53 +1,147 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { ArrowsClockwise, CloudSlash, CheckCircle } from '@phosphor-icons/react'
+import { ArrowsClockwise, CloudSlash, CheckCircle, GoogleLogo } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+import { AppSettings, Exercise, Session } from '@/lib/types'
+import {
+  initializeGoogleAPI,
+  initializeTokenClient,
+  requestAccessToken,
+  hasAccessToken,
+  fetchExercisesFromSheet,
+  syncSessionsToSheet,
+} from '@/lib/googleSheets'
 
 export function SyncButton() {
   const [isSyncing, setIsSyncing] = useState(false)
-  const [isOnline] = useState(true)
-  const [pendingSync] = useKV<number>('pendingSync', 0)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false)
+  const [isOnline, setIsOnline] = useState(navigator.onLine)
   
-  const handleSync = async () => {
-    setIsSyncing(true)
-    
+  const [settings] = useKV<AppSettings>('settings', { defaultSetsPerExercise: 2 })
+  const [, setExercises] = useKV<Exercise[]>('exercises', [])
+  const [sessions] = useKV<Session[]>('sessions', [])
+  const [exercises] = useKV<Exercise[]>('exercises', [])
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true)
+    const handleOffline = () => setIsOnline(false)
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
+
+  useEffect(() => {
+    const initializeAPIs = async () => {
+      try {
+        await initializeGoogleAPI()
+        initializeTokenClient(() => {
+          setIsAuthenticated(hasAccessToken())
+        })
+        setIsInitialized(true)
+        setIsAuthenticated(hasAccessToken())
+      } catch (error) {
+        console.error('Fehler bei der Initialisierung:', error)
+      }
+    }
+
+    const timer = setTimeout(initializeAPIs, 1000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  const handleAuthenticate = async () => {
+    if (!isInitialized) {
+      toast.error('Google API wird geladen', {
+        description: 'Bitte warten Sie einen Moment',
+      })
+      return
+    }
+
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      await requestAccessToken()
+      setIsAuthenticated(true)
+      toast.success('Erfolgreich angemeldet', {
+        description: 'Sie können jetzt mit Google Sheets synchronisieren',
+        icon: <GoogleLogo size={20} weight="fill" />
+      })
+    } catch (error) {
+      toast.error('Anmeldung fehlgeschlagen', {
+        description: error instanceof Error ? error.message : 'Bitte versuchen Sie es erneut'
+      })
+    }
+  }
+
+  const handleSync = async () => {
+    if (!settings?.googleSheetId) {
+      toast.error('Keine Spreadsheet-ID', {
+        description: 'Bitte geben Sie in den Einstellungen eine Google Sheets ID ein'
+      })
+      return
+    }
+
+    if (!isAuthenticated) {
+      await handleAuthenticate()
+      return
+    }
+
+    setIsSyncing(true)
+
+    try {
+      const config = {
+        spreadsheetId: settings.googleSheetId,
+        exerciseRange: 'Übungen!A:B',
+        dataRange: 'Trainings!A:Z'
+      }
+
+      const fetchedExercises = await fetchExercisesFromSheet(config)
       
+      if (fetchedExercises.length > 0) {
+        setExercises(() => fetchedExercises)
+      }
+
+      if (sessions && sessions.length > 0) {
+        await syncSessionsToSheet(config, sessions, exercises || [])
+      }
+
       toast.success('Synchronisierung erfolgreich', {
-        description: 'Trainingsdaten wurden mit Google Sheets synchronisiert',
+        description: `${fetchedExercises.length} Übungen geladen${sessions?.length ? `, ${sessions.length} Sessions gespeichert` : ''}`,
         icon: <CheckCircle size={20} weight="fill" />
       })
     } catch (error) {
+      console.error('Sync error:', error)
       toast.error('Synchronisierung fehlgeschlagen', {
-        description: 'Bitte versuchen Sie es später erneut'
+        description: error instanceof Error ? error.message : 'Bitte versuchen Sie es später erneut'
       })
     } finally {
       setIsSyncing(false)
     }
   }
-  
+
+  const buttonDisabled = isSyncing || !isOnline || !isInitialized
+
   return (
     <Button
-      variant="outline"
+      variant={isAuthenticated ? "outline" : "default"}
       size="icon"
       onClick={handleSync}
-      disabled={isSyncing || !isOnline}
+      disabled={buttonDisabled}
       className="h-10 w-10 relative"
     >
       {!isOnline ? (
         <CloudSlash size={20} />
+      ) : !isAuthenticated ? (
+        <GoogleLogo size={20} weight="bold" />
       ) : (
         <ArrowsClockwise 
           size={20} 
           className={isSyncing ? 'animate-spin' : ''}
         />
-      )}
-      {(pendingSync ?? 0) > 0 && (
-        <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-bold">
-          {pendingSync}
-        </span>
       )}
     </Button>
   )

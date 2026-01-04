@@ -41,11 +41,11 @@ This is a focused workout tracking tool with exercise selection, set logging, an
 - **Success criteria**: Each training session has unique date, cannot create duplicate sessions for same day
 
 ### Google Sheets Sync
-- **Functionality**: Import exercise templates and export completed training data
-- **Purpose**: Centralized training plan management and history
-- **Trigger**: Manual sync button or automatic background sync when online
-- **Progression**: User initiates sync → Fetch latest exercise config → Upload new training entries → Confirm sync success
-- **Success criteria**: Spreadsheet structure maintained, new columns added for new sessions, offline changes queued for sync
+- **Functionality**: Direct Google Sheets API integration to import exercise templates and export completed training data with OAuth2 authentication
+- **Purpose**: Centralized training plan management and history in user's own Google Drive
+- **Trigger**: Manual sync button with authentication flow or direct sync when authenticated
+- **Progression**: User enters Sheet ID in settings → Clicks sync → Google OAuth login (first time) → Fetch exercises from "Übungen" sheet → Upload training data to "Trainings" sheet → Confirm sync success with counts
+- **Success criteria**: Spreadsheet structure maintained (Übungen: A=Name, B=Notes; Trainings: auto-generated with dates and sets), exercises imported successfully, all sessions exported with proper formatting, OAuth token persisted for subsequent syncs
 
 ### Offline-First Architecture
 - **Functionality**: Full app functionality without internet connection
