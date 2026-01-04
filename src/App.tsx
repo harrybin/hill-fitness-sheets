@@ -93,28 +93,7 @@ function App() {
         </div>
       </div>
 
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
-
-      <footer className="max-w-2xl mx-auto mt-4 px-4 pb-4 text-xs text-muted-foreground">
-        <div className="flex gap-4">
-          <a
-            href="/DATENSCHUTZ.html"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors underline"
-          >
-            Datenschutz
-          </a>
-          <a
-            href="/NUTZUNGSBEDINGUNGEN.html"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors underline"
-          >
-            Nutzungsbedingungen
-          </a>
-        </div>
-      </footer>
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />     
     </div>
   );
 }
