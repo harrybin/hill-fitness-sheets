@@ -304,7 +304,7 @@ export function TrainingEntryView({
       <div className="fixed bottom-0 left-0 right-0 p-3 bg-background border-t border-border">
         <Button
           size="lg"
-          className="w-full h-12 text-lg font-bold"
+          className="w-full h-24 text-lg font-bold"
           onClick={handleConfirmSet}
         >
           <Check size={24} weight="bold" className="mr-2" />
