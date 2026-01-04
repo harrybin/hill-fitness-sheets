@@ -1,12 +1,22 @@
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Exercise, Session } from "@/lib/types";
-import { Barbell, FileXls } from "@phosphor-icons/react";
+import { Barbell, FileXls, Download, GoogleLogo } from "@phosphor-icons/react";
 import { CompletedExerciseCard } from "./CompletedExerciseCard";
 import { IncompleteExerciseCard } from "./IncompleteExerciseCard";
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/contexts/AppContext";
 import { toast } from "sonner";
 import { arrayBufferToBase64 } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { 
+  initGoogleAuth, 
+  requestGoogleAuth, 
+  downloadFileFromDrive,
+  loadToken,
+  saveToken,
+  clearToken,
+  type GoogleAuthToken 
+} from "@/lib/googleAuth";
 
 interface ExerciseListProps {
   exercises: Exercise[];
@@ -25,6 +35,49 @@ export function ExerciseList({
 }: ExerciseListProps) {
   const { loadFromXLSX, setSettings } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [driveUrl, setDriveUrl] = useState("");
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [googleToken, setGoogleToken] = useState<GoogleAuthToken | null>(null);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+
+  useEffect(() => {
+    // Load saved token
+    const savedToken = loadToken();
+    if (savedToken) {
+      setGoogleToken(savedToken);
+    }
+
+    // Initialize Google Auth
+    initGoogleAuth().catch((error) => {
+      console.error('Google Auth initialization failed:', error);
+    });
+  }, []);
+
+  const handleGoogleAuth = async () => {
+    try {
+      setIsAuthenticating(true);
+      const token = await requestGoogleAuth();
+      setGoogleToken(token);
+      saveToken(token);
+      toast.success("Mit Google angemeldet", {
+        description: "Sie können jetzt private Dateien importieren",
+      });
+    } catch (error) {
+      toast.error("Anmeldung fehlgeschlagen", {
+        description: error instanceof Error ? error.message : "Unbekannter Fehler",
+      });
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  const handleGoogleSignOut = () => {
+    clearToken();
+    setGoogleToken(null);
+    toast.info("Abgemeldet", {
+      description: "Google Authentifizierung entfernt",
+    });
+  };
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -61,6 +114,124 @@ export function ExerciseList({
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+  };
+
+  const handleDriveDownload = async () => {
+    if (!driveUrl.trim()) {
+      toast.error("Fehler", {
+        description: "Bitte geben Sie einen Google Drive Link ein",
+      });
+      return;
+    }
+
+    const fileIdMatch = driveUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    if (!fileIdMatch) {
+      toast.error("Ungültiger Link", {
+        description: "Kein gültiger Google Drive Link",
+      });
+      return;
+    }
+
+    const fileId = fileIdMatch[1];
+
+    try {
+      setIsDownloading(true);
+
+      // Try Google Drive API if authenticated
+      if (googleToken) {
+        try {
+          const arrayBuffer = await downloadFileFromDrive(fileId, googleToken.access_token);
+          const fileName = `sheet_${new Date().getTime()}.xlsx`;
+
+          loadFromXLSX(arrayBuffer);
+
+          const fileData = arrayBufferToBase64(arrayBuffer);
+
+          setSettings((prev) => ({
+            ...prev,
+            importedFile: {
+              name: fileName,
+              data: fileData,
+              lastModified: Date.now(),
+              size: arrayBuffer.byteLength,
+            },
+          }));
+
+          toast.success("Erfolgreich importiert (Drive API)", {
+            description: fileName,
+          });
+
+          setDriveUrl("");
+          return;
+        } catch (driveError) {
+          console.error('Drive API failed, trying fallback:', driveError);
+          // Token might be expired
+          if (driveError instanceof Error && driveError.message.includes('401')) {
+            clearToken();
+            setGoogleToken(null);
+            toast.warning("Sitzung abgelaufen", {
+              description: "Bitte erneut anmelden",
+            });
+          }
+        }
+      }
+
+      // Try direct fetch for public files
+      const downloadUrl = `https://docs.google.com/spreadsheets/d/${fileId}/export?format=xlsx`;
+      const response = await fetch(downloadUrl, {
+        mode: 'cors',
+      });
+
+      if (!response.ok) {
+        throw new Error('Download fehlgeschlagen');
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const fileName = `sheet_${new Date().getTime()}.xlsx`;
+
+      loadFromXLSX(arrayBuffer);
+
+      const fileData = arrayBufferToBase64(arrayBuffer);
+
+      setSettings((prev) => ({
+        ...prev,
+        importedFile: {
+          name: fileName,
+          data: fileData,
+          lastModified: Date.now(),
+          size: arrayBuffer.byteLength,
+        },
+      }));
+
+      toast.success("Erfolgreich importiert", {
+        description: fileName,
+      });
+
+      setDriveUrl("");
+    } catch (error) {
+      // Fallback to browser download if all else fails
+      const downloadUrl = `https://docs.google.com/spreadsheets/d/${fileId}/export?format=xlsx`;
+
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = `sheet_${new Date().getTime()}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      const message = googleToken 
+        ? "Automatischer Import fehlgeschlagen. Browser-Download gestartet."
+        : "Datei nicht öffentlich? Melden Sie sich mit Google an oder laden Sie manuell hoch.";
+
+      toast.info("Download gestartet", {
+        description: message,
+        duration: 8000,
+      });
+
+      setDriveUrl("");
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -116,15 +287,74 @@ export function ExerciseList({
           Importieren Sie Ihre Übungen aus dem Google Sheet von Hill-Fitness.
           (Dies kann jeder Zeit über die Einstellungen wiederholt werden.)
         </p>
-        <Button
-          onClick={() => fileInputRef.current?.click()}
-          variant="default"
-          className="gap-2"
-          data-testid="import-xlsx-button"
-        >
-          <FileXls size={20} />
-          XLSX importieren
-        </Button>
+
+        <div className="w-full max-w-md space-y-3">
+          {!googleToken ? (
+            <Button
+              onClick={handleGoogleAuth}
+              disabled={isAuthenticating}
+              variant="outline"
+              className="gap-2 w-full"
+            >
+              <GoogleLogo size={20} />
+              {isAuthenticating ? "Anmeldung..." : "Mit Google anmelden (für private Dateien)"}
+            </Button>
+          ) : (
+            <div className="flex gap-2">
+              <Button
+                onClick={handleGoogleSignOut}
+                variant="ghost"
+                size="sm"
+                className="gap-2"
+              >
+                <GoogleLogo size={16} />
+                Abmelden
+              </Button>
+              <span className="text-xs text-muted-foreground flex items-center">
+                ✓ Angemeldet
+              </span>
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <Input
+              type="text"
+              placeholder="Google Drive Link einfügen..."
+              value={driveUrl}
+              onChange={(e) => setDriveUrl(e.target.value)}
+              className="flex-1"
+            />
+            <Button
+              onClick={handleDriveDownload}
+              disabled={isDownloading}
+              variant="default"
+              className="gap-2"
+            >
+              <Download size={20} />
+              {isDownloading ? "Importiere..." : "Import"}
+            </Button>
+          </div>
+
+          <p className="text-xs text-muted-foreground text-center">
+            {googleToken 
+              ? "Mit Google angemeldet - private Dateien werden unterstützt"
+              : "Öffentliche Dateien oder mit Google anmelden für private Dateien"
+            }
+          </p>
+
+          <div className="text-sm text-muted-foreground text-center">oder</div>
+
+          <Button
+            onClick={() => fileInputRef.current?.click()}
+            variant="outline"
+            className="gap-2 w-full"
+            data-testid="import-xlsx-button"
+          >
+            <FileXls size={20} />
+            Lokale XLSX Datei importieren
+          </Button>
+        </div>
+
         <input
           ref={fileInputRef}
           type="file"

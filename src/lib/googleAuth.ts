@@ -1,0 +1,148 @@
+// Google OAuth and Drive API integration
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
+
+export interface GoogleAuthToken {
+  access_token: string;
+  expires_in: number;
+  token_type: string;
+  scope: string;
+  expires_at: number;
+}
+
+let tokenClient: google.accounts.oauth2.TokenClient | null = null;
+
+export function initGoogleAuth(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (!GOOGLE_CLIENT_ID) {
+      reject(new Error('VITE_GOOGLE_CLIENT_ID nicht konfiguriert'));
+      return;
+    }
+
+    if (typeof google === 'undefined' || !google.accounts) {
+      // Load Google Identity Services script
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Google Auth Script konnte nicht geladen werden'));
+      document.head.appendChild(script);
+    } else {
+      resolve();
+    }
+  });
+}
+
+export function requestGoogleAuth(): Promise<GoogleAuthToken> {
+  return new Promise((resolve, reject) => {
+    if (!GOOGLE_CLIENT_ID) {
+      reject(new Error('VITE_GOOGLE_CLIENT_ID nicht konfiguriert'));
+      return;
+    }
+
+    try {
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: SCOPES,
+        callback: (response: google.accounts.oauth2.TokenResponse) => {
+          if (response.error) {
+            reject(new Error(response.error));
+            return;
+          }
+
+          const token: GoogleAuthToken = {
+            access_token: response.access_token,
+            expires_in: parseInt(response.expires_in || '3600'),
+            token_type: response.token_type || 'Bearer',
+            scope: response.scope || SCOPES,
+            expires_at: Date.now() + parseInt(response.expires_in || '3600') * 1000,
+          };
+
+          resolve(token);
+        },
+      });
+
+      tokenClient.requestAccessToken({ prompt: 'consent' });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+export async function downloadFileFromDrive(
+  fileId: string,
+  accessToken: string
+): Promise<ArrayBuffer> {
+  const url = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`;
+
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Drive API Fehler: ${response.status} ${response.statusText}`);
+  }
+
+  return response.arrayBuffer();
+}
+
+export function saveToken(token: GoogleAuthToken): void {
+  localStorage.setItem('google_auth_token', JSON.stringify(token));
+}
+
+export function loadToken(): GoogleAuthToken | null {
+  const tokenStr = localStorage.getItem('google_auth_token');
+  if (!tokenStr) return null;
+
+  try {
+    const token = JSON.parse(tokenStr) as GoogleAuthToken;
+    // Check if token is expired
+    if (token.expires_at && token.expires_at < Date.now()) {
+      localStorage.removeItem('google_auth_token');
+      return null;
+    }
+    return token;
+  } catch {
+    return null;
+  }
+}
+
+export function clearToken(): void {
+  localStorage.removeItem('google_auth_token');
+}
+
+// Type declarations for Google Identity Services
+declare global {
+  interface Window {
+    google?: typeof google;
+  }
+
+  namespace google {
+    namespace accounts {
+      namespace oauth2 {
+        interface TokenClient {
+          requestAccessToken(options?: { prompt?: string }): void;
+        }
+
+        interface TokenResponse {
+          access_token: string;
+          expires_in?: string;
+          token_type?: string;
+          scope?: string;
+          error?: string;
+          error_description?: string;
+        }
+
+        function initTokenClient(config: {
+          client_id: string;
+          scope: string;
+          callback: (response: TokenResponse) => void;
+        }): TokenClient;
+      }
+    }
+  }
+}
