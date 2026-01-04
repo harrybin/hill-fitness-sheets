@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { AppSettings, Exercise, Session } from '@/lib/types'
+import { AppSettings, Exercise } from '@/lib/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -17,7 +17,6 @@ interface SettingsDialogProps {
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [settings, setSettings] = useKV<AppSettings>('settings', { defaultSetsPerExercise: 2 })
   const [, setExercises] = useKV<Exercise[]>('exercises', [])
-  const [, setSessions] = useKV<Session[]>('sessions', [])
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   const adjustSets = (delta: number) => {
@@ -241,7 +240,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       }
       
       setExercises(() => newExercises)
-      setSessions(() => [])
       
       const fileData = arrayBufferToBase64(arrayBuffer)
       
