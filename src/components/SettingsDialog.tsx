@@ -348,7 +348,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           )}
           
           <div className="space-y-3">
-            <Label htmlFor="sheet-id">Google Sheets ID (Optional)</Label>
+            <Label htmlFor="sheet-id">Google Sheets ID</Label>
             <div className="flex gap-2">
               <Input
                 id="sheet-id"
