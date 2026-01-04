@@ -10,12 +10,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import {
-  FileArrowDown,
-  FileXls,
-  ArrowsClockwise,
-  DownloadSimple,
-} from "@phosphor-icons/react";
+import { FileArrowDown, FileXls, DownloadSimple } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import {
   base64ToArrayBuffer,
@@ -69,29 +64,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       toast.error("Export fehlgeschlagen", {
         description:
           error instanceof Error ? error.message : "Fehler beim Export",
-      });
-    }
-  };
-
-  const resyncFromStoredFile = () => {
-    if (!settings.importedFile) {
-      toast.error("Keine Datei", {
-        description: "Bitte zuerst eine XLSX-Datei importieren",
-      });
-      return;
-    }
-
-    try {
-      const arrayBuffer = base64ToArrayBuffer(settings.importedFile.data);
-      loadFromXLSX(arrayBuffer);
-
-      toast.success("Neu synchronisiert", {
-        icon: <ArrowsClockwise size={20} weight="fill" />,
-      });
-    } catch (error) {
-      toast.error("Sync fehlgeschlagen", {
-        description:
-          error instanceof Error ? error.message : "Fehler beim Laden",
       });
     }
   };
@@ -191,26 +163,15 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                       </div>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={resyncFromStoredFile}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 gap-1.5 text-xs h-8"
-                    >
-                      <ArrowsClockwise size={14} />
-                      Sync
-                    </Button>
-                    <Button
-                      onClick={exportStoredFile}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 gap-1.5 text-xs h-8"
-                    >
-                      <DownloadSimple size={14} />
-                      Export
-                    </Button>
-                  </div>
+                  <Button
+                    onClick={exportStoredFile}
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-1.5 text-xs h-8"
+                  >
+                    <DownloadSimple size={14} />
+                    Export
+                  </Button>
                 </div>
               )}
             </div>
