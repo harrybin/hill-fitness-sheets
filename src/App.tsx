@@ -18,17 +18,6 @@ function App() {
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   
-  const validExercises = (exercises || []).filter(ex => 
-    ex.name && 
-    ex.name.trim() !== '' && 
-    ex.name !== 'undefined' &&
-    ex.name.toLowerCase() !== 'undefined'
-  )
-  
-  if (validExercises.length !== (exercises || []).length) {
-    setExercises(() => validExercises)
-  }
-  
   const today = new Date().toISOString().split('T')[0]
   const currentSession = (sessions || []).find(s => s.date === today)
   
@@ -90,7 +79,7 @@ function App() {
           />
         ) : (
           <ExerciseList
-            exercises={validExercises || []}
+            exercises={exercises || []}
             currentSession={currentSession}
             onSelectExercise={setSelectedExercise}
           />

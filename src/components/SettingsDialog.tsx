@@ -108,7 +108,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     const metadataKeywords = [
       'trainingsziel', 'training goal', 'ziel',
       'rechtliche hinweise', 'legal notice', 'hinweise', 'rechtlich',
-      'notiz', 'note', 'anmerkung',
       'bemerkung', 'hinweis', 'info', 'information',
       'beschreibung', 'description'
     ]
@@ -144,7 +143,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         metadata.trainingGoal = String(row[1] || '').trim()
       } else if (firstCell.includes('rechtliche hinweise') || firstCell.includes('legal notice')) {
         metadata.legalNotice = String(row[1] || '').trim()
-      } else if ((firstCell.includes('notiz') || firstCell.includes('note')) && !firstCell.includes('übung')) {
+      } else if ((firstCell.includes('notiz') || firstCell.includes('note')) && !firstCell.includes('übung') && !secondCell.includes('übung')) {
         metadata.notes = String(row[1] || '').trim()
       }
     }
@@ -153,25 +152,32 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     
     for (let i = startIndex; i < data.length; i++) {
       const row = data[i]
-      if (!row) continue
+      if (!row || row.length === 0) continue
       
       const cellA = row[0]
       const cellB = row[1]
       const cellC = row[2]
       
-      if (!cellB || String(cellB).trim() === '') continue
+      const cellAStr = cellA !== null && cellA !== undefined ? String(cellA).trim() : ''
+      const cellBStr = cellB !== null && cellB !== undefined ? String(cellB).trim() : ''
+      const cellCStr = cellC !== null && cellC !== undefined ? String(cellC).trim() : ''
       
-      const isNumericId = !isNaN(Number(cellA)) || String(cellA).trim() === ''
+      const isNumericId = !isNaN(Number(cellA)) && cellAStr !== ''
+      const hasEmptyCellA = cellAStr === ''
       
-      let exerciseName: string
+      let exerciseName: string = ''
       let notes: string | undefined
       
-      if (isNumericId) {
-        exerciseName = String(cellB).trim()
-        notes = cellC ? String(cellC).trim() : undefined
+      if (isNumericId || hasEmptyCellA) {
+        if (cellBStr !== '') {
+          exerciseName = cellBStr
+          notes = cellCStr !== '' ? cellCStr : undefined
+        }
       } else {
-        exerciseName = String(cellA).trim()
-        notes = cellB ? String(cellB).trim() : undefined
+        if (cellAStr !== '') {
+          exerciseName = cellAStr
+          notes = cellBStr !== '' ? cellBStr : undefined
+        }
       }
       
       if (
@@ -182,7 +188,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         !isMetadataRow(exerciseName)
       ) {
         exercises.push({
-          id: `exercise-${Date.now()}-${i}`,
+          id: `exercise-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 9)}`,
           name: exerciseName,
           notes: notes,
           order: exercises.length
