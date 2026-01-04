@@ -268,7 +268,8 @@ export async function importExercisesFromXLSX(arrayBuffer: ArrayBuffer): Promise
     
     const sheetName = workbook.SheetNames.find(name => 
       name.toLowerCase().includes('übung') || 
-      name.toLowerCase().includes('exercise')
+      name.toLowerCase().includes('exercise') ||
+      name.toLowerCase().includes('muskel')
     ) || workbook.SheetNames[0]
     
     if (!sheetName) {
@@ -283,29 +284,58 @@ export async function importExercisesFromXLSX(arrayBuffer: ArrayBuffer): Promise
     }
     
     const exercises: Exercise[] = []
-    let startIndex = 0
+    let headerRowIndex = -1
     
-    if (data[0] && (
-      String(data[0][0]).toLowerCase().includes('übung') ||
-      String(data[0][0]).toLowerCase().includes('exercise') ||
-      String(data[0][0]).toLowerCase().includes('name')
-    )) {
-      startIndex = 1
+    for (let i = 0; i < Math.min(data.length, 20); i++) {
+      const row = data[i]
+      if (!row) continue
+      
+      const firstCell = String(row[0] || '').toLowerCase().trim()
+      const secondCell = String(row[1] || '').toLowerCase().trim()
+      
+      if (
+        (firstCell.includes('nr') && secondCell.includes('übung')) ||
+        (firstCell.includes('number') && secondCell.includes('exercise')) ||
+        (firstCell === 'nr' && (secondCell === 'übungen' || secondCell === 'übung'))
+      ) {
+        headerRowIndex = i
+        break
+      }
     }
+    
+    const startIndex = headerRowIndex >= 0 ? headerRowIndex + 1 : 0
     
     for (let i = startIndex; i < data.length; i++) {
       const row = data[i]
-      if (!row || !row[0] || String(row[0]).trim() === '') continue
+      if (!row) continue
       
-      const exerciseName = String(row[0]).trim()
-      const notes = row[1] ? String(row[1]).trim() : undefined
+      const cellA = row[0]
+      const cellB = row[1]
+      const cellC = row[2]
       
-      exercises.push({
-        id: `exercise-${Date.now()}-${i}`,
-        name: exerciseName,
-        notes: notes,
-        order: i - startIndex
-      })
+      if (!cellB || String(cellB).trim() === '') continue
+      
+      const isNumericId = !isNaN(Number(cellA)) || String(cellA).trim() === ''
+      
+      let exerciseName: string
+      let notes: string | undefined
+      
+      if (isNumericId) {
+        exerciseName = String(cellB).trim()
+        notes = cellC ? String(cellC).trim() : undefined
+      } else {
+        exerciseName = String(cellA).trim()
+        notes = cellB ? String(cellB).trim() : undefined
+      }
+      
+      if (exerciseName && exerciseName.length > 0) {
+        exercises.push({
+          id: `exercise-${Date.now()}-${i}`,
+          name: exerciseName,
+          notes: notes,
+          order: exercises.length
+        })
+      }
     }
     
     return exercises
