@@ -26,7 +26,10 @@ interface AppContextValue {
 const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [exercises, setExercises] = useLocalStorage<Exercise[]>("exercises", []);
+  const [exercises, setExercises] = useLocalStorage<Exercise[]>(
+    "exercises",
+    []
+  );
   const [sessions, setSessions] = useLocalStorage<Session[]>("sessions", []);
   const [settings, setSettings] = useLocalStorage<AppSettings>("settings", {
     defaultSetsPerExercise: 2,

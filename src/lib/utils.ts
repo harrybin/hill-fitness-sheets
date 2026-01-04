@@ -50,7 +50,7 @@ export function parseXLSX(arrayBuffer: ArrayBuffer): {
   // Process each sheet
   for (const sheetName of workbook.SheetNames) {
     console.log(`\n=== Processing sheet: ${sheetName} ===`);
-    
+
     const worksheet = workbook.Sheets[sheetName];
     const data: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
@@ -65,14 +65,16 @@ export function parseXLSX(arrayBuffer: ArrayBuffer): {
 
     // Parse sessions from this sheet
     const sessions = parseSessionsFromSheet(data, exercises);
-    
+
     // Merge sessions
-    sessions.forEach(session => {
-      const existingSession = allSessions.find(s => s.date === session.date);
+    sessions.forEach((session) => {
+      const existingSession = allSessions.find((s) => s.date === session.date);
       if (existingSession) {
         // Merge entries
-        session.entries.forEach(entry => {
-          const existingEntry = existingSession.entries.find(e => e.exerciseId === entry.exerciseId);
+        session.entries.forEach((entry) => {
+          const existingEntry = existingSession.entries.find(
+            (e) => e.exerciseId === entry.exerciseId
+          );
           if (existingEntry) {
             // Merge sets
             existingEntry.sets.push(...entry.sets);
@@ -90,7 +92,7 @@ export function parseXLSX(arrayBuffer: ArrayBuffer): {
   console.log(`Total exercises: ${exercises.length}`);
   console.log(`Total sessions: ${allSessions.length}`);
   if (allSessions.length > 0) {
-    console.log("Session dates:", allSessions.map(s => s.date).sort());
+    console.log("Session dates:", allSessions.map((s) => s.date).sort());
   }
 
   // Check for history sheet (legacy support)
@@ -300,7 +302,10 @@ function parseSheetData(data: any[][]): {
   return { exercises, metadata };
 }
 
-function parseSessionsFromSheet(data: any[][], exercises: Exercise[]): Session[] {
+function parseSessionsFromSheet(
+  data: any[][],
+  exercises: Exercise[]
+): Session[] {
   const sessions: Session[] = [];
 
   const parseExcelDate = (value: any): string | null => {
@@ -384,7 +389,9 @@ function parseSessionsFromSheet(data: any[][], exercises: Exercise[]): Session[]
   let dateRowIndex = -1;
   for (let i = 0; i < Math.min(data.length, 20); i++) {
     const row = data[i];
-    const cellA = String(row[0] || "").toLowerCase().trim();
+    const cellA = String(row[0] || "")
+      .toLowerCase()
+      .trim();
     if (cellA.includes("datum")) {
       dateRowIndex = i;
       console.log(`Found "Datum:" row at index ${i}`);
@@ -394,30 +401,89 @@ function parseSessionsFromSheet(data: any[][], exercises: Exercise[]): Session[]
 
   if (dateRowIndex >= 0) {
     const dateRow = data[dateRowIndex];
-    const trainingSessions: { whCol: number; kgCol: number; date: string }[] = [];
+    
+    // Also find the Einheit row (row 8) to map Einheit numbers to columns
+    let einheitRowIndex = -1;
+    for (let i = 0; i < Math.min(data.length, 20); i++) {
+      const row = data[i];
+      for (let j = 0; j < row.length; j++) {
+        const cell = String(row[j] || "")
+          .toLowerCase()
+          .trim();
+        if (cell === "einheit:") {
+          einheitRowIndex = i;
+          break;
+        }
+      }
+      if (einheitRowIndex >= 0) break;
+    }
+    
+    const trainingSessions: {
+      whCol: number;
+      kgCol: number;
+      date: string;
+      einheitNumber?: number;
+    }[] = [];
 
     console.log("Scanning date row:", dateRow);
+    if (einheitRowIndex >= 0) {
+      console.log("Scanning Einheit row at index", einheitRowIndex);
+    }
 
     // Dates and WH/KG pairs start at column 6
     // Pattern: date at col 6, WH/KG at 6,7; date at col 8, WH/KG at 8,9; etc.
-    for (let colIdx = 6; colIdx < dateRow.length; colIdx += 2) {
+    const maxCol = Math.max(
+      dateRow.length,
+      einheitRowIndex >= 0 ? data[einheitRowIndex].length : 0
+    );
+    for (let colIdx = 6; colIdx < maxCol; colIdx += 2) {
       const dateValue = dateRow[colIdx];
-      
-      if (!dateValue) continue;
 
-      const parsedDate = parseExcelDate(dateValue);
+      let parsedDate = parseExcelDate(dateValue);
+      let einheitNumber: number | undefined;
+
+      // If no date found, try to get Einheit number and generate a date
+      if (!parsedDate && einheitRowIndex >= 0) {
+        const einheitRow = data[einheitRowIndex];
+        // Einheit numbers are typically at colIdx+1 (after "Einheit:" text)
+        if (colIdx + 1 < einheitRow.length) {
+          const einheitValue = einheitRow[colIdx + 1];
+          if (einheitValue != null && einheitValue !== "") {
+            const num =
+              typeof einheitValue === "number"
+                ? einheitValue
+                : parseInt(String(einheitValue));
+            if (!isNaN(num) && num > 0) {
+              einheitNumber = num;
+              // Generate a synthetic date based on Einheit number
+              // Space them 3 days apart, counting backwards from today
+              const baseDate = new Date();
+              baseDate.setDate(baseDate.getDate() - (num - 1) * 3);
+              parsedDate = baseDate.toISOString().split("T")[0];
+              console.log(
+                `No date for Einheit ${num} at column ${colIdx}, generated date: ${parsedDate}`
+              );
+            }
+          }
+        }
+      }
+
       if (parsedDate) {
         const whCol = colIdx;
         const kgCol = colIdx + 1;
-        trainingSessions.push({ whCol, kgCol, date: parsedDate });
+        trainingSessions.push({ whCol, kgCol, date: parsedDate, einheitNumber });
         console.log(
-          `Found training date at column ${colIdx}: ${parsedDate} (WH: ${whCol}, KG: ${kgCol})`
+          `Found training session at column ${colIdx}: ${parsedDate} (WH: ${whCol}, KG: ${kgCol})${
+            einheitNumber ? ` [Einheit ${einheitNumber}]` : ""
+          }`
         );
       }
     }
 
     if (trainingSessions.length > 0) {
-      console.log(`Found ${trainingSessions.length} training sessions in this sheet`);
+      console.log(
+        `Found ${trainingSessions.length} training sessions in this sheet`
+      );
 
       for (let exerciseIdx = 0; exerciseIdx < exercises.length; exerciseIdx++) {
         const exercise = exercises[exerciseIdx];
@@ -426,46 +492,67 @@ function parseSessionsFromSheet(data: any[][], exercises: Exercise[]): Session[]
         const exerciseRowIdx2 = startIndex + exerciseIdx * 2 + 1;
 
         if (exerciseRowIdx1 >= data.length) continue;
-        
+
         const exerciseRow1 = data[exerciseRowIdx1];
-        const exerciseRow2 = exerciseRowIdx2 < data.length ? data[exerciseRowIdx2] : null;
+        const exerciseRow2 =
+          exerciseRowIdx2 < data.length ? data[exerciseRowIdx2] : null;
 
         for (const { whCol, kgCol, date } of trainingSessions) {
           // Get data for Satz 1
           const reps1 = exerciseRow1[whCol];
           const weight1 = exerciseRow1[kgCol];
-          
+
           // Get data for Satz 2
           const reps2 = exerciseRow2 ? exerciseRow2[whCol] : null;
           const weight2 = exerciseRow2 ? exerciseRow2[kgCol] : null;
 
           const sets = [];
-          
+
           // Process Satz 1
           if (reps1 != null && weight1 != null) {
             const repsStr1 = String(reps1).trim();
             const weightStr1 = String(weight1).trim();
-            
-            if (repsStr1 !== "/" && weightStr1 !== "/" && repsStr1 !== "" && weightStr1 !== "") {
+
+            if (
+              repsStr1 !== "/" &&
+              weightStr1 !== "/" &&
+              repsStr1 !== "" &&
+              weightStr1 !== ""
+            ) {
               const repsNum1 = parseInt(repsStr1);
-              const weightNum1 = parseFloat(weightStr1.replace(',', '.'));
-              
-              if (!isNaN(weightNum1) && weightNum1 > 0 && !isNaN(repsNum1) && repsNum1 > 0) {
+              const weightNum1 = parseFloat(weightStr1.replace(",", "."));
+
+              if (
+                !isNaN(weightNum1) &&
+                weightNum1 > 0 &&
+                !isNaN(repsNum1) &&
+                repsNum1 > 0
+              ) {
                 sets.push({ setNumber: 1, weight: weightNum1, reps: repsNum1 });
               }
             }
           }
-          
+
           // Process Satz 2
           if (reps2 != null && weight2 != null) {
             const repsStr2 = String(reps2).trim();
             const weightStr2 = String(weight2).trim();
-            
-            if (repsStr2 !== "/" && weightStr2 !== "/" && repsStr2 !== "" && weightStr2 !== "") {
+
+            if (
+              repsStr2 !== "/" &&
+              weightStr2 !== "/" &&
+              repsStr2 !== "" &&
+              weightStr2 !== ""
+            ) {
               const repsNum2 = parseInt(repsStr2);
-              const weightNum2 = parseFloat(weightStr2.replace(',', '.'));
-              
-              if (!isNaN(weightNum2) && weightNum2 > 0 && !isNaN(repsNum2) && repsNum2 > 0) {
+              const weightNum2 = parseFloat(weightStr2.replace(",", "."));
+
+              if (
+                !isNaN(weightNum2) &&
+                weightNum2 > 0 &&
+                !isNaN(repsNum2) &&
+                repsNum2 > 0
+              ) {
                 sets.push({ setNumber: 2, weight: weightNum2, reps: repsNum2 });
               }
             }
@@ -494,9 +581,7 @@ function parseSessionsFromSheet(data: any[][], exercises: Exercise[]): Session[]
         }
       }
 
-      console.log(
-        `Imported ${sessions.length} sessions from this sheet`
-      );
+      console.log(`Imported ${sessions.length} sessions from this sheet`);
     }
   }
 
