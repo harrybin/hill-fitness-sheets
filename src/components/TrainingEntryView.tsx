@@ -136,17 +136,34 @@ export function TrainingEntryView({
           <label className="text-xs font-semibold text-muted-foreground mb-2 block uppercase tracking-wide">
             Gewicht (beide Sätze)
           </label>
-          <div className="flex items-center justify-center gap-3">
+
+          <div className="flex items-center justify-center gap-2">
             <Button
-              size="lg"
+              size="sm"
               variant="outline"
-              onClick={() => adjustWeight(-2.5)}
-              className="h-14 w-14 rounded-full p-0"
+              onClick={() => adjustWeight(-5)}
+              className="h-10 w-10 px-1 text-xs"
             >
-              <Minus size={24} weight="bold" />
+              -5
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => adjustWeight(-1)}
+              className="h-10 w-10 px-1 text-xs"
+            >
+              -1
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => adjustWeight(-0.5)}
+              className="h-10 w-10 px-1 text-xs"
+            >
+              -0.5
             </Button>
 
-            <div className="flex-1 max-w-[200px]">
+            <div className="flex-1 max-w-[140px]">
               <div className="text-center font-mono font-bold text-5xl text-primary">
                 {weight}
               </div>
@@ -156,31 +173,28 @@ export function TrainingEntryView({
             </div>
 
             <Button
-              size="lg"
+              size="sm"
               variant="outline"
-              onClick={() => adjustWeight(2.5)}
-              className="h-14 w-14 rounded-full p-0"
+              onClick={() => adjustWeight(0.5)}
+              className="h-10 w-10 px-1 text-xs"
             >
-              <Plus size={24} weight="bold" />
-            </Button>
-          </div>
-
-          <div className="flex gap-2 justify-center mt-3">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => adjustWeight(-5)}
-              className="h-8 px-3 text-xs"
-            >
-              -5kg
+              +0.5
             </Button>
             <Button
-              variant="secondary"
               size="sm"
+              variant="outline"
+              onClick={() => adjustWeight(1)}
+              className="h-10 w-10 px-1 text-xs"
+            >
+              +1
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
               onClick={() => adjustWeight(5)}
-              className="h-8 px-3 text-xs"
+              className="h-10 w-10 px-1 text-xs"
             >
-              +5kg
+              +5
             </Button>
           </div>
         </div>
@@ -194,9 +208,9 @@ export function TrainingEntryView({
               size="lg"
               variant="outline"
               onClick={() => adjustReps(1, -1)}
-              className="h-14 w-14 rounded-full p-0"
+              className="h-12 w-12 rounded-full p-0"
             >
-              <Minus size={24} weight="bold" />
+              <Minus size={20} weight="bold" />
             </Button>
 
             <div className="flex-1 max-w-[200px]">
@@ -212,24 +226,10 @@ export function TrainingEntryView({
               size="lg"
               variant="outline"
               onClick={() => adjustReps(1, 1)}
-              className="h-14 w-14 rounded-full p-0"
+              className="h-12 w-12 rounded-full p-0"
             >
-              <Plus size={24} weight="bold" />
+              <Plus size={20} weight="bold" />
             </Button>
-          </div>
-
-          <div className="grid grid-cols-4 gap-2 mt-3">
-            {[-3, -2, 2, 3].map((delta) => (
-              <Button
-                key={delta}
-                variant="secondary"
-                size="sm"
-                onClick={() => adjustReps(1, delta)}
-                className="h-8 px-2 text-xs"
-              >
-                {delta > 0 ? `+${delta}` : delta}
-              </Button>
-            ))}
           </div>
         </div>
 
@@ -242,9 +242,9 @@ export function TrainingEntryView({
               size="lg"
               variant="outline"
               onClick={() => adjustReps(2, -1)}
-              className="h-14 w-14 rounded-full p-0"
+              className="h-12 w-12 rounded-full p-0"
             >
-              <Minus size={24} weight="bold" />
+              <Minus size={20} weight="bold" />
             </Button>
 
             <div className="flex-1 max-w-[200px]">
@@ -260,24 +260,10 @@ export function TrainingEntryView({
               size="lg"
               variant="outline"
               onClick={() => adjustReps(2, 1)}
-              className="h-14 w-14 rounded-full p-0"
+              className="h-12 w-12 rounded-full p-0"
             >
-              <Plus size={24} weight="bold" />
+              <Plus size={20} weight="bold" />
             </Button>
-          </div>
-
-          <div className="grid grid-cols-4 gap-2 mt-3">
-            {[-3, -2, 2, 3].map((delta) => (
-              <Button
-                key={delta}
-                variant="secondary"
-                size="sm"
-                onClick={() => adjustReps(2, delta)}
-                className="h-8 px-2 text-xs"
-              >
-                {delta > 0 ? `+${delta}` : delta}
-              </Button>
-            ))}
           </div>
         </div>
       </div>
