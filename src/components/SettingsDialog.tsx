@@ -108,6 +108,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     const metadataKeywords = [
       'trainingsziel', 'training goal', 'ziel',
       'rechtliche hinweise', 'legal notice', 'hinweise', 'rechtlich',
+      'bei bedarf', 'copyright', '©',
     ]
     
     const isMetadataRow = (text: string): boolean => {
