@@ -282,29 +282,30 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Einstellungen</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="sm:max-w-md max-h-[90vh] p-4">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="text-base">Einstellungen</DialogTitle>
+          <DialogDescription className="text-xs">
             Passen Sie Ihre Trainingseinstellungen an
           </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-6 py-4">
-          <div className="space-y-3">
-            <Label htmlFor="default-sets">Standard-Sätze pro Übung</Label>
-            <div className="flex items-center gap-4">
+        <div className="space-y-4 overflow-y-auto max-h-[calc(90vh-8rem)]">
+          <div className="space-y-2">
+            <Label htmlFor="default-sets" className="text-sm">Standard-Sätze pro Übung</Label>
+            <div className="flex items-center gap-3">
               <Button
                 variant="outline"
                 size="icon"
                 onClick={() => adjustSets(-1)}
                 disabled={(settings?.defaultSetsPerExercise || 2) <= 1}
+                className="h-10 w-10"
               >
-                <Minus size={20} />
+                <Minus size={18} />
               </Button>
               
               <div className="flex-1 text-center">
-                <div className="text-3xl font-bold font-mono text-primary">
+                <div className="text-2xl font-bold font-mono text-primary">
                   {settings?.defaultSetsPerExercise || 2}
                 </div>
               </div>
@@ -314,26 +315,27 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 size="icon"
                 onClick={() => adjustSets(1)}
                 disabled={(settings?.defaultSetsPerExercise || 2) >= 10}
+                className="h-10 w-10"
               >
-                <Plus size={20} />
+                <Plus size={18} />
               </Button>
             </div>
           </div>
           
           <Separator />
           
-          <div className="space-y-3">
-            <Label>Übungen importieren</Label>
-            <div className="space-y-3">
+          <div className="space-y-2">
+            <Label className="text-sm">Übungen importieren</Label>
+            <div className="space-y-2">
               <Button
                 onClick={() => fileInputRef.current?.click()}
                 variant="outline"
-                className="w-full justify-start gap-3 h-auto py-4"
+                className="w-full justify-start gap-2 h-auto py-3"
               >
-                <FileXls size={24} className="flex-shrink-0" />
-                <div className="text-left flex-1">
-                  <div className="font-semibold">Lokale XLSX-Datei hochladen</div>
-                  <div className="text-xs text-muted-foreground mt-1">
+                <FileXls size={20} className="flex-shrink-0" />
+                <div className="text-left flex-1 min-w-0">
+                  <div className="font-semibold text-sm">Lokale XLSX-Datei hochladen</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
                     Laden Sie eine Excel/Google Sheets XLSX-Datei hoch
                   </div>
                 </div>
@@ -347,13 +349,13 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               />
               
               {settings?.importedFile && (
-                <div className="bg-muted/50 p-3 rounded-md space-y-2">
+                <div className="bg-muted/50 p-2.5 rounded-md space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-semibold text-foreground truncate">
                         {settings.importedFile.name}
                       </div>
-                      <div className="text-xs text-muted-foreground mt-1">
+                      <div className="text-xs text-muted-foreground mt-0.5">
                         {new Date(settings.importedFile.lastModified).toLocaleDateString('de-DE', {
                           day: '2-digit',
                           month: '2-digit',
@@ -369,18 +371,18 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                       onClick={resyncFromStoredFile}
                       variant="outline"
                       size="sm"
-                      className="flex-1 gap-2"
+                      className="flex-1 gap-1.5 text-xs h-8"
                     >
-                      <ArrowsClockwise size={16} />
+                      <ArrowsClockwise size={14} />
                       Neu synchronisieren
                     </Button>
                     <Button
                       onClick={exportStoredFile}
                       variant="outline"
                       size="sm"
-                      className="flex-1 gap-2"
+                      className="flex-1 gap-1.5 text-xs h-8"
                     >
-                      <DownloadSimple size={16} />
+                      <DownloadSimple size={14} />
                       Exportieren
                     </Button>
                   </div>
@@ -389,35 +391,33 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             </div>
           </div>
           
-          <Separator />
-          
           {(settings?.trainingGoal || settings?.legalNotice || settings?.notes) && (
             <>
-              <div className="space-y-3">
-                <Label>Importierte Informationen</Label>
-                <div className="space-y-2 text-sm bg-muted/50 p-3 rounded-md">
+              <Separator />
+              
+              <div className="space-y-2">
+                <Label className="text-sm">Importierte Informationen</Label>
+                <div className="space-y-2 text-sm bg-muted/50 p-2.5 rounded-md max-h-32 overflow-y-auto">
                   {settings.trainingGoal && (
                     <div>
-                      <div className="font-semibold text-foreground">Trainingsziel:</div>
-                      <div className="text-muted-foreground mt-1">{settings.trainingGoal}</div>
+                      <div className="font-semibold text-foreground text-xs">Trainingsziel:</div>
+                      <div className="text-muted-foreground text-xs mt-0.5">{settings.trainingGoal}</div>
                     </div>
                   )}
                   {settings.legalNotice && (
-                    <div className="mt-3">
-                      <div className="font-semibold text-foreground">Rechtliche Hinweise:</div>
-                      <div className="text-muted-foreground mt-1">{settings.legalNotice}</div>
+                    <div className="mt-2">
+                      <div className="font-semibold text-foreground text-xs">Rechtliche Hinweise:</div>
+                      <div className="text-muted-foreground text-xs mt-0.5">{settings.legalNotice}</div>
                     </div>
                   )}
                   {settings.notes && (
-                    <div className="mt-3">
-                      <div className="font-semibold text-foreground">Notizen:</div>
-                      <div className="text-muted-foreground mt-1">{settings.notes}</div>
+                    <div className="mt-2">
+                      <div className="font-semibold text-foreground text-xs">Notizen:</div>
+                      <div className="text-muted-foreground text-xs mt-0.5">{settings.notes}</div>
                     </div>
                   )}
                 </div>
               </div>
-              
-              <Separator />
             </>
           )}
         </div>
