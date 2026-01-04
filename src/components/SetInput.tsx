@@ -45,7 +45,7 @@ export function SetInput({ setNumber, reps, onRepsChange }: SetInputProps) {
         </Button>
 
         <div className="flex-1 max-w-[120px]">
-          <div className="text-center font-mono font-bold text-5xl text-primary">
+          <div className="text-center font-mono font-bold text-4xl text-primary">
             {reps}
           </div>
           <div className="text-center text-xs text-muted-foreground mt-0.5">

@@ -66,13 +66,22 @@ export function TrainingEntryView({
 
   const previousTraining = getPreviousTraining();
 
+  // Determine initial weight: prioritize suggested weight from exercise over actual last weight
+  const getInitialWeight = () => {
+    if (existingEntry?.sets[0]?.weight) {
+      return existingEntry.sets[0].weight;
+    }
+    if (exercise.suggestedWeight && exercise.suggestedWeight > 0) {
+      return exercise.suggestedWeight;
+    }
+    if (previousTraining?.lastWeight) {
+      return previousTraining.lastWeight;
+    }
+    return 10;
+  };
+
   // State for weight (shared by both sets) and reps for each set
-  const [weight, setWeight] = useState(
-    existingEntry?.sets[0]?.weight ||
-      exercise.suggestedWeight ||
-      previousTraining?.lastWeight ||
-      10
-  );
+  const [weight, setWeight] = useState(getInitialWeight());
   const [repsSet1, setRepsSet1] = useState(
     existingEntry?.sets[0]?.reps || previousTraining?.lastReps || 10
   );
@@ -82,7 +91,9 @@ export function TrainingEntryView({
 
   // State for weight suggestion for next training
   const [suggestedWeight, setSuggestedWeight] = useState(
-    exercise.suggestedWeight || weight
+    exercise.suggestedWeight && exercise.suggestedWeight > 0
+      ? exercise.suggestedWeight
+      : weight
   );
 
   const handleComplete = () => {
@@ -173,18 +184,19 @@ export function TrainingEntryView({
             )}
           </div>
 
-          {previousTraining && (
-            <div className="text-sm text-muted-foreground">
-              Vorher: {previousTraining.lastWeight}kg ×{" "}
-              {previousTraining.lastReps}
-            </div>
-          )}
-
-          {exercise.suggestedWeight && (
-            <div className="text-sm text-primary font-semibold">
-              Vorschlag: {exercise.suggestedWeight}kg
-            </div>
-          )}
+          <div className="flex items-center justify-between gap-2">
+            {previousTraining && (
+              <div className="text-sm text-muted-foreground">
+                Vorher: {previousTraining.lastWeight}kg ×{" "}
+                {previousTraining.lastReps}
+              </div>
+            )}
+            {exercise.suggestedWeight && (
+              <div className="text-sm text-primary font-semibold">
+                Vorschlag: {exercise.suggestedWeight}kg
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -207,7 +219,7 @@ export function TrainingEntryView({
 
         <div>
           <label className="text-sm font-semibold text-muted-foreground mb-2 block uppercase tracking-wide">
-            Gewichtsvorschlag für nächstes Mal
+            Gewicht für nächstes Mal
           </label>
 
           <WeightInput
@@ -215,10 +227,6 @@ export function TrainingEntryView({
             onChange={setSuggestedWeight}
             size="small"
           />
-
-          <p className="text-xs text-muted-foreground mt-2 text-center">
-            Wird beim nächsten Training als Startwert verwendet
-          </p>
         </div>
       </div>
 

@@ -15,7 +15,7 @@ export function WeightInput({
     onChange(Math.max(0, value + delta));
   };
 
-  const textSize = size === "large" ? "text-5xl" : "text-3xl";
+  const textSize = size === "large" ? "text-4xl" : "text-2xl";
 
   return (
     <div className="flex items-center justify-center gap-2">
