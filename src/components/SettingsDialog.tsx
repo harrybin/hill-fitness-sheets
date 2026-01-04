@@ -312,24 +312,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 onChange={handleFileUpload}
                 className="hidden"
               />
-              <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md space-y-2">
-                <p className="font-semibold">So exportieren Sie aus Google Sheets:</p>
-                <ol className="list-decimal list-inside space-y-1 ml-2">
-                  <li>Öffnen Sie Ihr Google Sheet</li>
-                  <li>Klicken Sie auf Datei → Herunterladen → Microsoft Excel (.xlsx)</li>
-                  <li>Laden Sie die heruntergeladene Datei hier hoch</li>
-                </ol>
-                <p className="pt-2">
-                  <strong>Unterstützte Formate:</strong>
-                </p>
-                <ul className="list-disc list-inside space-y-1 ml-2">
-                  <li><strong>Mit Nummern:</strong> Spalte A = Nr., Spalte B = Übungsname, Spalte C = Notizen</li>
-                  <li><strong>Ohne Nummern:</strong> Spalte A = Übungsname, Spalte B = Notizen</li>
-                </ul>
-                <p className="pt-2 text-xs">
-                  Die Header-Zeile wird automatisch erkannt (z.B. "Nr. | Übungen | Notiz").
-                </p>
-              </div>
             </div>
           </div>
           
