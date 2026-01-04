@@ -29,6 +29,12 @@ export interface AppSettings {
   trainingGoal?: string;
   legalNotice?: string;
   notes?: string;
+  importedFile?: {
+    name: string;
+    data: string;
+    lastModified: number;
+    size: number;
+  };
 }
 
 export interface PreviousTraining {

@@ -1,11 +1,11 @@
-import { useRef } from 'react'
+import { useRef, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { AppSettings, Exercise } from '@/lib/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { Plus, Minus, FileArrowDown, FileXls } from '@phosphor-icons/react'
+import { Plus, Minus, FileArrowDown, FileXls, ArrowsClockwise } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
 
@@ -19,11 +19,62 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [, setExercises] = useKV<Exercise[]>('exercises', [])
   const fileInputRef = useRef<HTMLInputElement>(null)
   
+  useEffect(() => {
+    if (settings?.importedFile && settings.defaultSetsPerExercise !== undefined) {
+      try {
+        const arrayBuffer = base64ToArrayBuffer(settings.importedFile.data)
+        const { exercises: newExercises } = parseXLSX(arrayBuffer)
+        setExercises(() => newExercises)
+      } catch (error) {
+        console.error('Auto-sync failed:', error)
+      }
+    }
+  }, [settings?.defaultSetsPerExercise])
+  
   const adjustSets = (delta: number) => {
     setSettings((prev) => ({
       ...prev!,
       defaultSetsPerExercise: Math.max(1, Math.min(10, (prev?.defaultSetsPerExercise || 2) + delta))
     }))
+  }
+  
+  const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
+    const binaryString = atob(base64)
+    const bytes = new Uint8Array(binaryString.length)
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i)
+    }
+    return bytes.buffer
+  }
+  
+  const resyncFromStoredFile = () => {
+    if (!settings?.importedFile) {
+      toast.error('Keine gespeicherte Datei', {
+        description: 'Bitte importieren Sie zuerst eine XLSX-Datei'
+      })
+      return
+    }
+    
+    try {
+      const arrayBuffer = base64ToArrayBuffer(settings.importedFile.data)
+      const { exercises: newExercises, metadata } = parseXLSX(arrayBuffer)
+      
+      setExercises(() => newExercises)
+      
+      setSettings((prev) => ({
+        ...prev!,
+        ...metadata
+      }))
+      
+      toast.success('Daten neu synchronisiert', {
+        description: `${newExercises.length} Übungen aus ${settings.importedFile.name} geladen`,
+        icon: <ArrowsClockwise size={20} weight="fill" />
+      })
+    } catch (error) {
+      toast.error('Synchronisierung fehlgeschlagen', {
+        description: error instanceof Error ? error.message : 'Fehler beim Laden der gespeicherten Datei'
+      })
+    }
   }
   
   const parseXLSX = (arrayBuffer: ArrayBuffer): { exercises: Exercise[], metadata: Partial<AppSettings> } => {
@@ -142,6 +193,15 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     return { exercises, metadata }
   }
   
+  const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
+    const bytes = new Uint8Array(buffer)
+    let binary = ''
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i])
+    }
+    return btoa(binary)
+  }
+  
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -159,12 +219,18 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       
       setExercises(() => newExercises)
       
-      if (Object.keys(metadata).length > 0) {
-        setSettings((prev) => ({
-          ...prev!,
-          ...metadata
-        }))
-      }
+      const fileData = arrayBufferToBase64(arrayBuffer)
+      
+      setSettings((prev) => ({
+        ...prev!,
+        ...metadata,
+        importedFile: {
+          name: file.name,
+          data: fileData,
+          lastModified: file.lastModified,
+          size: file.size
+        }
+      }))
       
       const metadataInfo: string[] = []
       if (metadata.trainingGoal) metadataInfo.push('Trainingsziel')
@@ -257,6 +323,36 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 onChange={handleFileUpload}
                 className="hidden"
               />
+              
+              {settings?.importedFile && (
+                <div className="bg-muted/50 p-3 rounded-md space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-foreground truncate">
+                        {settings.importedFile.name}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {new Date(settings.importedFile.lastModified).toLocaleDateString('de-DE', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })} • {(settings.importedFile.size / 1024).toFixed(1)} KB
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={resyncFromStoredFile}
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2"
+                  >
+                    <ArrowsClockwise size={16} />
+                    Neu synchronisieren
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
           
