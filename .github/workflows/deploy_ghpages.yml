@@ -39,6 +39,7 @@ jobs:
         env:
           VITE_GIT_COMMIT_HASH: ${{ github.sha }}
           VITE_BUILD_DATE: ${{ github.event.head_commit.timestamp }}
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
         run: |
           export VITE_GIT_COMMIT_HASH=$(echo $VITE_GIT_COMMIT_HASH | cut -c1-7)
           npm run build

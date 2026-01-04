@@ -1,5 +1,6 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useApp } from "@/contexts/AppContext";
+import { XLSXImportSection } from "./XLSXImportSection";
 import {
   Dialog,
   DialogContent,
@@ -20,12 +21,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import {
-  FileArrowDown,
-  FileXls,
-  DownloadSimple,
-  Trash,
-} from "@phosphor-icons/react";
+import { FileArrowDown, DownloadSimple, Trash } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import QRCodeSVG from "react-qr-code";
 import { arrayBufferToBase64, exportXLSXWithFormatting } from "@/lib/utils";
@@ -37,8 +33,25 @@ interface SettingsDialogProps {
 
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { settings, setSettings, loadFromXLSX, sessions, exercises } = useApp();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  const handleImport = (arrayBuffer: ArrayBuffer, fileName: string) => {
+    loadFromXLSX(arrayBuffer);
+
+    const fileData = arrayBufferToBase64(arrayBuffer);
+
+    setSettings((prev) => ({
+      ...prev,
+      importedFile: {
+        name: fileName,
+        data: fileData,
+        lastModified: Date.now(),
+        size: arrayBuffer.byteLength,
+      },
+    }));
+
+    onOpenChange(false);
+  };
 
   const exportStoredFile = () => {
     if (!settings.importedFile) {
@@ -81,47 +94,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     }
   };
 
-  const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-
-      loadFromXLSX(arrayBuffer);
-
-      const fileData = arrayBufferToBase64(arrayBuffer);
-
-      setSettings((prev) => ({
-        ...prev,
-        importedFile: {
-          name: file.name,
-          data: fileData,
-          lastModified: file.lastModified,
-          size: file.size,
-        },
-      }));
-
-      toast.success("Importiert", {
-        description: file.name,
-        icon: <FileArrowDown size={20} weight="fill" />,
-      });
-
-      onOpenChange(false);
-    } catch (error) {
-      toast.error("Import fehlgeschlagen", {
-        description:
-          error instanceof Error ? error.message : "Ungültiges Format",
-      });
-    }
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
   const handleClearApp = () => {
     try {
       localStorage.clear();
@@ -153,26 +125,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           <div className="space-y-2">
             <Label className="text-sm">Google Sheets Datei</Label>
             <div className="space-y-2">
-              <Button
-                onClick={() => fileInputRef.current?.click()}
-                variant="outline"
-                className="w-full justify-start gap-2 h-auto py-2.5"
-                data-testid="settings-import-xlsx-button"
-              >
-                <FileXls size={20} className="shrink-0" />
-                <div className="text-left flex-1 min-w-0">
-                  <div className="font-semibold text-sm">XLSX importieren</div>
-                  <div className="text-xs text-muted-foreground mt-0.5 leading-tight">
-                    Excel/Google Sheets Datei
-                  </div>
-                </div>
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx,.xls,.ods"
-                onChange={handleFileUpload}
-                className="hidden"
+              <XLSXImportSection
+                onImport={handleImport}
+                showLocalUpload={true}
               />
 
               {settings.importedFile && (
