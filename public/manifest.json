@@ -1,6 +1,6 @@
 {
     "name": "Hill Fitness Sheets",
-    "short_name": "Gym Tracker",
+    "short_name": "Hill-Fitness-Sheet",
     "description": "Trainingseinheiten im Fitnessstudio erfassen",
     "start_url": "/",
     "display": "standalone",
