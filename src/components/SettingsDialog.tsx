@@ -37,8 +37,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   
   const exportStoredFile = () => {
     if (!settings?.importedFile) {
-      toast.error('Keine gespeicherte Datei', {
-        description: 'Bitte importieren Sie zuerst eine XLSX-Datei'
+      toast.error('Keine Datei', {
+        description: 'Bitte zuerst eine XLSX-Datei importieren'
       })
       return
     }
@@ -58,21 +58,21 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       document.body.removeChild(link)
       URL.revokeObjectURL(url)
       
-      toast.success('Datei exportiert', {
-        description: `${settings.importedFile.name} wurde heruntergeladen`,
+      toast.success('Exportiert', {
+        description: `${settings.importedFile.name}`,
         icon: <DownloadSimple size={20} weight="fill" />
       })
     } catch (error) {
       toast.error('Export fehlgeschlagen', {
-        description: error instanceof Error ? error.message : 'Fehler beim Exportieren der Datei'
+        description: error instanceof Error ? error.message : 'Fehler beim Export'
       })
     }
   }
   
   const resyncFromStoredFile = () => {
     if (!settings?.importedFile) {
-      toast.error('Keine gespeicherte Datei', {
-        description: 'Bitte importieren Sie zuerst eine XLSX-Datei'
+      toast.error('Keine Datei', {
+        description: 'Bitte zuerst eine XLSX-Datei importieren'
       })
       return
     }
@@ -88,13 +88,13 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         ...metadata
       }))
       
-      toast.success('Daten neu synchronisiert', {
-        description: `${newExercises.length} Übungen aus ${settings.importedFile.name} geladen`,
+      toast.success('Neu synchronisiert', {
+        description: `${newExercises.length} Übungen geladen`,
         icon: <ArrowsClockwise size={20} weight="fill" />
       })
     } catch (error) {
-      toast.error('Synchronisierung fehlgeschlagen', {
-        description: error instanceof Error ? error.message : 'Fehler beim Laden der gespeicherten Datei'
+      toast.error('Sync fehlgeschlagen', {
+        description: error instanceof Error ? error.message : 'Fehler beim Laden'
       })
     }
   }
@@ -233,8 +233,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       const { exercises: newExercises, metadata } = parseXLSX(arrayBuffer)
       
       if (newExercises.length === 0) {
-        toast.error('Keine Übungen gefunden', {
-          description: 'Die Datei enthält keine gültigen Übungen'
+        toast.error('Keine Übungen', {
+          description: 'Datei enthält keine gültigen Übungen'
         })
         return
       }
@@ -256,12 +256,12 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       
       const metadataInfo: string[] = []
       if (metadata.trainingGoal) metadataInfo.push('Trainingsziel')
-      if (metadata.legalNotice) metadataInfo.push('Rechtliche Hinweise')
+      if (metadata.legalNotice) metadataInfo.push('Hinweise')
       if (metadata.notes) metadataInfo.push('Notizen')
       
       const description = metadataInfo.length > 0
-        ? `${metadataInfo.join(', ')} wurden in den Einstellungen gespeichert`
-        : 'Ihre Trainingsliste wurde erfolgreich aktualisiert'
+        ? `${metadataInfo.join(', ')} gespeichert`
+        : 'Trainingsliste aktualisiert'
       
       toast.success(`${newExercises.length} Übungen importiert`, {
         description,
@@ -271,7 +271,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       onOpenChange(false)
     } catch (error) {
       toast.error('Import fehlgeschlagen', {
-        description: error instanceof Error ? error.message : 'Ungültiges Dateiformat'
+        description: error instanceof Error ? error.message : 'Ungültiges Format'
       })
     }
     
@@ -286,13 +286,13 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         <DialogHeader className="pb-2">
           <DialogTitle className="text-base">Einstellungen</DialogTitle>
           <DialogDescription className="text-xs">
-            Passen Sie Ihre Trainingseinstellungen an
+            Trainingseinstellungen
           </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4 overflow-y-auto max-h-[calc(90vh-8rem)]">
           <div className="space-y-2">
-            <Label htmlFor="default-sets" className="text-sm">Standard-Sätze pro Übung</Label>
+            <Label htmlFor="default-sets" className="text-sm">Standard-Sätze</Label>
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
@@ -325,18 +325,18 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           <Separator />
           
           <div className="space-y-2">
-            <Label className="text-sm">Übungen importieren</Label>
+            <Label className="text-sm">Übungen</Label>
             <div className="space-y-2">
               <Button
                 onClick={() => fileInputRef.current?.click()}
                 variant="outline"
-                className="w-full justify-start gap-2 h-auto py-3"
+                className="w-full justify-start gap-2 h-auto py-2.5"
               >
                 <FileXls size={20} className="flex-shrink-0" />
                 <div className="text-left flex-1 min-w-0">
-                  <div className="font-semibold text-sm">Lokale XLSX-Datei hochladen</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    Laden Sie eine Excel/Google Sheets XLSX-Datei hoch
+                  <div className="font-semibold text-sm">XLSX hochladen</div>
+                  <div className="text-xs text-muted-foreground mt-0.5 leading-tight">
+                    Excel/Google Sheets Datei
                   </div>
                 </div>
               </Button>
@@ -355,13 +355,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                       <div className="text-sm font-semibold text-foreground truncate">
                         {settings.importedFile.name}
                       </div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
+                      <div className="text-xs text-muted-foreground mt-0.5 leading-tight">
                         {new Date(settings.importedFile.lastModified).toLocaleDateString('de-DE', {
                           day: '2-digit',
                           month: '2-digit',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
+                          year: '2-digit'
                         })} • {(settings.importedFile.size / 1024).toFixed(1)} KB
                       </div>
                     </div>
@@ -374,7 +372,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                       className="flex-1 gap-1.5 text-xs h-8"
                     >
                       <ArrowsClockwise size={14} />
-                      Neu synchronisieren
+                      Sync
                     </Button>
                     <Button
                       onClick={exportStoredFile}
@@ -383,7 +381,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                       className="flex-1 gap-1.5 text-xs h-8"
                     >
                       <DownloadSimple size={14} />
-                      Exportieren
+                      Export
                     </Button>
                   </div>
                 </div>
@@ -396,24 +394,24 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               <Separator />
               
               <div className="space-y-2">
-                <Label className="text-sm">Importierte Informationen</Label>
+                <Label className="text-sm">Informationen</Label>
                 <div className="space-y-2 text-sm bg-muted/50 p-2.5 rounded-md max-h-32 overflow-y-auto">
                   {settings.trainingGoal && (
                     <div>
-                      <div className="font-semibold text-foreground text-xs">Trainingsziel:</div>
-                      <div className="text-muted-foreground text-xs mt-0.5">{settings.trainingGoal}</div>
+                      <div className="font-semibold text-foreground text-xs">Ziel:</div>
+                      <div className="text-muted-foreground text-xs mt-0.5 leading-tight break-words">{settings.trainingGoal}</div>
                     </div>
                   )}
                   {settings.legalNotice && (
                     <div className="mt-2">
-                      <div className="font-semibold text-foreground text-xs">Rechtliche Hinweise:</div>
-                      <div className="text-muted-foreground text-xs mt-0.5">{settings.legalNotice}</div>
+                      <div className="font-semibold text-foreground text-xs">Hinweise:</div>
+                      <div className="text-muted-foreground text-xs mt-0.5 leading-tight break-words">{settings.legalNotice}</div>
                     </div>
                   )}
                   {settings.notes && (
                     <div className="mt-2">
                       <div className="font-semibold text-foreground text-xs">Notizen:</div>
-                      <div className="text-muted-foreground text-xs mt-0.5">{settings.notes}</div>
+                      <div className="text-muted-foreground text-xs mt-0.5 leading-tight break-words">{settings.notes}</div>
                     </div>
                   )}
                 </div>

@@ -142,20 +142,20 @@ export function TrainingEntryView({
           </Button>
           
           <div className="mb-2">
-            <h1 className="text-2xl font-bold mb-0.5">{exercise.name}</h1>
+            <h1 className="text-2xl font-bold mb-0.5 truncate">{exercise.name}</h1>
             {exercise.notes && (
-              <p className="text-sm text-muted-foreground">{exercise.notes}</p>
+              <p className="text-sm text-muted-foreground line-clamp-2">{exercise.notes}</p>
             )}
           </div>
           
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">
-                Satz {currentSetIndex + 1} von {totalSets}
+                Satz {currentSetIndex + 1}/{totalSets}
               </span>
               {previousTraining && (
-                <span className="text-muted-foreground">
-                  Letztes Mal: {previousTraining.lastWeight}kg × {previousTraining.lastReps}
+                <span className="text-muted-foreground truncate ml-2">
+                  Vorher: {previousTraining.lastWeight}kg × {previousTraining.lastReps}
                 </span>
               )}
             </div>
@@ -196,8 +196,8 @@ export function TrainingEntryView({
         
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-semibold text-muted-foreground mb-2 block">
-              GEWICHT (KG)
+            <label className="text-xs font-semibold text-muted-foreground mb-2 block uppercase tracking-wide">
+              Gewicht (kg)
             </label>
             <div className="flex items-center justify-center gap-3">
               <Button
@@ -213,7 +213,7 @@ export function TrainingEntryView({
                 <div className="text-center font-mono font-bold text-5xl text-primary">
                   {currentWeight}
                 </div>
-                <div className="text-center text-sm text-muted-foreground mt-0.5">
+                <div className="text-center text-xs text-muted-foreground mt-0.5">
                   kg
                 </div>
               </div>
@@ -233,7 +233,7 @@ export function TrainingEntryView({
                 variant="secondary"
                 size="sm"
                 onClick={() => adjustWeight(-5)}
-                className="h-8 px-3"
+                className="h-8 px-3 text-xs"
               >
                 -5kg
               </Button>
@@ -241,7 +241,7 @@ export function TrainingEntryView({
                 variant="secondary"
                 size="sm"
                 onClick={() => adjustWeight(5)}
-                className="h-8 px-3"
+                className="h-8 px-3 text-xs"
               >
                 +5kg
               </Button>
@@ -249,8 +249,8 @@ export function TrainingEntryView({
           </div>
           
           <div>
-            <label className="text-sm font-semibold text-muted-foreground mb-2 block">
-              WIEDERHOLUNGEN
+            <label className="text-xs font-semibold text-muted-foreground mb-2 block uppercase tracking-wide">
+              Wiederholungen
             </label>
             <div className="flex items-center justify-center gap-3">
               <Button
@@ -266,8 +266,8 @@ export function TrainingEntryView({
                 <div className="text-center font-mono font-bold text-5xl text-primary">
                   {currentReps}
                 </div>
-                <div className="text-center text-sm text-muted-foreground mt-0.5">
-                  Wiederholungen
+                <div className="text-center text-xs text-muted-foreground mt-0.5">
+                  Wdh.
                 </div>
               </div>
               
@@ -289,7 +289,7 @@ export function TrainingEntryView({
                   size="sm"
                   onClick={() => adjustReps(delta)}
                   className={cn(
-                    "h-8 px-3",
+                    "h-8 px-3 text-xs",
                     delta > 0 && "col-start-2"
                   )}
                 >

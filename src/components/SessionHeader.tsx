@@ -50,12 +50,12 @@ export function SessionHeader({ session, allSessions }: SessionHeaderProps) {
   
   return (
     <div className="flex items-center gap-3">
-      <Calendar size={24} weight="bold" className="text-primary" />
-      <div>
-        <div className="text-base font-semibold text-foreground leading-tight">{today}</div>
-        <div className="text-xs text-muted-foreground leading-tight mt-0.5">
-          {lastTrainingDate ? `Letztes Training: ${lastTrainingDate}` : 'Letztes Training: ---'}
-          {completedCount > 0 && ` • ${completedCount} ${completedCount === 1 ? 'Übung' : 'Übungen'} absolviert`}
+      <Calendar size={24} weight="bold" className="text-primary flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        <div className="text-base font-semibold text-foreground leading-tight truncate">{today}</div>
+        <div className="text-xs text-muted-foreground leading-tight mt-0.5 truncate">
+          {lastTrainingDate ? `Letztes: ${lastTrainingDate}` : 'Letztes: ---'}
+          {completedCount > 0 && ` • ${completedCount} Übung${completedCount === 1 ? '' : 'en'}`}
         </div>
       </div>
     </div>
