@@ -229,16 +229,21 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             <div className="bg-muted/50 p-2.5 rounded-md space-y-3">
               <div className="space-y-1.5">
                 <div className="text-xs">
-                  <span className="font-semibold text-foreground">Version: </span>
+                  <span className="font-semibold text-foreground">
+                    Version:{" "}
+                  </span>
                   <span className="text-muted-foreground font-mono">
-                    1.0.{import.meta.env.VITE_GIT_COMMIT_HASH || 'dev'}
+                    1.0.{import.meta.env.VITE_GIT_COMMIT_HASH || "dev"}
                   </span>
                   {import.meta.env.VITE_BUILD_DATE && (
                     <span className="text-muted-foreground/70 ml-1">
-                      • {new Date(import.meta.env.VITE_BUILD_DATE).toLocaleDateString('de-DE', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: '2-digit'
+                      •{" "}
+                      {new Date(
+                        import.meta.env.VITE_BUILD_DATE
+                      ).toLocaleDateString("de-DE", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "2-digit",
                       })}
                     </span>
                   )}

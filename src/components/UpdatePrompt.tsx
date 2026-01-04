@@ -1,8 +1,15 @@
-import { useState, useEffect } from 'react';
-import { useRegisterSW } from 'virtual:pwa-register/react';
-import { Button } from './ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
-import { toast } from 'sonner';
+import { useState, useEffect } from "react";
+import { useRegisterSW } from "virtual:pwa-register/react";
+import { Button } from "./ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
+import { toast } from "sonner";
 
 export function UpdatePrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
@@ -13,20 +20,21 @@ export function UpdatePrompt() {
     updateServiceWorker,
   } = useRegisterSW({
     onRegistered(r) {
-      console.log('Service Worker registriert');
+      console.log("Service Worker registriert");
       // Check for updates every hour
-      r && setInterval(() => {
-        r.update();
-      }, 60 * 60 * 1000);
+      r &&
+        setInterval(() => {
+          r.update();
+        }, 60 * 60 * 1000);
     },
     onRegisterError(error) {
-      console.error('Service Worker Registrierung fehlgeschlagen:', error);
+      console.error("Service Worker Registrierung fehlgeschlagen:", error);
     },
   });
 
   useEffect(() => {
     if (offlineReady) {
-      toast.success('App ist bereit für Offline-Nutzung', {
+      toast.success("App ist bereit für Offline-Nutzung", {
         duration: 3000,
       });
       setOfflineReady(false);
@@ -57,14 +65,12 @@ export function UpdatePrompt() {
         <CardHeader>
           <CardTitle className="text-lg">Neue Version verfügbar</CardTitle>
           <CardDescription>
-            Eine aktualisierte Version der App wurde gefunden. Möchten Sie jetzt aktualisieren?
+            Eine aktualisierte Version der App wurde gefunden. Möchten Sie jetzt
+            aktualisieren?
           </CardDescription>
         </CardHeader>
         <CardFooter className="flex gap-2 justify-end">
-          <Button
-            variant="outline"
-            onClick={handleDismiss}
-          >
+          <Button variant="outline" onClick={handleDismiss}>
             Später
           </Button>
           <Button
