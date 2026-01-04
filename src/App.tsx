@@ -157,7 +157,7 @@ function App() {
   useEffect(() => {
     if (selectedExercise && currentSession) {
       const updatedEntry = currentSession.entries.find(e => e.exerciseId === selectedExercise.id)
-      if (updatedEntry && updatedEntry.sets.length === 0) {
+      if (!updatedEntry || updatedEntry.sets.length === 0) {
         setSelectedExercise(null)
       }
     }

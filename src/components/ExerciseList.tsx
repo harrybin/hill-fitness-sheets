@@ -12,7 +12,11 @@ interface ExerciseListProps {
 
 export function ExerciseList({ exercises, currentSession, onSelectExercise }: ExerciseListProps) {
   const getExerciseStatus = (exerciseId: string) => {
-    return currentSession?.entries.find(e => e.exerciseId === exerciseId)
+    const entry = currentSession?.entries.find(e => e.exerciseId === exerciseId)
+    if (!entry || entry.sets.length === 0) {
+      return undefined
+    }
+    return entry
   }
   
   const validExercises = exercises.filter(ex => 
