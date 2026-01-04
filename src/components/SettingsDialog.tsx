@@ -131,7 +131,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               >
                 <FileXls size={20} className="shrink-0" />
                 <div className="text-left flex-1 min-w-0">
-                  <div className="font-semibold text-sm">XLSX hochladen</div>
+                  <div className="font-semibold text-sm">XLSX importieren</div>
                   <div className="text-xs text-muted-foreground mt-0.5 leading-tight">
                     Excel/Google Sheets Datei
                   </div>
