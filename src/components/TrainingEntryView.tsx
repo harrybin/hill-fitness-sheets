@@ -99,7 +99,7 @@ export function TrainingEntryView({
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="sticky top-0 z-10 bg-background border-b border-border">
+      <div className="sticky top-0 z-10 bg-background border-b-2 border-border">
         <div className="p-3">
           <Button
             variant="outline"
@@ -198,6 +198,8 @@ export function TrainingEntryView({
             </Button>
           </div>
         </div>
+
+        <div className="border-t border-border my-4"></div>
 
         <div>
           <label className="text-xs font-semibold text-muted-foreground mb-2 block uppercase tracking-wide">
