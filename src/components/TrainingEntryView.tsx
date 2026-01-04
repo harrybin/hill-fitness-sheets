@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { ArrowLeft, Plus, Minus, Check } from '@phosphor-icons/react'
+import { ArrowLeft, Plus, Minus, Check, Trash } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 
 interface TrainingEntryViewProps {
@@ -97,6 +97,16 @@ export function TrainingEntryView({
     setCurrentReps(Math.max(0, currentReps + delta))
   }
   
+  const handleDeleteSet = (setIndex: number) => {
+    const updatedSets = sets.filter((_, idx) => idx !== setIndex)
+    const renumberedSets = updatedSets.map((set, idx) => ({
+      ...set,
+      setNumber: idx + 1
+    }))
+    setSets(renumberedSets)
+    setCurrentSetIndex(renumberedSets.length)
+  }
+  
   const progressPercentage = ((currentSetIndex) / totalSets) * 100
   
   return (
@@ -140,18 +150,28 @@ export function TrainingEntryView({
         {sets.map((set, idx) => (
           <Card key={idx} className="p-3 bg-card/50 border-primary/30">
             <div className="flex items-center justify-between">
-              <Badge variant="secondary" className="font-mono">
-                Satz {set.setNumber}
-              </Badge>
               <div className="flex items-center gap-4">
-                <span className="font-mono font-bold text-2xl">
-                  {set.weight}kg
-                </span>
-                <span className="text-muted-foreground">×</span>
-                <span className="font-mono font-bold text-2xl">
-                  {set.reps}
-                </span>
+                <Badge variant="secondary" className="font-mono">
+                  Satz {set.setNumber}
+                </Badge>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-bold text-2xl">
+                    {set.weight}kg
+                  </span>
+                  <span className="text-muted-foreground">×</span>
+                  <span className="font-mono font-bold text-2xl">
+                    {set.reps}
+                  </span>
+                </div>
               </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDeleteSet(idx)}
+                className="h-9 w-9 text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <Trash size={20} weight="bold" />
+              </Button>
             </div>
           </Card>
         ))}
