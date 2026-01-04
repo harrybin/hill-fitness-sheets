@@ -36,7 +36,10 @@ export function TrainingEntryView({
   const getPreviousTraining = (): PreviousTraining | null => {
     if (!allSessions || allSessions.length === 0) return null
     
-    const sortedSessions = [...allSessions].sort((a, b) => b.date.localeCompare(a.date))
+    const today = new Date().toISOString().split('T')[0]
+    const sortedSessions = [...allSessions]
+      .filter(s => s.date !== today)
+      .sort((a, b) => b.date.localeCompare(a.date))
     
     for (const session of sortedSessions) {
       const entry = session.entries.find(e => e.exerciseId === exercise.id)

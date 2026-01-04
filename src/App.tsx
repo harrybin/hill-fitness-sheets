@@ -24,8 +24,10 @@ function App() {
     
     if (settings.importedFile && (!exercises || exercises.length === 0)) {
       try {
+        console.log('Auto-loading exercises and sessions from stored file...')
         const arrayBuffer = base64ToArrayBuffer(settings.importedFile.data)
         const { exercises: newExercises, sessions: loadedSessions } = parseXLSX(arrayBuffer)
+        console.log(`Auto-loaded ${newExercises.length} exercises and ${loadedSessions?.length || 0} sessions`)
         setExercises(() => newExercises)
         if (loadedSessions && loadedSessions.length > 0) {
           setSessions(() => loadedSessions)
@@ -34,8 +36,10 @@ function App() {
         console.error('Auto-load failed:', error)
       }
     } else if (settings.importedFile && sessions && sessions.length > 0 && exercises && exercises.length > 0) {
+      console.log('Syncing sessions back to XLSX...')
       const newData = updateXLSXWithSessions(settings.importedFile.data, sessions, exercises)
       if (newData !== settings.importedFile.data) {
+        console.log('XLSX data updated with current sessions')
         setSettings((prev) => {
           if (!prev?.importedFile) return prev!
           return {

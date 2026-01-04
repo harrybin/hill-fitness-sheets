@@ -33,7 +33,8 @@ export function ExerciseList({ exercises, currentSession, allSessions, onSelectE
       if (entry && entry.sets && entry.sets.length > 0) {
         const weights = entry.sets.map(s => s.weight).filter(w => w > 0)
         if (weights.length > 0) {
-          return Math.max(...weights)
+          const maxWeight = Math.max(...weights)
+          return maxWeight
         }
       }
     }
