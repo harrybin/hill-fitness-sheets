@@ -662,3 +662,77 @@ export function updateXLSXWithSessions(
     return base64Data;
   }
 }
+
+export function exportXLSXWithFormatting(
+  base64Data: string,
+  sessions: Session[],
+  exercises: Exercise[]
+): ArrayBuffer {
+  try {
+    const arrayBuffer = base64ToArrayBuffer(base64Data);
+
+    // Read original workbook - this preserves all original sheets and their formatting
+    const workbook = XLSX.read(arrayBuffer, { type: "array", bookVBA: true });
+
+    // Remove old Trainings sheet if it exists
+    const trainingsIndex = workbook.SheetNames.indexOf("Trainings");
+    if (trainingsIndex !== -1) {
+      delete workbook.Sheets["Trainings"];
+      workbook.SheetNames.splice(trainingsIndex, 1);
+    }
+
+    // Prepare data for Trainings sheet
+    const trainingsData: any[][] = [
+      [
+        "Datum",
+        "Übung",
+        "Satz 1 Gewicht (kg)",
+        "Satz 1 Wiederholungen",
+        "Satz 2 Gewicht (kg)",
+        "Satz 2 Wiederholungen",
+      ],
+    ];
+
+    // Sort sessions by date (descending)
+    const sortedSessions = [...sessions].sort((a, b) =>
+      b.date.localeCompare(a.date)
+    );
+
+    // Add data rows - one row per exercise per session
+    sortedSessions.forEach((session) => {
+      session.entries.forEach((entry) => {
+        const exercise = exercises.find((ex) => ex.id === entry.exerciseId);
+        if (!exercise) return;
+
+        const sortedSets = [...entry.sets].sort(
+          (a, b) => a.setNumber - b.setNumber
+        );
+
+        const row: any[] = [session.date, exercise.name];
+
+        sortedSets.forEach((set) => {
+          row.push(set.weight);
+          row.push(set.reps);
+        });
+
+        trainingsData.push(row);
+      });
+    });
+
+    // Create new Trainings sheet and add to workbook
+    const trainingsSheet = XLSX.utils.aoa_to_sheet(trainingsData);
+    XLSX.utils.book_append_sheet(workbook, trainingsSheet, "Trainings");
+
+    // Write workbook - all original sheets remain completely unchanged
+    const buffer = XLSX.write(workbook, {
+      type: "array",
+      bookType: "xlsx",
+      bookVBA: true,
+    });
+
+    return buffer;
+  } catch (error) {
+    console.error("Error exporting XLSX:", error);
+    throw error;
+  }
+}

@@ -17,7 +17,11 @@ import {
   DownloadSimple,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
-import { base64ToArrayBuffer, arrayBufferToBase64 } from "@/lib/utils";
+import {
+  base64ToArrayBuffer,
+  arrayBufferToBase64,
+  exportXLSXWithFormatting,
+} from "@/lib/utils";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -25,7 +29,7 @@ interface SettingsDialogProps {
 }
 
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
-  const { settings, setSettings, loadFromXLSX } = useApp();
+  const { settings, setSettings, loadFromXLSX, sessions, exercises } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const exportStoredFile = () => {
@@ -37,7 +41,13 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     }
 
     try {
-      const arrayBuffer = base64ToArrayBuffer(settings.importedFile.data);
+      // Export with formatting preservation
+      const arrayBuffer = exportXLSXWithFormatting(
+        settings.importedFile.data,
+        sessions,
+        exercises
+      );
+
       const blob = new Blob([arrayBuffer], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
