@@ -1,7 +1,12 @@
+import { useRef } from "react";
 import { Exercise, Session } from "@/lib/types";
-import { Barbell } from "@phosphor-icons/react";
+import { Barbell, FileXls } from "@phosphor-icons/react";
 import { CompletedExerciseCard } from "./CompletedExerciseCard";
 import { IncompleteExerciseCard } from "./IncompleteExerciseCard";
+import { Button } from "@/components/ui/button";
+import { useApp } from "@/contexts/AppContext";
+import { toast } from "sonner";
+import { arrayBufferToBase64 } from "@/lib/utils";
 
 interface ExerciseListProps {
   exercises: Exercise[];
@@ -18,6 +23,47 @@ export function ExerciseList({
   onSelectExercise,
   selectedDate,
 }: ExerciseListProps) {
+  const { loadFromXLSX, setSettings } = useApp();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+
+      loadFromXLSX(arrayBuffer);
+
+      const fileData = arrayBufferToBase64(arrayBuffer);
+
+      setSettings((prev) => ({
+        ...prev,
+        importedFile: {
+          name: file.name,
+          data: fileData,
+          lastModified: file.lastModified,
+          size: file.size,
+        },
+      }));
+
+      toast.success("Importiert", {
+        description: file.name,
+      });
+    } catch (error) {
+      toast.error("Import fehlgeschlagen", {
+        description:
+          error instanceof Error ? error.message : "Ungültiges Format",
+      });
+    }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const todayDateString = new Date().toISOString().split("T")[0];
   const isOldSession =
     selectedDate && selectedDate.replace(" ?", "").trim() !== todayDateString;
@@ -66,9 +112,24 @@ export function ExerciseList({
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
         <Barbell size={64} className="text-muted-foreground mb-4" />
         <h2 className="text-xl font-bold mb-2">Keine Übungen</h2>
-        <p className="text-muted-foreground mb-4 max-w-md text-sm">
-          Importieren Sie Ihre Trainingsübungen über die Einstellungen.
+        <p className="text-muted-foreground mb-6 max-w-md text-sm">
+          Importieren Sie Ihre Übungen aus dem Google Sheet von Hill-Fitness. (Dies kann jeder Zeit über die Einstellungen wiederholt werden.)
         </p>
+        <Button
+          onClick={() => fileInputRef.current?.click()}
+          variant="default"
+          className="gap-2"
+        >
+          <FileXls size={20} />
+          XLSX importieren
+        </Button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".xlsx,.xls,.ods"
+          onChange={handleFileUpload}
+          className="hidden"
+        />
       </div>
     );
   }
