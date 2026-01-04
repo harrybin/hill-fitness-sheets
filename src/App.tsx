@@ -174,8 +174,8 @@ function App() {
               <Gear size={20} />
             </Button>
           </div>
-      
-        ="pb-20">
+        </div>
+        
         <div className="pb-20">
           {selectedExercise ? (
             <TrainingEntryView
@@ -188,7 +188,7 @@ function App() {
               onCancel={handleCancelEntry}
             />
           ) : (
-            <ExerciseList}
+            <ExerciseList
               exercises={exercises || []}
               currentSession={currentSession}
               allSessions={sessions || []}
@@ -196,6 +196,8 @@ function App() {
             />
           )}
         </div>
+      </div>
+      
       <SettingsDialog
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
