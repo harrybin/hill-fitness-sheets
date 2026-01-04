@@ -41,11 +41,15 @@ This is a focused workout tracking tool with exercise selection, set logging, an
 - **Success criteria**: Each training session has unique date, cannot create duplicate sessions for same day
 
 ### Google Sheets Sync
-- **Functionality**: Direct Google Sheets API integration to import exercise templates and export completed training data with OAuth2 authentication
-- **Purpose**: Centralized training plan management and history in user's own Google Drive
-- **Trigger**: Manual sync button with authentication flow or direct sync when authenticated
-- **Progression**: User enters Sheet ID in settings → Clicks sync → Google OAuth login (first time) → Fetch exercises from "Übungen" sheet → Upload training data to "Trainings" sheet → Confirm sync success with counts
-- **Success criteria**: Spreadsheet structure maintained (Übungen: A=Name, B=Notes; Trainings: auto-generated with dates and sets), exercises imported successfully, all sessions exported with proper formatting, OAuth token persisted for subsequent syncs
+- **Functionality**: Multiple import methods - Direct Google Sheets API integration with OAuth2, XLSX file import from downloaded Google Sheets, and local XLSX file upload
+- **Purpose**: Flexible exercise template management and training data export, works with or without internet connection
+- **Trigger**: Manual sync button with authentication flow, XLSX download option in dropdown menu, or file upload in settings
+- **Progression**: 
+  - **API Sync (Fast)**: User enters Sheet ID in settings → Clicks sync → Google OAuth login (first time) → Fetch exercises from "Übungen" sheet → Upload training data to "Trainings" sheet → Confirm sync success
+  - **XLSX Import (Complete)**: User enters Sheet ID → Authenticates → Selects "XLSX Import" from sync dropdown → Downloads entire spreadsheet as XLSX → Parses locally → Imports exercises
+  - **Local Upload**: User downloads XLSX from Google Sheets manually → Opens Settings → Clicks "Lokale XLSX-Datei hochladen" → Selects file → Exercises imported
+- **Success criteria**: All three methods successfully import exercises, spreadsheet structure maintained (Übungen/Exercise sheet: Column A=Name, Column B=Notes), first row auto-detected as header if contains "Übung/Exercise/Name", OAuth token persisted, training data exported correctly
+
 
 ### Offline-First Architecture
 - **Functionality**: Full app functionality without internet connection

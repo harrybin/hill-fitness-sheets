@@ -6,9 +6,10 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
-import { Plus, Minus, Upload, FileArrowDown, CheckCircle, Warning } from '@phosphor-icons/react'
+import { Plus, Minus, Upload, FileArrowDown, CheckCircle, Warning, FileXls } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { testSheetAccess, hasAccessToken } from '@/lib/googleSheets'
+import * as XLSX from 'xlsx'
 
 interface SettingsDialogProps {
   open: boolean
@@ -80,30 +81,50 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     }
   }
   
-  const parseCSV = (text: string): Exercise[] => {
-    const lines = text.trim().split('\n')
-    if (lines.length === 0) {
-      throw new Error('CSV-Datei ist leer')
+  const parseXLSX = (arrayBuffer: ArrayBuffer): Exercise[] => {
+    const workbook = XLSX.read(arrayBuffer, { type: 'array' })
+    
+    const sheetName = workbook.SheetNames.find(name => 
+      name.toLowerCase().includes('übung') || 
+      name.toLowerCase().includes('exercise')
+    ) || workbook.SheetNames[0]
+    
+    if (!sheetName) {
+      throw new Error('Keine Arbeitsblätter in der Datei gefunden')
+    }
+    
+    const worksheet = workbook.Sheets[sheetName]
+    const data = XLSX.utils.sheet_to_json<any>(worksheet, { header: 1 })
+    
+    if (data.length === 0) {
+      throw new Error('Die Datei enthält keine Daten')
     }
     
     const exercises: Exercise[] = []
+    let startIndex = 0
     
-    lines.forEach((line, index) => {
-      if (!line.trim()) return
+    if (data[0] && (
+      String(data[0][0]).toLowerCase().includes('übung') ||
+      String(data[0][0]).toLowerCase().includes('exercise') ||
+      String(data[0][0]).toLowerCase().includes('name')
+    )) {
+      startIndex = 1
+    }
+    
+    for (let i = startIndex; i < data.length; i++) {
+      const row = data[i]
+      if (!row || !row[0] || String(row[0]).trim() === '') continue
       
-      const parts = line.split(/[,;\t]/).map(p => p.trim())
-      
-      if (parts.length === 0 || !parts[0]) return
-      
-      const exerciseName = parts[0].replace(/^["']|["']$/g, '')
+      const exerciseName = String(row[0]).trim()
+      const notes = row[1] ? String(row[1]).trim() : undefined
       
       exercises.push({
-        id: `exercise-${Date.now()}-${index}`,
+        id: `exercise-${Date.now()}-${i}`,
         name: exerciseName,
-        notes: parts[1] && parts[1] !== '' ? parts[1].replace(/^["']|["']$/g, '') : undefined,
-        order: index
+        notes: notes,
+        order: i - startIndex
       })
-    })
+    }
     
     return exercises
   }
@@ -113,8 +134,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     if (!file) return
     
     try {
-      const text = await file.text()
-      const newExercises = parseCSV(text)
+      const arrayBuffer = await file.arrayBuffer()
+      const newExercises = parseXLSX(arrayBuffer)
       
       if (newExercises.length === 0) {
         toast.error('Keine Übungen gefunden', {
@@ -192,32 +213,40 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 variant="outline"
                 className="w-full justify-start gap-3 h-auto py-4"
               >
-                <Upload size={24} className="flex-shrink-0" />
+                <FileXls size={24} className="flex-shrink-0" />
                 <div className="text-left flex-1">
-                  <div className="font-semibold">CSV/Spreadsheet hochladen</div>
+                  <div className="font-semibold">Lokale XLSX-Datei hochladen</div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    Laden Sie eine CSV-Datei mit Ihren Übungen hoch
+                    Laden Sie eine Excel/Google Sheets XLSX-Datei hoch
                   </div>
                 </div>
               </Button>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".csv,.txt"
+                accept=".xlsx,.xls,.ods"
                 onChange={handleFileUpload}
                 className="hidden"
               />
-              <p className="text-xs text-muted-foreground">
-                Format: Eine Übung pro Zeile, getrennt durch Komma oder Tab.<br />
-                Beispiel: "Bankdrücken, Brust" oder einfach "Bankdrücken"
-              </p>
+              <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md space-y-2">
+                <p className="font-semibold">So exportieren Sie aus Google Sheets:</p>
+                <ol className="list-decimal list-inside space-y-1 ml-2">
+                  <li>Öffnen Sie Ihr Google Sheet</li>
+                  <li>Klicken Sie auf Datei → Herunterladen → Microsoft Excel (.xlsx)</li>
+                  <li>Laden Sie die heruntergeladene Datei hier hoch</li>
+                </ol>
+                <p className="pt-2">
+                  <strong>Format:</strong> Erste Spalte = Übungsname, Zweite Spalte = Notizen (optional).<br />
+                  Die erste Zeile wird als Header ignoriert, wenn sie "Übung", "Exercise" oder "Name" enthält.
+                </p>
+              </div>
             </div>
           </div>
           
           <Separator />
           
           <div className="space-y-3">
-            <Label htmlFor="sheet-id">Google Sheets ID</Label>
+            <Label htmlFor="sheet-id">Google Sheets ID (Optional)</Label>
             <div className="flex gap-2">
               <Input
                 id="sheet-id"
@@ -250,6 +279,13 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                   https://docs.google.com/spreadsheets/d/<strong className="text-primary">IHRE_ID_HIER</strong>/edit
                 </code>
               </p>
+              <p className="pt-2">
+                <strong>Mit Google Sheets ID können Sie:</strong>
+              </p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li><strong>API Sync:</strong> Schnelle Synchronisierung über die Google Sheets API</li>
+                <li><strong>XLSX Import:</strong> Kompletter Download als Excel-Datei</li>
+              </ul>
               <p className="pt-2">
                 <strong>Erforderliche Sheets in Ihrer Tabelle:</strong>
               </p>

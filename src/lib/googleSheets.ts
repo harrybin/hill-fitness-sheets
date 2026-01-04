@@ -1,6 +1,7 @@
 /// <reference path="./google-api.d.ts" />
 
 import { Exercise, Session } from './types'
+import * as XLSX from 'xlsx'
 
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || ''
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
@@ -233,5 +234,83 @@ export async function testSheetAccess(spreadsheetId: string): Promise<boolean> {
   } catch (error) {
     console.error('Fehler beim Zugriff auf Sheet:', error)
     return false
+  }
+}
+
+export async function downloadSheetAsXLSX(spreadsheetId: string): Promise<ArrayBuffer> {
+  if (!accessToken) {
+    throw new Error('Nicht authentifiziert. Bitte melden Sie sich an.')
+  }
+
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=xlsx`
+    
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    return await response.arrayBuffer()
+  } catch (error) {
+    console.error('Fehler beim Herunterladen der XLSX-Datei:', error)
+    throw new Error('Fehler beim Herunterladen der Google Sheets Datei')
+  }
+}
+
+export async function importExercisesFromXLSX(arrayBuffer: ArrayBuffer): Promise<Exercise[]> {
+  try {
+    const workbook = XLSX.read(arrayBuffer, { type: 'array' })
+    
+    const sheetName = workbook.SheetNames.find(name => 
+      name.toLowerCase().includes('übung') || 
+      name.toLowerCase().includes('exercise')
+    ) || workbook.SheetNames[0]
+    
+    if (!sheetName) {
+      throw new Error('Keine Arbeitsblätter in der Datei gefunden')
+    }
+    
+    const worksheet = workbook.Sheets[sheetName]
+    const data = XLSX.utils.sheet_to_json<any>(worksheet, { header: 1 })
+    
+    if (data.length === 0) {
+      throw new Error('Die Datei enthält keine Daten')
+    }
+    
+    const exercises: Exercise[] = []
+    let startIndex = 0
+    
+    if (data[0] && (
+      String(data[0][0]).toLowerCase().includes('übung') ||
+      String(data[0][0]).toLowerCase().includes('exercise') ||
+      String(data[0][0]).toLowerCase().includes('name')
+    )) {
+      startIndex = 1
+    }
+    
+    for (let i = startIndex; i < data.length; i++) {
+      const row = data[i]
+      if (!row || !row[0] || String(row[0]).trim() === '') continue
+      
+      const exerciseName = String(row[0]).trim()
+      const notes = row[1] ? String(row[1]).trim() : undefined
+      
+      exercises.push({
+        id: `exercise-${Date.now()}-${i}`,
+        name: exerciseName,
+        notes: notes,
+        order: i - startIndex
+      })
+    }
+    
+    return exercises
+  } catch (error) {
+    console.error('Fehler beim Parsen der XLSX-Datei:', error)
+    throw new Error('Fehler beim Lesen der Excel-Datei')
   }
 }

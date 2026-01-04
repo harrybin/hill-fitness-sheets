@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { ArrowsClockwise, CloudSlash, CheckCircle, GoogleLogo } from '@phosphor-icons/react'
+import { ArrowsClockwise, CloudSlash, CheckCircle, GoogleLogo, FileXls } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { AppSettings, Exercise, Session } from '@/lib/types'
@@ -11,7 +11,16 @@ import {
   hasAccessToken,
   fetchExercisesFromSheet,
   syncSessionsToSheet,
+  downloadSheetAsXLSX,
+  importExercisesFromXLSX,
 } from '@/lib/googleSheets'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
 
 export function SyncButton() {
   const [isSyncing, setIsSyncing] = useState(false)
@@ -123,26 +132,90 @@ export function SyncButton() {
     }
   }
 
+  const handleXLSXImport = async () => {
+    if (!settings?.googleSheetId) {
+      toast.error('Keine Spreadsheet-ID', {
+        description: 'Bitte geben Sie in den Einstellungen eine Google Sheets ID ein'
+      })
+      return
+    }
+
+    if (!isAuthenticated) {
+      await handleAuthenticate()
+      return
+    }
+
+    setIsSyncing(true)
+
+    try {
+      const arrayBuffer = await downloadSheetAsXLSX(settings.googleSheetId)
+      const importedExercises = await importExercisesFromXLSX(arrayBuffer)
+
+      if (importedExercises.length > 0) {
+        setExercises(() => importedExercises)
+        
+        toast.success('XLSX Import erfolgreich', {
+          description: `${importedExercises.length} Übungen aus Google Sheets importiert`,
+          icon: <FileXls size={20} weight="fill" />
+        })
+      } else {
+        toast.error('Keine Übungen gefunden', {
+          description: 'Die Datei enthält keine gültigen Übungen'
+        })
+      }
+    } catch (error) {
+      console.error('XLSX import error:', error)
+      toast.error('XLSX Import fehlgeschlagen', {
+        description: error instanceof Error ? error.message : 'Bitte versuchen Sie es später erneut'
+      })
+    } finally {
+      setIsSyncing(false)
+    }
+  }
+
   const buttonDisabled = isSyncing || !isOnline || !isInitialized
 
   return (
-    <Button
-      variant={isAuthenticated ? "outline" : "default"}
-      size="icon"
-      onClick={handleSync}
-      disabled={buttonDisabled}
-      className="h-10 w-10 relative"
-    >
-      {!isOnline ? (
-        <CloudSlash size={20} />
-      ) : !isAuthenticated ? (
-        <GoogleLogo size={20} weight="bold" />
-      ) : (
-        <ArrowsClockwise 
-          size={20} 
-          className={isSyncing ? 'animate-spin' : ''}
-        />
-      )}
-    </Button>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant={isAuthenticated ? "outline" : "default"}
+          size="icon"
+          disabled={buttonDisabled}
+          className="h-10 w-10 relative"
+        >
+          {!isOnline ? (
+            <CloudSlash size={20} />
+          ) : !isAuthenticated ? (
+            <GoogleLogo size={20} weight="bold" />
+          ) : (
+            <ArrowsClockwise 
+              size={20} 
+              className={isSyncing ? 'animate-spin' : ''}
+            />
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        {!isAuthenticated ? (
+          <DropdownMenuItem onClick={handleAuthenticate}>
+            <GoogleLogo size={16} className="mr-2" />
+            Bei Google anmelden
+          </DropdownMenuItem>
+        ) : (
+          <>
+            <DropdownMenuItem onClick={handleSync}>
+              <ArrowsClockwise size={16} className="mr-2" />
+              API Sync (schnell)
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleXLSXImport}>
+              <FileXls size={16} className="mr-2" />
+              XLSX Import (komplett)
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
