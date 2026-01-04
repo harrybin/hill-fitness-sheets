@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { Plus, Minus, FileArrowDown, FileXls, ArrowsClockwise } from '@phosphor-icons/react'
+import { Plus, Minus, FileArrowDown, FileXls, ArrowsClockwise, DownloadSimple } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
 
@@ -45,6 +45,40 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       bytes[i] = binaryString.charCodeAt(i)
     }
     return bytes.buffer
+  }
+  
+  const exportStoredFile = () => {
+    if (!settings?.importedFile) {
+      toast.error('Keine gespeicherte Datei', {
+        description: 'Bitte importieren Sie zuerst eine XLSX-Datei'
+      })
+      return
+    }
+    
+    try {
+      const arrayBuffer = base64ToArrayBuffer(settings.importedFile.data)
+      const blob = new Blob([arrayBuffer], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      })
+      
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = settings.importedFile.name
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      
+      toast.success('Datei exportiert', {
+        description: `${settings.importedFile.name} wurde heruntergeladen`,
+        icon: <DownloadSimple size={20} weight="fill" />
+      })
+    } catch (error) {
+      toast.error('Export fehlgeschlagen', {
+        description: error instanceof Error ? error.message : 'Fehler beim Exportieren der Datei'
+      })
+    }
   }
   
   const resyncFromStoredFile = () => {
@@ -342,15 +376,26 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                       </div>
                     </div>
                   </div>
-                  <Button
-                    onClick={resyncFromStoredFile}
-                    variant="outline"
-                    size="sm"
-                    className="w-full gap-2"
-                  >
-                    <ArrowsClockwise size={16} />
-                    Neu synchronisieren
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={resyncFromStoredFile}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-2"
+                    >
+                      <ArrowsClockwise size={16} />
+                      Neu synchronisieren
+                    </Button>
+                    <Button
+                      onClick={exportStoredFile}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-2"
+                    >
+                      <DownloadSimple size={16} />
+                      Exportieren
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
