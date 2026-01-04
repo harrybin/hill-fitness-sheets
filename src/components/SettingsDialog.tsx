@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { AppSettings, Exercise } from '@/lib/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
@@ -18,18 +18,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [settings, setSettings] = useKV<AppSettings>('settings', { defaultSetsPerExercise: 2 })
   const [, setExercises] = useKV<Exercise[]>('exercises', [])
   const fileInputRef = useRef<HTMLInputElement>(null)
-  
-  useEffect(() => {
-    if (settings?.importedFile && settings.defaultSetsPerExercise !== undefined) {
-      try {
-        const arrayBuffer = base64ToArrayBuffer(settings.importedFile.data)
-        const { exercises: newExercises } = parseXLSX(arrayBuffer)
-        setExercises(() => newExercises)
-      } catch (error) {
-        console.error('Auto-sync failed:', error)
-      }
-    }
-  }, [settings?.defaultSetsPerExercise])
   
   const adjustSets = (delta: number) => {
     setSettings((prev) => ({
