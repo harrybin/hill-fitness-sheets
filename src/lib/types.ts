@@ -24,7 +24,6 @@ export interface Session {
 }
 
 export interface AppSettings {
-  googleSheetId?: string;
   trainingGoal?: string;
   legalNotice?: string;
   notes?: string;
