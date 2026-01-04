@@ -5,6 +5,7 @@ import "@github/spark/spark";
 import App from "./App.tsx";
 import { AppProvider } from "./contexts/AppContext.tsx";
 import { ErrorFallback } from "./ErrorFallback.tsx";
+import { UpdatePrompt } from "./components/UpdatePrompt.tsx";
 
 import "./main.css";
 import "./styles/theme.css";
@@ -14,6 +15,7 @@ createRoot(document.getElementById("root")!).render(
   <ErrorBoundary FallbackComponent={ErrorFallback}>
     <AppProvider>
       <App />
+      <UpdatePrompt />
     </AppProvider>
   </ErrorBoundary>
 );
