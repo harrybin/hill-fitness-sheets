@@ -142,7 +142,7 @@ export function TrainingEntryView({
               size="sm"
               variant="outline"
               onClick={() => adjustWeight(-5)}
-              className="h-10 w-10 px-1 text-xs"
+              className="h-11 w-11 p-0 text-xs"
             >
               -5
             </Button>
@@ -150,7 +150,7 @@ export function TrainingEntryView({
               size="sm"
               variant="outline"
               onClick={() => adjustWeight(-1)}
-              className="h-10 w-10 px-1 text-xs"
+              className="h-11 w-11 p-0 text-xs"
             >
               -1
             </Button>
@@ -158,7 +158,7 @@ export function TrainingEntryView({
               size="sm"
               variant="outline"
               onClick={() => adjustWeight(-0.5)}
-              className="h-10 w-10 px-1 text-xs"
+              className="h-11 w-11 p-0 text-xs"
             >
               -0.5
             </Button>
@@ -176,7 +176,7 @@ export function TrainingEntryView({
               size="sm"
               variant="outline"
               onClick={() => adjustWeight(0.5)}
-              className="h-10 w-10 px-1 text-xs"
+              className="h-11 w-11 p-0 text-xs"
             >
               +0.5
             </Button>
@@ -184,7 +184,7 @@ export function TrainingEntryView({
               size="sm"
               variant="outline"
               onClick={() => adjustWeight(1)}
-              className="h-10 w-10 px-1 text-xs"
+              className="h-11 w-11 p-0 text-xs"
             >
               +1
             </Button>
@@ -192,7 +192,7 @@ export function TrainingEntryView({
               size="sm"
               variant="outline"
               onClick={() => adjustWeight(5)}
-              className="h-10 w-10 px-1 text-xs"
+              className="h-11 w-11 p-0 text-xs"
             >
               +5
             </Button>
@@ -203,7 +203,7 @@ export function TrainingEntryView({
           <label className="text-xs font-semibold text-muted-foreground mb-2 block uppercase tracking-wide">
             Satz 1 - Wiederholungen
           </label>
-          <div className="flex items-center justify-center gap-3">
+          <div className="flex items-center justify-center gap-1">
             <Button
               size="lg"
               variant="outline"
@@ -213,7 +213,24 @@ export function TrainingEntryView({
               <Minus size={20} weight="bold" />
             </Button>
 
-            <div className="flex-1 max-w-[200px]">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setRepsSet1(Math.max(0, repsSet1 - 3))}
+              className="h-11 w-11 p-0 text-3xl font-bold text-primary"
+            >
+              {Math.max(0, repsSet1 - 3)}
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setRepsSet1(Math.max(0, repsSet1 - 1))}
+              className="h-11 w-11 p-0 text-3xl font-bold text-primary"
+            >
+              {Math.max(0, repsSet1 - 1)}
+            </Button>
+
+            <div className="flex-1 max-w-[120px]">
               <div className="text-center font-mono font-bold text-5xl text-primary">
                 {repsSet1}
               </div>
@@ -221,6 +238,23 @@ export function TrainingEntryView({
                 Wdh.
               </div>
             </div>
+
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setRepsSet1(repsSet1 + 1)}
+              className="h-11 w-11 p-0 text-3xl font-bold text-primary"
+            >
+              {repsSet1 + 1}
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setRepsSet1(repsSet1 + 3)}
+              className="h-11 w-11 p-0 text-3xl font-bold text-primary"
+            >
+              {repsSet1 + 3}
+            </Button>
 
             <Button
               size="lg"
@@ -237,7 +271,7 @@ export function TrainingEntryView({
           <label className="text-xs font-semibold text-muted-foreground mb-2 block uppercase tracking-wide">
             Satz 2 - Wiederholungen
           </label>
-          <div className="flex items-center justify-center gap-3">
+          <div className="flex items-center justify-center gap-1">
             <Button
               size="lg"
               variant="outline"
@@ -247,7 +281,24 @@ export function TrainingEntryView({
               <Minus size={20} weight="bold" />
             </Button>
 
-            <div className="flex-1 max-w-[200px]">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setRepsSet2(Math.max(0, repsSet2 - 3))}
+              className="h-11 w-11 p-0 text-3xl font-bold text-primary"
+            >
+              {Math.max(0, repsSet2 - 3)}
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setRepsSet2(Math.max(0, repsSet2 - 1))}
+              className="h-11 w-11 p-0 text-3xl font-bold text-primary"
+            >
+              {Math.max(0, repsSet2 - 1)}
+            </Button>
+
+            <div className="flex-1 max-w-[120px]">
               <div className="text-center font-mono font-bold text-5xl text-primary">
                 {repsSet2}
               </div>
@@ -255,6 +306,23 @@ export function TrainingEntryView({
                 Wdh.
               </div>
             </div>
+
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setRepsSet2(repsSet2 + 1)}
+              className="h-11 w-11 p-0 text-3xl font-bold text-primary"
+            >
+              {repsSet2 + 1}
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setRepsSet2(repsSet2 + 3)}
+              className="h-11 w-11 p-0 text-3xl font-bold text-primary"
+            >
+              {repsSet2 + 3}
+            </Button>
 
             <Button
               size="lg"
