@@ -8,14 +8,14 @@ import { useApp } from "@/contexts/AppContext";
 import { toast } from "sonner";
 import { arrayBufferToBase64 } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { 
-  initGoogleAuth, 
-  requestGoogleAuth, 
+import {
+  initGoogleAuth,
+  requestGoogleAuth,
   downloadFileFromDrive,
   loadToken,
   saveToken,
   clearToken,
-  type GoogleAuthToken 
+  type GoogleAuthToken,
 } from "@/lib/googleAuth";
 
 interface ExerciseListProps {
@@ -49,7 +49,7 @@ export function ExerciseList({
 
     // Initialize Google Auth
     initGoogleAuth().catch((error) => {
-      console.error('Google Auth initialization failed:', error);
+      console.error("Google Auth initialization failed:", error);
     });
   }, []);
 
@@ -64,7 +64,8 @@ export function ExerciseList({
       });
     } catch (error) {
       toast.error("Anmeldung fehlgeschlagen", {
-        description: error instanceof Error ? error.message : "Unbekannter Fehler",
+        description:
+          error instanceof Error ? error.message : "Unbekannter Fehler",
       });
     } finally {
       setIsAuthenticating(false);
@@ -141,7 +142,10 @@ export function ExerciseList({
       // Try Google Drive API if authenticated
       if (googleToken) {
         try {
-          const arrayBuffer = await downloadFileFromDrive(fileId, googleToken.access_token);
+          const arrayBuffer = await downloadFileFromDrive(
+            fileId,
+            googleToken.access_token
+          );
           const fileName = `sheet_${new Date().getTime()}.xlsx`;
 
           loadFromXLSX(arrayBuffer);
@@ -165,9 +169,12 @@ export function ExerciseList({
           setDriveUrl("");
           return;
         } catch (driveError) {
-          console.error('Drive API failed, trying fallback:', driveError);
+          console.error("Drive API failed, trying fallback:", driveError);
           // Token might be expired
-          if (driveError instanceof Error && driveError.message.includes('401')) {
+          if (
+            driveError instanceof Error &&
+            driveError.message.includes("401")
+          ) {
             clearToken();
             setGoogleToken(null);
             toast.warning("Sitzung abgelaufen", {
@@ -180,11 +187,11 @@ export function ExerciseList({
       // Try direct fetch for public files
       const downloadUrl = `https://docs.google.com/spreadsheets/d/${fileId}/export?format=xlsx`;
       const response = await fetch(downloadUrl, {
-        mode: 'cors',
+        mode: "cors",
       });
 
       if (!response.ok) {
-        throw new Error('Download fehlgeschlagen');
+        throw new Error("Download fehlgeschlagen");
       }
 
       const arrayBuffer = await response.arrayBuffer();
@@ -220,7 +227,7 @@ export function ExerciseList({
       link.click();
       document.body.removeChild(link);
 
-      const message = googleToken 
+      const message = googleToken
         ? "Automatischer Import fehlgeschlagen. Browser-Download gestartet."
         : "Datei nicht öffentlich? Melden Sie sich mit Google an oder laden Sie manuell hoch.";
 
@@ -297,7 +304,9 @@ export function ExerciseList({
               className="gap-2 w-full"
             >
               <GoogleLogo size={20} />
-              {isAuthenticating ? "Anmeldung..." : "Mit Google anmelden (für private Dateien)"}
+              {isAuthenticating
+                ? "Anmeldung..."
+                : "Mit Google anmelden (für private Dateien)"}
             </Button>
           ) : (
             <div className="flex gap-2">
@@ -336,10 +345,9 @@ export function ExerciseList({
           </div>
 
           <p className="text-xs text-muted-foreground text-center">
-            {googleToken 
+            {googleToken
               ? "Mit Google angemeldet - private Dateien werden unterstützt"
-              : "Öffentliche Dateien oder mit Google anmelden für private Dateien"
-            }
+              : "Öffentliche Dateien oder mit Google anmelden für private Dateien"}
           </p>
 
           <div className="text-sm text-muted-foreground text-center">oder</div>

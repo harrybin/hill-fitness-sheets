@@ -1,7 +1,7 @@
 // Google OAuth and Drive API integration
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
+const SCOPES = "https://www.googleapis.com/auth/drive.readonly";
 
 export interface GoogleAuthToken {
   access_token: string;
@@ -16,18 +16,19 @@ let tokenClient: google.accounts.oauth2.TokenClient | null = null;
 export function initGoogleAuth(): Promise<void> {
   return new Promise((resolve, reject) => {
     if (!GOOGLE_CLIENT_ID) {
-      reject(new Error('VITE_GOOGLE_CLIENT_ID nicht konfiguriert'));
+      reject(new Error("VITE_GOOGLE_CLIENT_ID nicht konfiguriert"));
       return;
     }
 
-    if (typeof google === 'undefined' || !google.accounts) {
+    if (typeof google === "undefined" || !google.accounts) {
       // Load Google Identity Services script
-      const script = document.createElement('script');
-      script.src = 'https://accounts.google.com/gsi/client';
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
       script.async = true;
       script.defer = true;
       script.onload = () => resolve();
-      script.onerror = () => reject(new Error('Google Auth Script konnte nicht geladen werden'));
+      script.onerror = () =>
+        reject(new Error("Google Auth Script konnte nicht geladen werden"));
       document.head.appendChild(script);
     } else {
       resolve();
@@ -38,7 +39,7 @@ export function initGoogleAuth(): Promise<void> {
 export function requestGoogleAuth(): Promise<GoogleAuthToken> {
   return new Promise((resolve, reject) => {
     if (!GOOGLE_CLIENT_ID) {
-      reject(new Error('VITE_GOOGLE_CLIENT_ID nicht konfiguriert'));
+      reject(new Error("VITE_GOOGLE_CLIENT_ID nicht konfiguriert"));
       return;
     }
 
@@ -54,17 +55,18 @@ export function requestGoogleAuth(): Promise<GoogleAuthToken> {
 
           const token: GoogleAuthToken = {
             access_token: response.access_token,
-            expires_in: parseInt(response.expires_in || '3600'),
-            token_type: response.token_type || 'Bearer',
+            expires_in: parseInt(response.expires_in || "3600"),
+            token_type: response.token_type || "Bearer",
             scope: response.scope || SCOPES,
-            expires_at: Date.now() + parseInt(response.expires_in || '3600') * 1000,
+            expires_at:
+              Date.now() + parseInt(response.expires_in || "3600") * 1000,
           };
 
           resolve(token);
         },
       });
 
-      tokenClient.requestAccessToken({ prompt: 'consent' });
+      tokenClient.requestAccessToken({ prompt: "consent" });
     } catch (error) {
       reject(error);
     }
@@ -84,25 +86,27 @@ export async function downloadFileFromDrive(
   });
 
   if (!response.ok) {
-    throw new Error(`Drive API Fehler: ${response.status} ${response.statusText}`);
+    throw new Error(
+      `Drive API Fehler: ${response.status} ${response.statusText}`
+    );
   }
 
   return response.arrayBuffer();
 }
 
 export function saveToken(token: GoogleAuthToken): void {
-  localStorage.setItem('google_auth_token', JSON.stringify(token));
+  localStorage.setItem("google_auth_token", JSON.stringify(token));
 }
 
 export function loadToken(): GoogleAuthToken | null {
-  const tokenStr = localStorage.getItem('google_auth_token');
+  const tokenStr = localStorage.getItem("google_auth_token");
   if (!tokenStr) return null;
 
   try {
     const token = JSON.parse(tokenStr) as GoogleAuthToken;
     // Check if token is expired
     if (token.expires_at && token.expires_at < Date.now()) {
-      localStorage.removeItem('google_auth_token');
+      localStorage.removeItem("google_auth_token");
       return null;
     }
     return token;
@@ -112,7 +116,7 @@ export function loadToken(): GoogleAuthToken | null {
 }
 
 export function clearToken(): void {
-  localStorage.removeItem('google_auth_token');
+  localStorage.removeItem("google_auth_token");
 }
 
 // Type declarations for Google Identity Services
