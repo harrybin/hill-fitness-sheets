@@ -13,7 +13,7 @@ Eine Progressive Web App zum Tracken von Trainingseinheiten im Fitnessstudio mit
 #### Übungen-Übersicht
 ![Übungen-Übersicht](screenshots/uebungen-übersicht.png)
 
-*Wähle deine Übung aus der Liste. Die App zeigt dir automatisch deine Werte aus dem letzten Training an (grüne Zahlen), sodass du siehst, welches Gewicht und wie viele Wiederholungen du beim letzten Mal geschafft hast.*
+*Wähle deine Übung aus der Liste. Die Übungen ohne grünen Haken sind heute noch zu absolvieren.
 
 #### Training erfassen
 ![Übung bearbeiten](screenshots/uebung-edit.png)
@@ -45,8 +45,18 @@ Eine Progressive Web App zum Tracken von Trainingseinheiten im Fitnessstudio mit
 - **💾 Excel-Sync**: Importiere Übungen aus Excel und exportiere deine Trainings-Daten
 - **🌙 Dark Mode**: Augenschonendes dunkles Design mit orangen Akzenten
 - **📱 PWA**: Installierbar auf Smartphone, Tablet und Desktop
+  
+
+</br>
+</br>
+</br>
+</br>
 
 ---
+---
+---
+
+</br>
 
 ## For Developers
 

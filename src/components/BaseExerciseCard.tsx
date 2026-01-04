@@ -24,7 +24,7 @@ export function BaseExerciseCard({
     <Card
       onClick={() => onSelect(exercise)}
       className={cn(
-        "p-4 cursor-pointer transition-all active:scale-[0.98]",
+        "relative p-4 cursor-pointer transition-all active:scale-[0.98]",
         "hover:border-primary/50",
         isCompleted && "bg-card/50 border-primary/30",
         isOldSession && "bg-amber-950/20 border-amber-900/30"
