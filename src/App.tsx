@@ -5,6 +5,7 @@ import { ExerciseList } from "@/components/ExerciseList";
 import { TrainingEntryView } from "@/components/TrainingEntryView";
 import { SessionHeader } from "@/components/SessionHeader";
 import { SettingsDialog } from "@/components/SettingsDialog";
+import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 import { Toaster } from "@/components/ui/sonner";
 import { Gear } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,7 @@ function App() {
   return (
     <div className="min-h-screen bg-background text-foreground p-2 sm:p-4 md:p-6">
       <Toaster />
+      <PWAInstallBanner />
 
       <div className="max-w-2xl mx-auto bg-card border border-border rounded-lg shadow-lg overflow-hidden">
         <div className="sticky top-0 z-10 bg-card border-b border-border">
