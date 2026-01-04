@@ -31,9 +31,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     []
   );
   const [sessions, setSessions] = useLocalStorage<Session[]>("sessions", []);
-  const [settings, setSettings] = useLocalStorage<AppSettings>("settings", {
-    defaultSetsPerExercise: 2,
-  });
+  const [settings, setSettings] = useLocalStorage<AppSettings>("settings", {});
 
   // Auto-load from stored file on mount
   useEffect(() => {
@@ -76,7 +74,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (newData !== settings.importedFile.data) {
         console.log("XLSX data updated with current sessions");
         setSettings((prev) => {
-          if (!prev?.importedFile) return prev || { defaultSetsPerExercise: 2 };
+          if (!prev?.importedFile) return prev || {};
           return {
             ...prev,
             importedFile: {
@@ -108,7 +106,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setSessions(loadedSessions);
     }
     setSettings((prev) => ({
-      ...(prev || { defaultSetsPerExercise: 2 }),
+      ...(prev || {}),
       ...metadata,
     }));
   };
@@ -181,7 +179,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value: AppContextValue = {
     exercises: exercises || [],
     sessions: sessions || [],
-    settings: settings || { defaultSetsPerExercise: 2 },
+    settings: settings || {},
     setExercises,
     setSessions,
     setSettings,

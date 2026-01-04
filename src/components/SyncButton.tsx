@@ -1,9 +1,15 @@
-import { useState, useEffect } from 'react'
-import { useKV } from '@github/spark/hooks'
-import { ArrowsClockwise, CloudSlash, CheckCircle, GoogleLogo, FileXls } from '@phosphor-icons/react'
-import { Button } from '@/components/ui/button'
-import { toast } from 'sonner'
-import { AppSettings, Exercise, Session } from '@/lib/types'
+import { useState, useEffect } from "react";
+import { useKV } from "@github/spark/hooks";
+import {
+  ArrowsClockwise,
+  CloudSlash,
+  CheckCircle,
+  GoogleLogo,
+  FileXls,
+} from "@phosphor-icons/react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { AppSettings, Exercise, Session } from "@/lib/types";
 import {
   initializeGoogleAPI,
   initializeTokenClient,
@@ -13,167 +19,180 @@ import {
   syncSessionsToSheet,
   downloadSheetAsXLSX,
   importExercisesFromXLSX,
-} from '@/lib/googleSheets'
+} from "@/lib/googleSheets";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu'
+} from "@/components/ui/dropdown-menu";
 
 export function SyncButton() {
-  const [isSyncing, setIsSyncing] = useState(false)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [isInitialized, setIsInitialized] = useState(false)
-  const [isOnline, setIsOnline] = useState(navigator.onLine)
-  
-  const [settings] = useKV<AppSettings>('settings', { defaultSetsPerExercise: 2 })
-  const [, setExercises] = useKV<Exercise[]>('exercises', [])
-  const [sessions] = useKV<Session[]>('sessions', [])
-  const [exercises] = useKV<Exercise[]>('exercises', [])
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  const [settings] = useKV<AppSettings>("settings", {});
+  const [, setExercises] = useKV<Exercise[]>("exercises", []);
+  const [sessions] = useKV<Session[]>("sessions", []);
+  const [exercises] = useKV<Exercise[]>("exercises", []);
 
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true)
-    const handleOffline = () => setIsOnline(false)
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
 
-    window.addEventListener('online', handleOnline)
-    window.addEventListener('offline', handleOffline)
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     return () => {
-      window.removeEventListener('online', handleOnline)
-      window.removeEventListener('offline', handleOffline)
-    }
-  }, [])
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     const initializeAPIs = async () => {
       try {
-        await initializeGoogleAPI()
+        await initializeGoogleAPI();
         initializeTokenClient(() => {
-          setIsAuthenticated(hasAccessToken())
-        })
-        setIsInitialized(true)
-        setIsAuthenticated(hasAccessToken())
+          setIsAuthenticated(hasAccessToken());
+        });
+        setIsInitialized(true);
+        setIsAuthenticated(hasAccessToken());
       } catch (error) {
-        console.error('Fehler bei der Initialisierung:', error)
+        console.error("Fehler bei der Initialisierung:", error);
       }
-    }
+    };
 
-    const timer = setTimeout(initializeAPIs, 1000)
-    return () => clearTimeout(timer)
-  }, [])
+    const timer = setTimeout(initializeAPIs, 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleAuthenticate = async () => {
     if (!isInitialized) {
-      toast.error('Google API wird geladen', {
-        description: 'Bitte warten Sie einen Moment',
-      })
-      return
+      toast.error("Google API wird geladen", {
+        description: "Bitte warten Sie einen Moment",
+      });
+      return;
     }
 
     try {
-      await requestAccessToken()
-      setIsAuthenticated(true)
-      toast.success('Erfolgreich angemeldet', {
-        description: 'Sie können jetzt mit Google Sheets synchronisieren',
-        icon: <GoogleLogo size={20} weight="fill" />
-      })
+      await requestAccessToken();
+      setIsAuthenticated(true);
+      toast.success("Erfolgreich angemeldet", {
+        description: "Sie können jetzt mit Google Sheets synchronisieren",
+        icon: <GoogleLogo size={20} weight="fill" />,
+      });
     } catch (error) {
-      toast.error('Anmeldung fehlgeschlagen', {
-        description: error instanceof Error ? error.message : 'Bitte versuchen Sie es erneut'
-      })
+      toast.error("Anmeldung fehlgeschlagen", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "Bitte versuchen Sie es erneut",
+      });
     }
-  }
+  };
 
   const handleSync = async () => {
     if (!settings?.googleSheetId) {
-      toast.error('Keine Spreadsheet-ID', {
-        description: 'Bitte geben Sie in den Einstellungen eine Google Sheets ID ein'
-      })
-      return
+      toast.error("Keine Spreadsheet-ID", {
+        description:
+          "Bitte geben Sie in den Einstellungen eine Google Sheets ID ein",
+      });
+      return;
     }
 
     if (!isAuthenticated) {
-      await handleAuthenticate()
-      return
+      await handleAuthenticate();
+      return;
     }
 
-    setIsSyncing(true)
+    setIsSyncing(true);
 
     try {
       const config = {
         spreadsheetId: settings.googleSheetId,
-        exerciseRange: 'Übungen!A:B',
-        dataRange: 'Trainings!A:Z'
-      }
+        exerciseRange: "Übungen!A:B",
+        dataRange: "Trainings!A:Z",
+      };
 
-      const fetchedExercises = await fetchExercisesFromSheet(config)
-      
+      const fetchedExercises = await fetchExercisesFromSheet(config);
+
       if (fetchedExercises.length > 0) {
-        setExercises(() => fetchedExercises)
+        setExercises(() => fetchedExercises);
       }
 
       if (sessions && sessions.length > 0) {
-        await syncSessionsToSheet(config, sessions, exercises || [])
+        await syncSessionsToSheet(config, sessions, exercises || []);
       }
 
-      toast.success('Synchronisierung erfolgreich', {
-        description: `${fetchedExercises.length} Übungen geladen${sessions?.length ? `, ${sessions.length} Sessions gespeichert` : ''}`,
-        icon: <CheckCircle size={20} weight="fill" />
-      })
+      toast.success("Synchronisierung erfolgreich", {
+        description: `${fetchedExercises.length} Übungen geladen${
+          sessions?.length ? `, ${sessions.length} Sessions gespeichert` : ""
+        }`,
+        icon: <CheckCircle size={20} weight="fill" />,
+      });
     } catch (error) {
-      console.error('Sync error:', error)
-      toast.error('Synchronisierung fehlgeschlagen', {
-        description: error instanceof Error ? error.message : 'Bitte versuchen Sie es später erneut'
-      })
+      console.error("Sync error:", error);
+      toast.error("Synchronisierung fehlgeschlagen", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "Bitte versuchen Sie es später erneut",
+      });
     } finally {
-      setIsSyncing(false)
+      setIsSyncing(false);
     }
-  }
+  };
 
   const handleXLSXImport = async () => {
     if (!settings?.googleSheetId) {
-      toast.error('Keine Spreadsheet-ID', {
-        description: 'Bitte geben Sie in den Einstellungen eine Google Sheets ID ein'
-      })
-      return
+      toast.error("Keine Spreadsheet-ID", {
+        description:
+          "Bitte geben Sie in den Einstellungen eine Google Sheets ID ein",
+      });
+      return;
     }
 
     if (!isAuthenticated) {
-      await handleAuthenticate()
-      return
+      await handleAuthenticate();
+      return;
     }
 
-    setIsSyncing(true)
+    setIsSyncing(true);
 
     try {
-      const arrayBuffer = await downloadSheetAsXLSX(settings.googleSheetId)
-      const importedExercises = await importExercisesFromXLSX(arrayBuffer)
+      const arrayBuffer = await downloadSheetAsXLSX(settings.googleSheetId);
+      const importedExercises = await importExercisesFromXLSX(arrayBuffer);
 
       if (importedExercises.length > 0) {
-        setExercises(() => importedExercises)
-        
-        toast.success('XLSX Import erfolgreich', {
+        setExercises(() => importedExercises);
+
+        toast.success("XLSX Import erfolgreich", {
           description: `${importedExercises.length} Übungen aus Google Sheets importiert`,
-          icon: <FileXls size={20} weight="fill" />
-        })
+          icon: <FileXls size={20} weight="fill" />,
+        });
       } else {
-        toast.error('Keine Übungen gefunden', {
-          description: 'Die Datei enthält keine gültigen Übungen'
-        })
+        toast.error("Keine Übungen gefunden", {
+          description: "Die Datei enthält keine gültigen Übungen",
+        });
       }
     } catch (error) {
-      console.error('XLSX import error:', error)
-      toast.error('XLSX Import fehlgeschlagen', {
-        description: error instanceof Error ? error.message : 'Bitte versuchen Sie es später erneut'
-      })
+      console.error("XLSX import error:", error);
+      toast.error("XLSX Import fehlgeschlagen", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "Bitte versuchen Sie es später erneut",
+      });
     } finally {
-      setIsSyncing(false)
+      setIsSyncing(false);
     }
-  }
+  };
 
-  const buttonDisabled = isSyncing || !isOnline || !isInitialized
+  const buttonDisabled = isSyncing || !isOnline || !isInitialized;
 
   return (
     <DropdownMenu>
@@ -189,9 +208,9 @@ export function SyncButton() {
           ) : !isAuthenticated ? (
             <GoogleLogo size={20} weight="bold" />
           ) : (
-            <ArrowsClockwise 
-              size={20} 
-              className={isSyncing ? 'animate-spin' : ''}
+            <ArrowsClockwise
+              size={20}
+              className={isSyncing ? "animate-spin" : ""}
             />
           )}
         </Button>
@@ -217,5 +236,5 @@ export function SyncButton() {
         )}
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

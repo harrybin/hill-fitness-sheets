@@ -11,8 +11,6 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
-  Plus,
-  Minus,
   FileArrowDown,
   FileXls,
   ArrowsClockwise,
@@ -29,16 +27,6 @@ interface SettingsDialogProps {
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { settings, setSettings, loadFromXLSX } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const adjustSets = (delta: number) => {
-    setSettings((prev) => ({
-      ...prev,
-      defaultSetsPerExercise: Math.max(
-        1,
-        Math.min(10, prev.defaultSetsPerExercise + delta)
-      ),
-    }));
-  };
 
   const exportStoredFile = () => {
     if (!settings.importedFile) {
@@ -150,41 +138,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         </DialogHeader>
 
         <div className="space-y-4 overflow-y-auto max-h-[calc(90vh-8rem)]">
-          <div className="space-y-2">
-            <Label htmlFor="default-sets" className="text-sm">
-              Standard-Sätze
-            </Label>
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => adjustSets(-1)}
-                disabled={settings.defaultSetsPerExercise <= 1}
-                className="h-10 w-10"
-              >
-                <Minus size={18} />
-              </Button>
-
-              <div className="flex-1 text-center">
-                <div className="text-2xl font-bold font-mono text-primary">
-                  {settings.defaultSetsPerExercise}
-                </div>
-              </div>
-
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => adjustSets(1)}
-                disabled={settings.defaultSetsPerExercise >= 10}
-                className="h-10 w-10"
-              >
-                <Plus size={18} />
-              </Button>
-            </div>
-          </div>
-
-          <Separator />
-
           <div className="space-y-2">
             <Label className="text-sm">Übungen</Label>
             <div className="space-y-2">

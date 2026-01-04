@@ -65,7 +65,7 @@ function App() {
               exercise={selectedExercise}
               currentSession={currentSession}
               allSessions={sessions}
-              defaultSets={settings.defaultSetsPerExercise}
+              defaultSets={2}
               onComplete={handleCompleteEntry}
               onUpdate={updateEntry}
               onCancel={handleCancelEntry}
