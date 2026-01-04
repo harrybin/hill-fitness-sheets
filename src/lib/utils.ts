@@ -510,12 +510,16 @@ function parseSessionsFromSheet(
           // Get data for Satz 2 from the next row
           const reps2 = exerciseRow2 ? exerciseRow2[whCol] : null;
           const weight2Raw = exerciseRow2 ? exerciseRow2[kgCol] : null;
-          
+
           // CRITICAL FIX: Merged cells in Excel only have values in the first row
           // If Satz 2 has reps but no weight, use weight from Satz 1 (merged cell behavior)
-          const weight2 = (weight2Raw === undefined || weight2Raw === null) && reps2 != null && reps2 !== "/" && String(reps2).trim() !== ""
-            ? weight1 
-            : weight2Raw;
+          const weight2 =
+            (weight2Raw === undefined || weight2Raw === null) &&
+            reps2 != null &&
+            reps2 !== "/" &&
+            String(reps2).trim() !== ""
+              ? weight1
+              : weight2Raw;
 
           const sets = [];
 
