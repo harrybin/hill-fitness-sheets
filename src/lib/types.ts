@@ -26,6 +26,9 @@ export interface Session {
 export interface AppSettings {
   defaultSetsPerExercise: number;
   googleSheetId?: string;
+  trainingGoal?: string;
+  legalNotice?: string;
+  notes?: string;
 }
 
 export interface PreviousTraining {

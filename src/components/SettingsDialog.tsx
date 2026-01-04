@@ -81,7 +81,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     }
   }
   
-  const parseXLSX = (arrayBuffer: ArrayBuffer): Exercise[] => {
+  const parseXLSX = (arrayBuffer: ArrayBuffer): { exercises: Exercise[], metadata: Partial<AppSettings> } => {
     const workbook = XLSX.read(arrayBuffer, { type: 'array' })
     
     const sheetName = workbook.SheetNames.find(name => 
@@ -102,7 +102,27 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     }
     
     const exercises: Exercise[] = []
+    const metadata: Partial<AppSettings> = {}
     let headerRowIndex = -1
+    
+    const metadataKeywords = [
+      'trainingsziel', 'training goal', 'ziel',
+      'rechtliche hinweise', 'legal notice', 'hinweise', 'rechtlich',
+      'notiz', 'note', 'anmerkung',
+      'bemerkung', 'hinweis', 'info', 'information',
+      'beschreibung', 'description'
+    ]
+    
+    const isMetadataRow = (text: string): boolean => {
+      const normalized = text.toLowerCase().trim()
+      if (normalized.length === 0) return true
+      
+      return metadataKeywords.some(keyword => 
+        normalized === keyword || 
+        normalized.startsWith(keyword + ':') ||
+        normalized.startsWith(keyword + ' ')
+      )
+    }
     
     for (let i = 0; i < Math.min(data.length, 20); i++) {
       const row = data[i]
@@ -118,6 +138,14 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       ) {
         headerRowIndex = i
         break
+      }
+      
+      if (firstCell.includes('trainingsziel') || firstCell.includes('training goal')) {
+        metadata.trainingGoal = String(row[1] || '').trim()
+      } else if (firstCell.includes('rechtliche hinweise') || firstCell.includes('legal notice')) {
+        metadata.legalNotice = String(row[1] || '').trim()
+      } else if ((firstCell.includes('notiz') || firstCell.includes('note')) && !firstCell.includes('übung')) {
+        metadata.notes = String(row[1] || '').trim()
       }
     }
     
@@ -146,7 +174,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         notes = cellB ? String(cellB).trim() : undefined
       }
       
-      if (exerciseName && exerciseName.length > 0) {
+      if (exerciseName && exerciseName.length > 0 && !isMetadataRow(exerciseName)) {
         exercises.push({
           id: `exercise-${Date.now()}-${i}`,
           name: exerciseName,
@@ -156,7 +184,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       }
     }
     
-    return exercises
+    return { exercises, metadata }
   }
   
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -165,7 +193,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     
     try {
       const arrayBuffer = await file.arrayBuffer()
-      const newExercises = parseXLSX(arrayBuffer)
+      const { exercises: newExercises, metadata } = parseXLSX(arrayBuffer)
       
       if (newExercises.length === 0) {
         toast.error('Keine Übungen gefunden', {
@@ -176,8 +204,24 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       
       setExercises(() => newExercises)
       
+      if (Object.keys(metadata).length > 0) {
+        setSettings((prev) => ({
+          ...prev!,
+          ...metadata
+        }))
+      }
+      
+      const metadataInfo: string[] = []
+      if (metadata.trainingGoal) metadataInfo.push('Trainingsziel')
+      if (metadata.legalNotice) metadataInfo.push('Rechtliche Hinweise')
+      if (metadata.notes) metadataInfo.push('Notizen')
+      
+      const description = metadataInfo.length > 0
+        ? `${metadataInfo.join(', ')} wurden in den Einstellungen gespeichert`
+        : 'Ihre Trainingsliste wurde erfolgreich aktualisiert'
+      
       toast.success(`${newExercises.length} Übungen importiert`, {
-        description: 'Ihre Trainingsliste wurde erfolgreich aktualisiert',
+        description,
         icon: <FileArrowDown size={20} weight="fill" />
       })
       
@@ -280,6 +324,36 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           </div>
           
           <Separator />
+          
+          {(settings?.trainingGoal || settings?.legalNotice || settings?.notes) && (
+            <>
+              <div className="space-y-3">
+                <Label>Importierte Informationen</Label>
+                <div className="space-y-2 text-sm bg-muted/50 p-3 rounded-md">
+                  {settings.trainingGoal && (
+                    <div>
+                      <div className="font-semibold text-foreground">Trainingsziel:</div>
+                      <div className="text-muted-foreground mt-1">{settings.trainingGoal}</div>
+                    </div>
+                  )}
+                  {settings.legalNotice && (
+                    <div className="mt-3">
+                      <div className="font-semibold text-foreground">Rechtliche Hinweise:</div>
+                      <div className="text-muted-foreground mt-1">{settings.legalNotice}</div>
+                    </div>
+                  )}
+                  {settings.notes && (
+                    <div className="mt-3">
+                      <div className="font-semibold text-foreground">Notizen:</div>
+                      <div className="text-muted-foreground mt-1">{settings.notes}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <Separator />
+            </>
+          )}
           
           <div className="space-y-3">
             <Label htmlFor="sheet-id">Google Sheets ID (Optional)</Label>
