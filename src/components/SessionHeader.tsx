@@ -35,7 +35,7 @@ export function SessionHeader({ session, allSessions }: SessionHeaderProps) {
       <div>
         <div className="text-base font-semibold text-foreground leading-tight">{today}</div>
         <div className="text-xs text-muted-foreground leading-tight mt-0.5">
-          {lastTrainingDate ? `Letztes Training: ${lastTrainingDate}` : 'Neuer Eintrag'}
+          {lastTrainingDate ? `Letztes Training: ${lastTrainingDate}` : 'Letztes Training: ---'}
           {completedCount > 0 && ` • ${completedCount} ${completedCount === 1 ? 'Übung' : 'Übungen'} absolviert`}
         </div>
       </div>
