@@ -85,7 +85,7 @@ export function SessionHeader({ session, allSessions }: SessionHeaderProps) {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogTrigger asChild>
           <Button variant="ghost" size="icon" className="flex-shrink-0 h-auto w-auto p-0 hover:bg-transparent">
-            <Calendar size={32} weight="bold" className="text-primary" />
+            <Calendar size={40} weight="bold" className="text-primary" />
           </Button>
         </DialogTrigger>
         <DialogContent className="max-w-md">
