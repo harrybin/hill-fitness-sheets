@@ -40,8 +40,8 @@ export function SessionHeader({ session, allSessions }: SessionHeaderProps) {
     <div className="flex items-center gap-3">
       <Calendar size={24} weight="bold" className="text-primary" />
       <div>
-        <div className="text-sm font-semibold text-foreground leading-tight">{today}</div>
-        <div className="text-xs text-muted-foreground leading-tight mt-0.5">
+        <div className="text-base font-semibold text-foreground leading-tight">{today}</div>
+        <div className="text-xs text-foreground/70 leading-tight mt-0.5">
           {completedCount} {completedCount === 1 ? 'Übung' : 'Übungen'} absolviert
           {lastTrainingDate && (
             <span className="ml-2">· Letztes Training: {lastTrainingDate}</span>
