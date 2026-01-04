@@ -287,90 +287,98 @@ export function ExerciseList({
 
   if (validExercises.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
-        <Barbell size={64} className="text-muted-foreground mb-4" />
-        <h2 className="text-xl font-bold mb-2">Keine Übungen</h2>
-        <p className="text-muted-foreground mb-6 max-w-md text-sm">
-          Importieren Sie Ihre Übungen aus dem Google Sheet von Hill-Fitness.
-          (Dies kann jeder Zeit über die Einstellungen wiederholt werden.)
-        </p>
+      <>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
+          <p className="text-muted-foreground mb-6 max-w-md text-sm ">
+            Eine Progressive Web App zum Tracken von Trainingseinheiten im
+            Fitnessstudio mit Offline-Funktionalität.
+          </p>
+          <Barbell size={64} className="text-muted-foreground mb-4" />
+          <h2 className="text-xl font-bold mb-2">Keine Übungen</h2>
+          <p className="text-muted-foreground mb-6 max-w-md text-sm">
+            Importieren Sie Ihre Übungen aus dem Google Sheet von Hill-Fitness.
+            (Dies kann jeder Zeit über die Einstellungen wiederholt werden.)
+          </p>
 
-        <div className="w-full max-w-md space-y-3">
-          {!googleToken ? (
-            <Button
-              onClick={handleGoogleAuth}
-              disabled={isAuthenticating}
-              variant="outline"
-              className="gap-2 w-full"
-            >
-              <GoogleLogo size={20} />
-              {isAuthenticating
-                ? "Anmeldung..."
-                : "Mit Google anmelden (für private Dateien)"}
-            </Button>
-          ) : (
-            <div className="flex gap-2">
+          <div className="w-full max-w-md space-y-3">
+            {!googleToken ? (
               <Button
-                onClick={handleGoogleSignOut}
-                variant="ghost"
-                size="sm"
+                onClick={handleGoogleAuth}
+                disabled={isAuthenticating}
+                variant="outline"
+                className="gap-2 w-full"
+              >
+                <GoogleLogo size={20} />
+                {isAuthenticating
+                  ? "Anmeldung..."
+                  : "Mit Google anmelden (für private Dateien)"}
+              </Button>
+            ) : (
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleGoogleSignOut}
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2"
+                >
+                  <GoogleLogo size={16} />
+                  Abmelden
+                </Button>
+                <span className="text-xs text-muted-foreground flex items-center">
+                  ✓ Angemeldet
+                </span>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                placeholder="Google Drive Link einfügen..."
+                value={driveUrl}
+                onChange={(e) => setDriveUrl(e.target.value)}
+                className="flex-1"
+              />
+              <Button
+                onClick={handleDriveDownload}
+                disabled={isDownloading}
+                variant="default"
                 className="gap-2"
               >
-                <GoogleLogo size={16} />
-                Abmelden
+                <Download size={20} />
+                {isDownloading ? "Importiere..." : "Import"}
               </Button>
-              <span className="text-xs text-muted-foreground flex items-center">
-                ✓ Angemeldet
-              </span>
             </div>
-          )}
 
-          <div className="flex gap-2">
-            <Input
-              type="text"
-              placeholder="Google Drive Link einfügen..."
-              value={driveUrl}
-              onChange={(e) => setDriveUrl(e.target.value)}
-              className="flex-1"
-            />
+            <p className="text-xs text-muted-foreground text-center">
+              {googleToken
+                ? "Mit Google angemeldet - private Dateien werden unterstützt"
+                : "Öffentliche Dateien oder mit Google anmelden für private Dateien"}
+            </p>
+
+            <div className="text-sm text-muted-foreground text-center">
+              oder
+            </div>
+
             <Button
-              onClick={handleDriveDownload}
-              disabled={isDownloading}
-              variant="default"
-              className="gap-2"
+              onClick={() => fileInputRef.current?.click()}
+              variant="outline"
+              className="gap-2 w-full"
+              data-testid="import-xlsx-button"
             >
-              <Download size={20} />
-              {isDownloading ? "Importiere..." : "Import"}
+              <FileXls size={20} />
+              Lokale XLSX Datei importieren
             </Button>
           </div>
 
-          <p className="text-xs text-muted-foreground text-center">
-            {googleToken
-              ? "Mit Google angemeldet - private Dateien werden unterstützt"
-              : "Öffentliche Dateien oder mit Google anmelden für private Dateien"}
-          </p>
-
-          <div className="text-sm text-muted-foreground text-center">oder</div>
-
-          <Button
-            onClick={() => fileInputRef.current?.click()}
-            variant="outline"
-            className="gap-2 w-full"
-            data-testid="import-xlsx-button"
-          >
-            <FileXls size={20} />
-            Lokale XLSX Datei importieren
-          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls,.ods"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
         </div>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".xlsx,.xls,.ods"
-          onChange={handleFileUpload}
-          className="hidden"
-        />
-      </div>
+      </>
     );
   }
 

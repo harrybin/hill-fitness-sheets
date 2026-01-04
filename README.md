@@ -1,6 +1,6 @@
 # Hill Fitness Sheets
 
-Eine Progressive Web App zum Tracken von Trainingseinheiten im Fitnessstudio mit Offline-Funktionalität und automatischen Updates.
+Eine Progressive Web App zum Tracken von Trainingseinheiten im Fitnessstudio mit Offline-Funktionalität.
 
 ## Für Benutzer
 
