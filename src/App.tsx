@@ -223,7 +223,7 @@ function App() {
       
       <div className="sticky top-0 z-10 bg-background border-b border-border">
         <div className="flex items-center justify-between p-3">
-          <SessionHeader session={currentSession} allSessions={sessions || []} />
+          <SessionHeader session={currentSession} />
           <Button
             variant="outline"
             size="icon"
