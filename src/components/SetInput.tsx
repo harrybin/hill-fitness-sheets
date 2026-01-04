@@ -30,10 +30,10 @@ export function SetInput({ setNumber, reps, onRepsChange }: SetInputProps) {
         <Button
           size="sm"
           variant="secondary"
-          onClick={() => onRepsChange(Math.max(0, reps - 3))}
+          onClick={() => onRepsChange(Math.max(0, reps - 2))}
           className="h-11 w-11 p-0 text-3xl font-bold text-primary"
         >
-          {Math.max(0, reps - 3)}
+          {Math.max(0, reps - 2)}
         </Button>
         <Button
           size="sm"
@@ -64,10 +64,10 @@ export function SetInput({ setNumber, reps, onRepsChange }: SetInputProps) {
         <Button
           size="sm"
           variant="secondary"
-          onClick={() => onRepsChange(reps + 3)}
+          onClick={() => onRepsChange(reps + 2)}
           className="h-11 w-11 p-0 text-3xl font-bold text-primary"
         >
-          {reps + 3}
+          {reps + 2}
         </Button>
 
         <Button

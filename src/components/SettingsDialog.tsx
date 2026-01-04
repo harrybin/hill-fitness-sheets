@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { FileArrowDown, FileXls, DownloadSimple } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import QRCodeSVG from "react-qr-code";
 import {
   base64ToArrayBuffer,
   arrayBufferToBase64,
@@ -121,7 +122,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
         <div className="space-y-4 overflow-y-auto max-h-[calc(90vh-8rem)]">
           <div className="space-y-2">
-            <Label className="text-sm">Übungen</Label>
+            <Label className="text-sm">Google Sheets Datei</Label>
             <div className="space-y-2">
               <Button
                 onClick={() => fileInputRef.current?.click()}
@@ -220,6 +221,64 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               </div>
             </>
           )}
+
+          <Separator />
+
+          <div className="space-y-2">
+            <Label className="text-sm">Über</Label>
+            <div className="bg-muted/50 p-2.5 rounded-md space-y-3">
+              <div className="space-y-1.5">
+                <div className="text-xs">
+                  <span className="font-semibold text-foreground">Autor: </span>
+                  <span className="text-muted-foreground">Harald Binkle</span>
+                </div>
+                <div className="text-xs">
+                  <span className="font-semibold text-foreground">
+                    Lizenz:{" "}
+                  </span>
+                  <span className="text-muted-foreground">
+                    MIT (kostenlos frei verfügbar)
+                  </span>
+                </div>
+                <div className="text-xs">
+                  <span className="font-semibold text-foreground">
+                    Quellcode:{" "}
+                  </span>
+                  <a
+                    href="https://github.com/harrybin/hill-fitness-sheets"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+                  >
+                    GitHub
+                  </a>
+                </div>
+                <div className="text-xs">
+                  <span className="font-semibold text-foreground">
+                    Download:{" "}
+                  </span>
+                  <a
+                    href="https://hill-fitness.harrybin.de/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+                  >
+                    hill-fitness.harrybin.de
+                  </a>
+                </div>
+              </div>
+
+              <div className="flex justify-center pt-1">
+                <div className="bg-white p-2 rounded-md">
+                  <QRCodeSVG
+                    value="https://hill-fitness.harrybin.de/"
+                    size={128}
+                    level="M"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
