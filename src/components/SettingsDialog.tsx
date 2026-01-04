@@ -157,6 +157,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 onClick={() => fileInputRef.current?.click()}
                 variant="outline"
                 className="w-full justify-start gap-2 h-auto py-2.5"
+                data-testid="settings-import-xlsx-button"
               >
                 <FileXls size={20} className="shrink-0" />
                 <div className="text-left flex-1 min-w-0">
@@ -198,6 +199,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                     variant="outline"
                     size="sm"
                     className="w-full gap-1.5 text-xs h-8"
+                    data-testid="export-xlsx-button"
                   >
                     <DownloadSimple size={14} />
                     Export
@@ -211,6 +213,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                     variant="outline"
                     size="sm"
                     className="w-full gap-1.5 text-xs h-8 text-destructive hover:text-destructive"
+                    data-testid="clear-cache-button"
                   >
                     <Trash size={14} />
                     App Cache leeren

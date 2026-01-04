@@ -138,6 +138,7 @@ export function SessionHeader({
               variant="outline"
               size="icon"
               className="hover:bg-transparent h-auto w-auto p-0"
+              data-testid="calendar-dialog-button"
             >
               <Calendar
                 size={48}
@@ -213,6 +214,7 @@ export function SessionHeader({
           variant="outline"
           onClick={() => onSelectSession(todayDateString)}
           className="shrink-0 h-12 px-4 mt-1 text-lg"
+          data-testid="today-button"
         >
           <CalendarCheck
             size={48}

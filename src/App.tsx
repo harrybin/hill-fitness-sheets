@@ -61,6 +61,7 @@ function App() {
               size="icon"
               onClick={() => setSettingsOpen(true)}
               className="h-9 w-9"
+              data-testid="settings-button"
             >
               <Gear size={20} />
             </Button>

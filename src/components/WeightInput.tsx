@@ -24,6 +24,7 @@ export function WeightInput({
         variant="outline"
         onClick={() => adjustWeight(-5)}
         className="h-11 w-11 p-0 text-xs"
+        data-testid="weight-minus-5-button"
       >
         -5
       </Button>
@@ -32,6 +33,7 @@ export function WeightInput({
         variant="outline"
         onClick={() => adjustWeight(-1)}
         className="h-11 w-11 p-0 text-xs"
+        data-testid="weight-minus-1-button"
       >
         -1
       </Button>
@@ -40,6 +42,7 @@ export function WeightInput({
         variant="outline"
         onClick={() => adjustWeight(-0.5)}
         className="h-11 w-11 p-0 text-xs"
+        data-testid="weight-minus-0.5-button"
       >
         -0.5
       </Button>
@@ -60,6 +63,7 @@ export function WeightInput({
         variant="outline"
         onClick={() => adjustWeight(0.5)}
         className="h-11 w-11 p-0 text-xs"
+        data-testid="weight-plus-0.5-button"
       >
         +0.5
       </Button>
@@ -68,6 +72,7 @@ export function WeightInput({
         variant="outline"
         onClick={() => adjustWeight(1)}
         className="h-11 w-11 p-0 text-xs"
+        data-testid="weight-plus-1-button"
       >
         +1
       </Button>
@@ -76,6 +81,7 @@ export function WeightInput({
         variant="outline"
         onClick={() => adjustWeight(5)}
         className="h-11 w-11 p-0 text-xs"
+        data-testid="weight-plus-5-button"
       >
         +5
       </Button>

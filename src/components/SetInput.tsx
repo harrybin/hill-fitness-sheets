@@ -23,6 +23,7 @@ export function SetInput({ setNumber, reps, onRepsChange }: SetInputProps) {
           variant="outline"
           onClick={() => adjustReps(-1)}
           className="h-12 w-12 rounded-full p-0"
+          data-testid={`set-${setNumber}-minus-button`}
         >
           <Minus size={20} weight="bold" />
         </Button>
@@ -32,6 +33,7 @@ export function SetInput({ setNumber, reps, onRepsChange }: SetInputProps) {
           variant="secondary"
           onClick={() => onRepsChange(Math.max(0, reps - 2))}
           className="h-11 w-11 p-0 text-3xl font-bold text-primary"
+          data-testid={`set-${setNumber}-minus-2-button`}
         >
           {Math.max(0, reps - 2)}
         </Button>
@@ -40,6 +42,7 @@ export function SetInput({ setNumber, reps, onRepsChange }: SetInputProps) {
           variant="secondary"
           onClick={() => onRepsChange(Math.max(0, reps - 1))}
           className="h-11 w-11 p-0 text-3xl font-bold text-primary"
+          data-testid={`set-${setNumber}-minus-1-button`}
         >
           {Math.max(0, reps - 1)}
         </Button>
@@ -58,6 +61,7 @@ export function SetInput({ setNumber, reps, onRepsChange }: SetInputProps) {
           variant="secondary"
           onClick={() => onRepsChange(reps + 1)}
           className="h-11 w-11 p-0 text-3xl font-bold text-primary"
+          data-testid={`set-${setNumber}-plus-1-button`}
         >
           {reps + 1}
         </Button>
@@ -66,6 +70,7 @@ export function SetInput({ setNumber, reps, onRepsChange }: SetInputProps) {
           variant="secondary"
           onClick={() => onRepsChange(reps + 2)}
           className="h-11 w-11 p-0 text-3xl font-bold text-primary"
+          data-testid={`set-${setNumber}-plus-2-button`}
         >
           {reps + 2}
         </Button>
@@ -75,6 +80,7 @@ export function SetInput({ setNumber, reps, onRepsChange }: SetInputProps) {
           variant="outline"
           onClick={() => adjustReps(1)}
           className="h-12 w-12 rounded-full p-0"
+          data-testid={`set-${setNumber}-plus-button`}
         >
           <Plus size={20} weight="bold" />
         </Button>

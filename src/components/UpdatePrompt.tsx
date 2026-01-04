@@ -70,12 +70,17 @@ export function UpdatePrompt() {
           </CardDescription>
         </CardHeader>
         <CardFooter className="flex gap-2 justify-end">
-          <Button variant="outline" onClick={handleDismiss}>
+          <Button
+            variant="outline"
+            onClick={handleDismiss}
+            data-testid="update-dismiss-button"
+          >
             Später
           </Button>
           <Button
             onClick={handleUpdate}
             className="bg-orange-600 hover:bg-orange-700"
+            data-testid="update-now-button"
           >
             Jetzt aktualisieren
           </Button>

@@ -42,7 +42,7 @@ test.describe("Screenshots Generation", () => {
 
     // Set up file chooser handler before clicking the button
     const fileChooserPromise = page.waitForEvent("filechooser");
-    await page.getByRole("button", { name: /XLSX importieren/i }).click();
+    await page.getByTestId("import-xlsx-button").click();
     const fileChooser = await fileChooserPromise;
     await fileChooser.setFiles(exampleSheetPath);
 
@@ -58,9 +58,7 @@ test.describe("Screenshots Generation", () => {
     await firstExercise.click();
     await page.waitForTimeout(500);
 
-    const completeButton = page.getByRole("button", {
-      name: /Übung abschließen/i,
-    });
+    const completeButton = page.getByTestId("complete-exercise-button");
     if (await completeButton.isVisible({ timeout: 2000 }).catch(() => false)) {
       await completeButton.click();
       await page.waitForTimeout(1000);
@@ -73,33 +71,8 @@ test.describe("Screenshots Generation", () => {
     // Wait for the exercise list to be visible again
     await page.waitForTimeout(1000);
 
-    // Try different selectors for the calendar button
-    const calendarSelectors = [
-      page.locator('button svg[class*="Calendar"]').locator(".."),
-      page
-        .locator("header button")
-        .filter({ has: page.locator("svg") })
-        .nth(0),
-      page.locator('[data-testid*="calendar"]'),
-      page
-        .locator("button")
-        .filter({ hasText: "" })
-        .filter({ has: page.locator("svg") })
-        .first(),
-    ];
-
-    let calendarButton = null;
-    for (const selector of calendarSelectors) {
-      if (await selector.isVisible({ timeout: 1000 }).catch(() => false)) {
-        calendarButton = selector;
-        break;
-      }
-    }
-
-    if (!calendarButton) {
-      // Just click the first button in the header that has an SVG
-      calendarButton = page.locator("header button svg").locator("..").first();
-    }
+    // Use data-testid for calendar button
+    const calendarButton = page.getByTestId("calendar-dialog-button");
 
     if (await calendarButton.isVisible({ timeout: 2000 }).catch(() => false)) {
       await calendarButton.click();
@@ -160,9 +133,7 @@ test.describe("Screenshots Generation", () => {
       }
 
       // Complete the exercise
-      const completeBtn = page.getByRole("button", {
-        name: /Übung abschließen/i,
-      });
+      const completeBtn = page.getByTestId("complete-exercise-button");
       if (await completeBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
         await completeBtn.click();
         await page.waitForTimeout(500);
@@ -218,10 +189,7 @@ test.describe("Screenshots Generation", () => {
     await page.goto("/");
 
     // Close PWA install banner if present
-    const closeButton = page
-      .locator("button")
-      .filter({ hasText: /×|close/i })
-      .first();
+    const closeButton = page.getByTestId("pwa-dismiss-button");
     if (await closeButton.isVisible({ timeout: 2000 }).catch(() => false)) {
       await closeButton.click();
       await page.waitForTimeout(500);
@@ -265,7 +233,7 @@ test.describe("Screenshots Generation", () => {
 
     // Set up file chooser handler
     const fileChooserPromise = page.waitForEvent("filechooser");
-    await page.getByRole("button", { name: /XLSX importieren/i }).click();
+    await page.getByTestId("import-xlsx-button").click();
     const fileChooser = await fileChooserPromise;
     await fileChooser.setFiles(exampleSheetPath);
 
@@ -276,18 +244,14 @@ test.describe("Screenshots Generation", () => {
     await page.waitForTimeout(500);
 
     // Open calendar to show history overview
-    const calendarButton = page
-      .locator("button")
-      .filter({
-        has: page.locator('svg[class*="CalendarBlank"]'),
-      })
-      .or(page.getByRole("button", { name: /kalender|calendar/i }))
-      .first();
+    const calendarButton = page.getByTestId("calendar-dialog-button");
+    await calendarButton.click();
+    await page.waitForTimeout(500);
 
-    if (await calendarButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await calendarButton.click();
-      await page.waitForTimeout(500);
-    }
+    // Wait for the dialog to be visible
+    const dialogHeading = page.getByText(/bisherige trainingseinheiten/i);
+    await expect(dialogHeading).toBeVisible({ timeout: 3000 });
+    await page.waitForTimeout(500);
 
     // Take screenshot of calendar view
     await page.screenshot({
@@ -312,14 +276,7 @@ test.describe("Screenshots Generation", () => {
     await prepareAppState(page);
 
     // Open settings dialog
-    const settingsButton = page
-      .getByRole("button", { name: /Einstellungen/i })
-      .or(
-        page
-          .locator("button")
-          .filter({ has: page.locator("svg") })
-          .last()
-      );
+    const settingsButton = page.getByTestId("settings-button");
     await settingsButton.click();
     await page.waitForTimeout(500);
 

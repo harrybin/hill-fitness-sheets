@@ -157,6 +157,7 @@ export function TrainingEntryView({
               size="sm"
               onClick={onCancel}
               className="h-9 px-3"
+              data-testid="back-button"
             >
               <ArrowLeft size={18} className="mr-1" />
               Zurück
@@ -167,6 +168,7 @@ export function TrainingEntryView({
                 size="sm"
                 onClick={handleDelete}
                 className="h-9 w-9 p-0"
+                data-testid="delete-entry-button"
               >
                 <Trash size={18} weight="bold" />
               </Button>
@@ -237,6 +239,7 @@ export function TrainingEntryView({
             variant="outline"
             className="h-24 px-8"
             onClick={handleSkip}
+            data-testid="skip-exercise-button"
           >
             <XCircle size={24} weight="bold" className="text-red-500" />
           </Button>
@@ -244,6 +247,7 @@ export function TrainingEntryView({
             size="lg"
             className="flex-1 h-24 text-lg font-bold"
             onClick={handleComplete}
+            data-testid="complete-exercise-button"
           >
             <Check size={24} weight="bold" className="mr-2" />
             Übung abschließen

@@ -90,6 +90,7 @@ export function PWAInstallBanner() {
             size="sm"
             onClick={handleInstall}
             className="h-8 px-3 text-xs font-semibold"
+            data-testid="pwa-install-button"
           >
             Installieren
           </Button>
@@ -98,6 +99,7 @@ export function PWAInstallBanner() {
             size="icon"
             onClick={handleDismiss}
             className="h-8 w-8"
+            data-testid="pwa-dismiss-button"
           >
             <X size={16} />
           </Button>

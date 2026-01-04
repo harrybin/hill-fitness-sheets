@@ -113,12 +113,14 @@ export function ExerciseList({
         <Barbell size={64} className="text-muted-foreground mb-4" />
         <h2 className="text-xl font-bold mb-2">Keine Übungen</h2>
         <p className="text-muted-foreground mb-6 max-w-md text-sm">
-          Importieren Sie Ihre Übungen aus dem Google Sheet von Hill-Fitness. (Dies kann jeder Zeit über die Einstellungen wiederholt werden.)
+          Importieren Sie Ihre Übungen aus dem Google Sheet von Hill-Fitness.
+          (Dies kann jeder Zeit über die Einstellungen wiederholt werden.)
         </p>
         <Button
           onClick={() => fileInputRef.current?.click()}
           variant="default"
           className="gap-2"
+          data-testid="import-xlsx-button"
         >
           <FileXls size={20} />
           XLSX importieren
