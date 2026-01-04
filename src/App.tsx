@@ -5,7 +5,6 @@ import { ExerciseList } from '@/components/ExerciseList'
 import { TrainingEntryView } from '@/components/TrainingEntryView'
 import { SessionHeader } from '@/components/SessionHeader'
 import { SettingsDialog } from '@/components/SettingsDialog'
-import { SyncButton } from '@/components/SyncButton'
 import { Toaster } from '@/components/ui/sonner'
 import { Gear } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
@@ -54,17 +53,14 @@ function App() {
       <div className="sticky top-0 z-10 bg-background border-b border-border">
         <div className="flex items-center justify-between p-4">
           <SessionHeader session={currentSession} />
-          <div className="flex gap-2">
-            <SyncButton />
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setSettingsOpen(true)}
-              className="h-10 w-10"
-            >
-              <Gear size={20} />
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setSettingsOpen(true)}
+            className="h-10 w-10"
+          >
+            <Gear size={20} />
+          </Button>
         </div>
       </div>
       
