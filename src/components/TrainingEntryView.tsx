@@ -29,6 +29,7 @@ export function TrainingEntryView({
   
   const [currentSetIndex, setCurrentSetIndex] = useState(0)
   const [sets, setSets] = useState<TrainingSet[]>([])
+  const [isInitialized, setIsInitialized] = useState(false)
   
   const getPreviousTraining = (): PreviousTraining | null => {
     if (!sessions || sessions.length === 0) return null
@@ -57,19 +58,12 @@ export function TrainingEntryView({
   const [currentReps, setCurrentReps] = useState(previousTraining?.lastReps || 10)
   
   useEffect(() => {
-    if (existingEntry) {
+    if (!isInitialized && existingEntry) {
       setSets(existingEntry.sets)
       setCurrentSetIndex(existingEntry.sets.length)
+      setIsInitialized(true)
     }
-  }, [existingEntry])
-  
-  useEffect(() => {
-    const entry = currentSession?.entries.find(e => e.exerciseId === exercise.id)
-    if (entry) {
-      setSets(entry.sets)
-      setCurrentSetIndex(entry.sets.length)
-    }
-  }, [currentSession, exercise.id])
+  }, [existingEntry, isInitialized])
   
   const totalSets = defaultSets
   const isLastSet = currentSetIndex >= totalSets - 1
