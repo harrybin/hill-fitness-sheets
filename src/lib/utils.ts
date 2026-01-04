@@ -1,13 +1,13 @@
 import { clsx, type ClassValue } from "clsx"
+import { twMerge } from "tailwind-merge"
 import * as XLSX from 'xlsx'
+import { Exercise, Session } from './types'
 
+export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
+}
 
-  const binaryString = atob(base64)
-  for (let i = 0; i < binarySt
- 
-
-export function arrayBufferToBase64(buffer: ArrayBuffer): string {
+export function base64ToArrayBuffer(base64: string): ArrayBuffer {
   const binaryString = atob(base64)
   const bytes = new Uint8Array(binaryString.length)
   for (let i = 0; i < binaryString.length; i++) {
@@ -18,26 +18,25 @@ export function arrayBufferToBase64(buffer: ArrayBuffer): string {
 
 export function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer)
-    trainingGoal?
-    notes?: string
-  sessions: Session[]
-  c
-  const sheetName = w
- 
+  let binary = ''
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i])
+  }
+  return btoa(binary)
+}
 
-  if (!sheetName) {
+export function parseXLSX(arrayBuffer: ArrayBuffer): {
+  exercises: Exercise[]
+  metadata: {
+    trainingGoal?: string
+    legalNotice?: string
+    notes?: string
   }
-  const works
+  sessions: Session[]
+} {
+  const workbook = XLSX.read(arrayBuffer, { type: 'array' })
   
-  const metadata: {
-    legalNotice?: 
-  }
-  const ignoredKeywor
-   
-    'legal notice',
-  
-    'bei bedarf',
-  ]
+  const sheetName = workbook.SheetNames.find(name =>
     name.toLowerCase().includes('ubungen') ||
     name.toLowerCase().includes('exercise')
   ) || workbook.SheetNames[0]
@@ -79,157 +78,154 @@ export function arrayBufferToBase64(buffer: ArrayBuffer): string {
     
     const secondCell = String(row[1] || '').toLowerCase().trim()
     
-    let exerciseName = ''
-    
-      exerciseName = cellBStr
-    } e
-      notes = cellBStr
-    
-     
-   
-  
-        name: exerciseName,
-        notes,
+    if (secondCell === 'ubungen' || secondCell === 'exercises' || secondCell === 'übungen') {
+      startIndex = i + 1
+      break
     }
+    
+    const cellBStr = String(row[1] || '').trim()
+    
+    if (cellBStr && isMetadataRow(cellBStr)) {
+      const value = String(row[2] || '').trim()
+      const lowerCellB = cellBStr.toLowerCase()
+      
+      if (lowerCellB.includes('trainingsziel') || lowerCellB.includes('training goal')) {
+        metadata.trainingGoal = value
+      } else if (lowerCellB.includes('rechtliche') || lowerCellB.includes('legal')) {
+        metadata.legalNotice = value
+      } else if (lowerCellB.includes('hinweise') || lowerCellB.includes('notiz') || lowerCellB.includes('notes')) {
+        if (!metadata.legalNotice) {
+          metadata.notes = value
+        }
+      }
+    }
+  }
   
-  co
-    name.toLowerCase().includes('history')
+  for (let i = startIndex; i < data.length; i++) {
+    const row = data[i]
+    
+    if (!row || row.length === 0) continue
+    
+    const cellBStr = String(row[1] || '').trim()
+    
+    if (!cellBStr || cellBStr === '') continue
+    
+    if (isMetadataRow(cellBStr)) continue
+    
+    const exerciseName = cellBStr
+    const notes = String(row[2] || '').trim()
+    
+    exercises.push({
+      id: `exercise-${i}`,
+      name: exerciseName,
+      notes: notes || undefined,
+      order: exercises.length
+    })
+  }
   
-    const historyData: any[][] = XLSX.utils.sheet_to_json(workbook.Sheets[historySheetName], { header: 1 })
-    for (let i = 1; i < historyData.len
+  const sessions: Session[] = []
+  
+  const historySheetName = workbook.SheetNames.find(name =>
+    name.toLowerCase().includes('history') ||
+    name.toLowerCase().includes('historie')
+  )
+  
+  if (historySheetName) {
+    try {
+      const historyData: any[][] = XLSX.utils.sheet_to_json(workbook.Sheets[historySheetName], { header: 1 })
+      
+      for (let i = 1; i < historyData.length; i++) {
         const row = historyData[i]
-        const dateStr = String(ro
-     
-   
-  
+        if (!row || row.length < 4) continue
+        
+        const dateStr = String(row[0] || '').trim()
+        const exerciseName = String(row[1] || '').trim()
+        const weight = parseFloat(String(row[2] || '0'))
+        const reps = parseInt(String(row[3] || '0'))
+        const setNumber = parseInt(String(row[4] || '1'))
+        
+        if (!dateStr || !exerciseName || isNaN(weight) || isNaN(reps)) continue
+        
         const exercise = exercises.find(ex => 
+          ex.name.toLowerCase() === exerciseName.toLowerCase()
         )
-    
-          sessions.push({ date: dateStr, entries
         
-        let entry = session.entries.find(e => e.
-    
+        if (!exercise) continue
+        
+        let session = sessions.find(s => s.date === dateStr)
+        if (!session) {
+          session = { date: dateStr, entries: [] }
+          sessions.push(session)
+        }
+        
+        let entry = session.entries.find(e => e.exerciseId === exercise.id)
+        if (!entry) {
+          entry = {
             id: `entry-${dateStr}-${exercise.id}`,
-            date: dateStr
+            exerciseId: exercise.id,
+            date: dateStr,
+            sets: []
           }
-    
-        entry.sets.pus
-        console.error('Error 
+          session.entries.push(entry)
+        }
+        
+        entry.sets.push({
+          setNumber: setNumber || entry.sets.length + 1,
+          weight,
+          reps
+        })
+      }
+    } catch (error) {
+      console.error('Error parsing history:', error)
     }
+  }
   
+  return { exercises, metadata, sessions }
 }
-export function update
-  ses
-): s
-    cons
+
+export function updateXLSXWithSessions(
+  base64Data: string,
+  sessions: Session[],
+  exercises: Exercise[]
+): string {
+  try {
+    const arrayBuffer = base64ToArrayBuffer(base64Data)
+    const workbook = XLSX.read(arrayBuffer, { type: 'array' })
     
-      delete workbook.Sheets[his
+    const historySheetName = 'History'
+    if (workbook.SheetNames.includes(historySheetName)) {
+      delete workbook.Sheets[historySheetName]
+      workbook.SheetNames = workbook.SheetNames.filter(name => name !== historySheetName)
     }
-    con
+    
+    const historyData: any[][] = [
+      ['Date', 'Exercise', 'Weight', 'Reps', 'Set']
     ]
-    sessions.forEach(session => {
-        const exercise = ex
-        
-          hist
-        
-     
-   
-  
     
-    XLSX.utils.book_append_sheet(workbook, newSheet, history
-    const updatedBuffer = XLSX.write(workbook, 
+    sessions.forEach(session => {
+      session.entries.forEach(entry => {
+        const exercise = exercises.find(ex => ex.id === entry.exerciseId)
+        if (!exercise) return
+        
+        entry.sets.forEach(set => {
+          historyData.push([
+            session.date,
+            exercise.name,
+            set.weight,
+            set.reps,
+            set.setNumber
+          ])
+        })
+      })
+    })
+    
+    const newSheet = XLSX.utils.aoa_to_sheet(historyData)
+    XLSX.utils.book_append_sheet(workbook, newSheet, historySheetName)
+    
+    const updatedBuffer = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' })
+    return arrayBufferToBase64(updatedBuffer)
   } catch (error) {
-   
+    console.error('Error updating XLSX:', error)
+    return base64Data
+  }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
