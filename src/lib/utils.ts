@@ -127,11 +127,6 @@ export function parseXLSX(arrayBuffer: ArrayBuffer): {
   
   const sessions: Session[] = []
   
-  const historySheetName = workbook.SheetNames.find(name =>
-    name.toLowerCase().includes('history') ||
-    name.toLowerCase().includes('historie')
-  )
-  
   const parseExcelDate = (value: any): string | null => {
     if (!value) return null
     
@@ -141,16 +136,26 @@ export function parseXLSX(arrayBuffer: ArrayBuffer): {
         return trimmed
       }
       
-      if (/^\d{2}\.\d{2}\.\d{4}$/.test(trimmed)) {
+      if (/^\d{1,2}\.\d{1,2}\.\d{2,4}$/.test(trimmed)) {
         const parts = trimmed.split('.')
-        return `${parts[2]}-${parts[1]}-${parts[0]}`
+        let year = parts[2]
+        if (year.length === 2) {
+          year = '20' + year
+        }
+        const month = parts[1].padStart(2, '0')
+        const day = parts[0].padStart(2, '0')
+        return `${year}-${month}-${day}`
       }
       
-      if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(trimmed)) {
+      if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(trimmed)) {
         const parts = trimmed.split('/')
         const month = parts[0].padStart(2, '0')
         const day = parts[1].padStart(2, '0')
-        return `${parts[2]}-${month}-${day}`
+        let year = parts[2]
+        if (year.length === 2) {
+          year = '20' + year
+        }
+        return `${year}-${month}-${day}`
       }
     }
     
@@ -177,6 +182,110 @@ export function parseXLSX(arrayBuffer: ArrayBuffer): {
     
     return null
   }
+  
+  let dateRowIndex = -1
+  for (let i = 0; i < Math.min(data.length, 15); i++) {
+    const row = data[i]
+    const cellBStr = String(row[1] || '').toLowerCase().trim()
+    if (cellBStr.includes('datum')) {
+      dateRowIndex = i
+      break
+    }
+  }
+  
+  if (dateRowIndex >= 0) {
+    const dateRow = data[dateRowIndex]
+    const trainingDates: { whCol: number, kgCol: number, date: string }[] = []
+    
+    console.log('Scanning date row:', dateRow)
+    
+    for (let colIdx = 3; colIdx < dateRow.length; colIdx++) {
+      const cellValue = dateRow[colIdx]
+      
+      if (!cellValue) continue
+      
+      const cellStr = String(cellValue).trim()
+      if (cellStr === '' || cellStr === '/' || cellStr.toLowerCase() === 'wh' || cellStr.toLowerCase() === 'kg') {
+        continue
+      }
+      
+      const parsedDate = parseExcelDate(cellValue)
+      if (parsedDate) {
+        const whCol = colIdx
+        const kgCol = colIdx + 1
+        trainingDates.push({ whCol, kgCol, date: parsedDate })
+        console.log(`Found training date "${cellValue}" at column ${colIdx}: ${parsedDate}`)
+        colIdx++
+      }
+    }
+    
+    if (trainingDates.length > 0) {
+      console.log(`Found ${trainingDates.length} training dates in header`)
+      
+      for (let exerciseIdx = 0; exerciseIdx < exercises.length; exerciseIdx++) {
+        const exercise = exercises[exerciseIdx]
+        const exerciseRowIdx = startIndex + exerciseIdx
+        
+        if (exerciseRowIdx >= data.length) continue
+        const exerciseRow = data[exerciseRowIdx]
+        
+        for (const { whCol, kgCol, date } of trainingDates) {
+          const repsValue = exerciseRow[whCol]
+          const weightValue = exerciseRow[kgCol]
+          
+          if (!weightValue && !repsValue) continue
+          
+          const repsStr = String(repsValue || '').trim()
+          const weightStr = String(weightValue || '').trim()
+          
+          if (repsStr === '/' || weightStr === '/' || repsStr === '' || weightStr === '') continue
+          
+          const reps = parseInt(repsStr)
+          const weight = parseFloat(weightStr)
+          
+          if (isNaN(weight) || weight === 0 || isNaN(reps) || reps === 0) continue
+          
+          let session = sessions.find(s => s.date === date)
+          if (!session) {
+            session = { date, entries: [] }
+            sessions.push(session)
+          }
+          
+          let entry = session.entries.find(e => e.exerciseId === exercise.id)
+          if (!entry) {
+            entry = {
+              id: `entry-${date}-${exercise.id}`,
+              exerciseId: exercise.id,
+              date: date,
+              sets: []
+            }
+            session.entries.push(entry)
+          }
+          
+          entry.sets.push({
+            setNumber: entry.sets.length + 1,
+            weight,
+            reps
+          })
+        }
+      }
+      
+      console.log(`Successfully imported ${sessions.length} sessions from exercise sheet`)
+      if (sessions.length > 0) {
+        console.log('Session dates:', sessions.map(s => s.date).sort())
+        const totalEntries = sessions.reduce((sum, s) => sum + s.entries.length, 0)
+        const totalSets = sessions.reduce((sum, s) => 
+          sum + s.entries.reduce((eSum, e) => eSum + e.sets.length, 0), 0
+        )
+        console.log(`Total entries: ${totalEntries}, Total sets: ${totalSets}`)
+      }
+    }
+  }
+  
+  const historySheetName = workbook.SheetNames.find(name =>
+    name.toLowerCase().includes('history') ||
+    name.toLowerCase().includes('historie')
+  )
   
   if (historySheetName) {
     try {
@@ -237,20 +346,10 @@ export function parseXLSX(arrayBuffer: ArrayBuffer): {
         })
       }
       
-      console.log(`Successfully imported ${sessions.length} sessions with history data`)
-      if (sessions.length > 0) {
-        console.log('Session dates:', sessions.map(s => s.date).sort())
-        const totalEntries = sessions.reduce((sum, s) => sum + s.entries.length, 0)
-        const totalSets = sessions.reduce((sum, s) => 
-          sum + s.entries.reduce((eSum, e) => eSum + e.sets.length, 0), 0
-        )
-        console.log(`Total entries: ${totalEntries}, Total sets: ${totalSets}`)
-      }
+      console.log(`Additionally imported ${sessions.length} total sessions including history sheet`)
     } catch (error) {
       console.error('Error parsing history:', error)
     }
-  } else {
-    console.warn('No history sheet found in workbook. Available sheets:', workbook.SheetNames)
   }
   
   return { exercises, metadata, sessions }
