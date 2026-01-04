@@ -94,6 +94,27 @@ function App() {
       </div>
 
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+
+      <footer className="max-w-2xl mx-auto mt-4 px-4 pb-4 text-xs text-muted-foreground">
+        <div className="flex gap-4">
+          <a
+            href="https://github.com/harrybin/hill-fitness-sheets/blob/main/DATENSCHUTZ.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-foreground transition-colors underline"
+          >
+            Datenschutz
+          </a>
+          <a
+            href="https://github.com/harrybin/hill-fitness-sheets/blob/main/NUTZUNGSBEDINGUNGEN.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-foreground transition-colors underline"
+          >
+            Nutzungsbedingungen
+          </a>
+        </div>
+      </footer>
     </div>
   );
 }
