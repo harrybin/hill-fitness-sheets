@@ -53,7 +53,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.error("Auto-load failed:", error);
       }
     }
-  }, [settings?.importedFile]);
+  }, [settings?.importedFile, exercises, setExercises, setSessions]);
 
   // Sync sessions back to XLSX when they change
   useEffect(() => {
@@ -85,7 +85,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         });
       }
     }
-  }, [sessions, exercises]);
+  }, [sessions, exercises, settings?.importedFile, setSettings]);
 
   const loadFromXLSX = (arrayBuffer: ArrayBuffer) => {
     const {
