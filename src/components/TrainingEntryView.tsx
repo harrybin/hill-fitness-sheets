@@ -98,21 +98,25 @@ export function TrainingEntryView({
   }
   
   const handleDeleteSet = (setIndex: number) => {
-    const updatedSets = sets.filter((_, idx) => idx !== setIndex)
-    const renumberedSets = updatedSets.map((set, idx) => ({
-      ...set,
-      setNumber: idx + 1
-    }))
-    setSets(renumberedSets)
-    setCurrentSetIndex(renumberedSets.length)
-    
     const today = new Date().toISOString().split('T')[0]
+    
     setSessions((prevSessions) => {
       const existingSessions = prevSessions || []
       const sessionIndex = existingSessions.findIndex(s => s.date === today)
       
       if (sessionIndex >= 0) {
         const updatedSessions = [...existingSessions]
+        const currentEntry = updatedSessions[sessionIndex].entries.find(
+          e => e.exerciseId === exercise.id
+        )
+        
+        if (!currentEntry) return existingSessions
+        
+        const updatedSets = currentEntry.sets.filter((_, idx) => idx !== setIndex)
+        const renumberedSets = updatedSets.map((set, idx) => ({
+          ...set,
+          setNumber: idx + 1
+        }))
         
         if (renumberedSets.length === 0) {
           updatedSessions[sessionIndex].entries = updatedSessions[sessionIndex].entries.filter(
@@ -120,7 +124,7 @@ export function TrainingEntryView({
           )
         } else {
           const entry: TrainingEntry = {
-            id: `${exercise.id}-${Date.now()}`,
+            id: currentEntry.id,
             exerciseId: exercise.id,
             date: today,
             sets: renumberedSets
@@ -134,6 +138,9 @@ export function TrainingEntryView({
             updatedSessions[sessionIndex].entries[entryIndex] = entry
           }
         }
+        
+        setSets(renumberedSets)
+        setCurrentSetIndex(renumberedSets.length)
         
         return updatedSessions
       }
