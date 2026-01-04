@@ -114,14 +114,18 @@ export function ExerciseList({
                 )}
 
                 {entry && (
-                  <div className="flex gap-4 text-sm">
+                  <div className="flex items-center gap-3 text-sm">
+                    <span className="font-mono font-bold text-base">
+                      {entry.sets[0]?.weight}kg
+                    </span>
+                    <span className="text-muted-foreground">|</span>
                     {entry.sets.map((set, idx) => (
                       <div key={idx} className="flex items-center gap-2">
                         <Badge variant="secondary" className="font-mono">
                           Satz {set.setNumber}
                         </Badge>
                         <span className="font-mono font-bold text-base">
-                          {set.weight}kg × {set.reps}
+                          {set.reps}
                         </span>
                       </div>
                     ))}
