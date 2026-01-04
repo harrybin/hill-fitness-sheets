@@ -25,6 +25,62 @@ export function arrayBufferToBase64(buffer: ArrayBuffer): string {
   return btoa(binary);
 }
 
+function parseExcelDate(value: any): string | null {
+  if (!value) return null;
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      return trimmed;
+    }
+
+    if (/^\d{1,2}\.\d{1,2}\.\d{2,4}$/.test(trimmed)) {
+      const parts = trimmed.split(".");
+      let year = parts[2];
+      if (year.length === 2) {
+        year = "20" + year;
+      }
+      const month = parts[1].padStart(2, "0");
+      const day = parts[0].padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(trimmed)) {
+      const parts = trimmed.split("/");
+      const month = parts[0].padStart(2, "0");
+      const day = parts[1].padStart(2, "0");
+      let year = parts[2];
+      if (year.length === 2) {
+        year = "20" + year;
+      }
+      return `${year}-${month}-${day}`;
+    }
+  }
+
+  if (typeof value === "number") {
+    const excelEpoch = new Date(1899, 11, 30);
+    const date = new Date(excelEpoch.getTime() + value * 86400000);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  try {
+    const date = new Date(value);
+    if (!isNaN(date.getTime())) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+  } catch (e) {
+    return null;
+  }
+
+  return null;
+}
+
 export function parseXLSX(arrayBuffer: ArrayBuffer): {
   exercises: Exercise[];
   metadata: {
@@ -308,62 +364,6 @@ function parseSessionsFromSheet(
 ): Session[] {
   const sessions: Session[] = [];
 
-  const parseExcelDate = (value: any): string | null => {
-    if (!value) return null;
-
-    if (typeof value === "string") {
-      const trimmed = value.trim();
-      if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-        return trimmed;
-      }
-
-      if (/^\d{1,2}\.\d{1,2}\.\d{2,4}$/.test(trimmed)) {
-        const parts = trimmed.split(".");
-        let year = parts[2];
-        if (year.length === 2) {
-          year = "20" + year;
-        }
-        const month = parts[1].padStart(2, "0");
-        const day = parts[0].padStart(2, "0");
-        return `${year}-${month}-${day}`;
-      }
-
-      if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(trimmed)) {
-        const parts = trimmed.split("/");
-        const month = parts[0].padStart(2, "0");
-        const day = parts[1].padStart(2, "0");
-        let year = parts[2];
-        if (year.length === 2) {
-          year = "20" + year;
-        }
-        return `${year}-${month}-${day}`;
-      }
-    }
-
-    if (typeof value === "number") {
-      const excelEpoch = new Date(1899, 11, 30);
-      const date = new Date(excelEpoch.getTime() + value * 86400000);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
-    }
-
-    try {
-      const date = new Date(value);
-      if (!isNaN(date.getTime())) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const day = String(date.getDate()).padStart(2, "0");
-        return `${year}-${month}-${day}`;
-      }
-    } catch (e) {
-      return null;
-    }
-
-    return null;
-  };
-
   // Find exercise start row
   let startIndex = 0;
   for (let i = 0; i < data.length; i++) {
@@ -507,9 +507,15 @@ function parseSessionsFromSheet(
           const reps1 = exerciseRow1[whCol];
           const weight1 = exerciseRow1[kgCol];
 
-          // Get data for Satz 2
+          // Get data for Satz 2 from the next row
           const reps2 = exerciseRow2 ? exerciseRow2[whCol] : null;
-          const weight2 = exerciseRow2 ? exerciseRow2[kgCol] : null;
+          const weight2Raw = exerciseRow2 ? exerciseRow2[kgCol] : null;
+          
+          // CRITICAL FIX: Merged cells in Excel only have values in the first row
+          // If Satz 2 has reps but no weight, use weight from Satz 1 (merged cell behavior)
+          const weight2 = (weight2Raw === undefined || weight2Raw === null) && reps2 != null && reps2 !== "/" && String(reps2).trim() !== ""
+            ? weight1 
+            : weight2Raw;
 
           const sets = [];
 

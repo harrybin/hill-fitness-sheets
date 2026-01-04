@@ -54,6 +54,11 @@ The Google Sheets workbook uses multiple sheets (e.g., "Einheit 1-8", "Einheit 9
 - **Columns F+**: Training sessions (Einheit 1, 2, 3...) as column pairs:
   - Each session has 2 columns: **WH** (reps performed) | **KG** (weight used)
   - Each exercise spans 2 rows (Satz 1 and Satz 2)
+  - **CRITICAL**: Weight cells (KG column) are merged across both rows in Excel
+    - Only row 1 (Satz 1) contains the weight value when imported
+    - Row 2 (Satz 2) has `undefined` for weight due to merged cell behavior
+    - Both sets use the same weight (this is the intended training methodology)
+    - Import logic: If Satz 2 has reps but no weight, use weight from Satz 1
 
 **Exercise Detection**:
 
@@ -84,7 +89,12 @@ The Google Sheets workbook uses multiple sheets (e.g., "Einheit 1-8", "Einheit 9
    - Auto-loads exercises and existing sessions from file
    - Sessions sync back to XLSX on entry completion via `updateXLSXWithSessions()`
 
-**Important**: All XLSX operations convert to/from base64 to store in localStorage. Header detection is critical—must check for common German/English variations.
+**Important**:
+
+- All XLSX operations convert to/from base64 to store in localStorage
+- Header detection is critical—must check for common German/English variations
+- Merged cells in Excel only export their value to the first row; subsequent rows return `undefined`
+- The app handles merged weight cells by inheriting Satz 1 weight for Satz 2 when needed
 
 ## Developer Workflows
 
