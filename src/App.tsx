@@ -186,6 +186,7 @@ function App() {
           <ExerciseList
             exercises={exercises || []}
             currentSession={currentSession}
+            allSessions={sessions || []}
             onSelectExercise={setSelectedExercise}
           />
         )}

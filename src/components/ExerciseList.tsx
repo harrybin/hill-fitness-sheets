@@ -7,16 +7,35 @@ import { cn } from '@/lib/utils'
 interface ExerciseListProps {
   exercises: Exercise[]
   currentSession?: Session
+  allSessions?: Session[]
   onSelectExercise: (exercise: Exercise) => void
 }
 
-export function ExerciseList({ exercises, currentSession, onSelectExercise }: ExerciseListProps) {
+export function ExerciseList({ exercises, currentSession, allSessions, onSelectExercise }: ExerciseListProps) {
   const getExerciseStatus = (exerciseId: string) => {
     const entry = currentSession?.entries.find(e => e.exerciseId === exerciseId)
     if (!entry || entry.sets.length === 0) {
       return undefined
     }
     return entry
+  }
+  
+  const getLastWeight = (exerciseId: string): number | undefined => {
+    if (!allSessions || allSessions.length === 0) return undefined
+    
+    const today = new Date().toISOString().split('T')[0]
+    const previousSessions = allSessions
+      .filter(s => s.date !== today)
+      .sort((a, b) => b.date.localeCompare(a.date))
+    
+    for (const session of previousSessions) {
+      const entry = session.entries.find(e => e.exerciseId === exerciseId)
+      if (entry && entry.sets.length > 0) {
+        return entry.sets[0].weight
+      }
+    }
+    
+    return undefined
   }
   
   const validExercises = exercises.filter(ex => 
@@ -43,6 +62,7 @@ export function ExerciseList({ exercises, currentSession, onSelectExercise }: Ex
       {validExercises.map((exercise) => {
         const entry = getExerciseStatus(exercise.id)
         const isCompleted = !!entry
+        const lastWeight = getLastWeight(exercise.id)
         
         return (
           <Card
@@ -82,6 +102,14 @@ export function ExerciseList({ exercises, currentSession, onSelectExercise }: Ex
                   </div>
                 )}
               </div>
+              
+              {!isCompleted && lastWeight !== undefined && (
+                <div className="flex-shrink-0 text-right">
+                  <div className="text-sm text-muted-foreground font-mono">
+                    {lastWeight}kg
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
         )
