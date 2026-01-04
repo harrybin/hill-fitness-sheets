@@ -1,83 +1,124 @@
 # Datenhaltung - Gym Tracker
 
-Die App verwendet die importierte XLSX-Datei im Local 
+## ✅ Single Source of Truth
 
-Die App verwendet die importierte XLSX-Datei im Local Storage als **Single Source of Truth** für alle Daten.
-
-## Architektur
-
-- **Historisc
-Beim Import einer XLSX-Datei:
-- Datei wird in Base64 kodiert und in `settings.importedFile` gespeichert
-- Übungen werden aus dem Hauptsheet extrahiert
-- **Historische Trainingsdaten** werden aus dem "Training History" Sheet geladen (falls vorhanden)
-- Alle Daten werden in den KV-Store geschrieben
-
-### 2. Training erfassen
-## XLSX-Struktur
-### Sheet 1: Übungsliste (Original-Sheet)
-Nr. | Übungen          | Notizen
-2   | Kniebeugen       | ...
-
-```
-2024-01-15 |
-2024-01-15 | Kniebeugen     | 1    | 100         | 12
-
-
-Import XLSX
-Local Storage (Bas
-Parse → Übungen + History
-KV-Store (exercises + sessions)
-Training erfassen
-
-## XLSX-Struktur
-
-### Sheet 1: Übungsliste (Original-Sheet)
-```
-Nr. | Übungen          | Notizen
-1   | Bankdrücken      | 3 Sätze
-2   | Kniebeugen       | ...
-```
-
-### Sheet 2: Training History (Auto-generiert)
-```
-Datum      | Übung          | Satz | Gewicht (kg) | Wiederholungen
-2024-01-15 | Bankdrücken    | 1    | 80          | 10
-2024-01-15 | Bankdrücken    | 2    | 80          | 8
-2024-01-15 | Kniebeugen     | 1    | 100         | 12
-```
+Die XLSX-Datei im Local Storage (useKV) ist die **Single Source of Truth** für alle Daten.
 
 ## Datenfluss
 
+### 1. Import (XLSX → App)
 ```
-Import XLSX
-    ↓
-Local Storage (Base64)
-    ↓
-Parse → Übungen + History
-    ↓
-KV-Store (exercises + sessions)
-    ↓
-Training erfassen
-    ↓
-Update KV-Store
-    ↓
-Update XLSX in Local Storage ← SINGLE SOURCE OF TRUTH
-    ↓
-Export XLSX
+Benutzer lädt XLSX hoch
+  ↓
+Datei wird in Base64 konvertiert
+  ↓
+In settings.importedFile gespeichert (useKV)
+  ↓
+Übungen werden geparst → exercises (useKV)
+  ↓
+Training History wird geparst → sessions (useKV)
 ```
 
-## Vorteile
+### 2. Auto-Load beim Start
+```
+App startet
+  ↓
+settings.importedFile vorhanden?
+  ↓ Ja
+XLSX aus settings laden
+  ↓
+Übungen & Sessions in useKV schreiben
+```
 
-1. ✅ **Offline-fähig**: Alle Daten im Local Storage
-2. ✅ **Portabel**: Export = komplette Datensicherung
-3. ✅ **Bidirektional**: Import und Export mit vollständiger Historie
-4. ✅ **Synchronisiert**: XLSX enthält immer aktuelle Trainingsdaten
-5. ✅ **Standard-Format**: XLSX kann in Excel/Google Sheets bearbeitet werden
+### 3. Training erfassen
+```
+Benutzer erfasst Sätze
+  ↓
+sessions (useKV) wird aktualisiert
+  ↓
+syncSessionsToXLSX() wird aufgerufen
+  ↓
+XLSX wird mit neuen Sessions aktualisiert
+  ↓
+settings.importedFile (useKV) wird aktualisiert
+```
 
-## Wichtige Hinweise
+### 4. Export
+```
+Benutzer klickt Export
+  ↓
+settings.importedFile.data (Base64) wird geladen
+  ↓
+In ArrayBuffer konvertiert
+  ↓
+Als XLSX-Datei heruntergeladen
+```
 
-- Die XLSX-Datei wird bei **jedem Training-Update** neu geschrieben
-- Das "Training History" Sheet wird automatisch verwaltet
-- Beim Re-Import einer XLSX mit History werden alte Trainings wiederhergestellt
-- Die Exercise-IDs werden beim Import generiert, daher müssen Exercise-Namen für History-Mapping verwendet werden
+## Verwendete useKV Keys
+
+| Key | Typ | Beschreibung |
+|-----|-----|--------------|
+| `settings` | AppSettings | Enthält defaultSetsPerExercise + **importedFile** (Base64 XLSX) |
+| `exercises` | Exercise[] | Liste aller Übungen (aus XLSX geparst) |
+| `sessions` | Session[] | Alle Trainingssessions mit Sets (wird in XLSX synchronisiert) |
+
+## Zentrale Funktionen (lib/utils.ts)
+
+### parseXLSX(arrayBuffer)
+- Liest XLSX-Datei
+- Extrahiert Übungen, Metadata, Sessions
+- Returns: `{ exercises, metadata, sessions }`
+
+### updateXLSXWithSessions(xlsxData, sessions, exercises)
+- Nimmt aktuelle XLSX-Daten (Base64)
+- Aktualisiert "Training History" Sheet mit sessions
+- Returns: neue XLSX-Daten (Base64)
+
+### base64ToArrayBuffer(base64)
+- Konvertiert Base64 → ArrayBuffer
+
+### arrayBufferToBase64(buffer)
+- Konvertiert ArrayBuffer → Base64
+
+## Synchronisation
+
+**Wann wird die XLSX aktualisiert?**
+1. Bei jedem Abschluss einer Übung (handleCompleteEntry)
+2. Bei jeder Änderung an Sets (handleUpdateEntry)
+3. Beim Löschen von Sets
+
+**Wie funktioniert die Sync?**
+```typescript
+syncSessionsToXLSX(updatedSessions) {
+  // Holt aktuelle XLSX aus settings
+  // Aktualisiert Training History Sheet
+  // Speichert zurück in settings.importedFile
+}
+```
+
+## Vorteile dieser Architektur
+
+✅ **Offline-fähig**: Alle Daten in useKV/localStorage
+✅ **Single Source of Truth**: XLSX im localStorage
+✅ **Persistenz**: Daten überleben Neuladen
+✅ **Export jederzeit**: Aktuelle XLSX kann exportiert werden
+✅ **Keine Duplikation**: Eine zentrale parseXLSX Funktion
+✅ **Automatisches Laden**: Beim Start wird XLSX automatisch geladen
+
+## Datenfluss-Diagramm
+
+```
+┌─────────────────────────────────────────────────┐
+│           useKV (localStorage)                  │
+│  ┌──────────────────────────────────────────┐  │
+│  │ settings.importedFile (Base64 XLSX)      │  │
+│  │  ← Single Source of Truth                │  │
+│  └──────────────────────────────────────────┘  │
+│                     ↕                           │
+│  ┌──────────────┐  ┌──────────────┐            │
+│  │  exercises   │  │   sessions   │            │
+│  │  (parsed)    │  │  (parsed +   │            │
+│  │              │  │   updates)   │            │
+│  └──────────────┘  └──────────────┘            │
+└─────────────────────────────────────────────────┘
+```
