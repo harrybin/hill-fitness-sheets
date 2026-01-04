@@ -24,14 +24,17 @@ export function ExerciseList({ exercises, currentSession, allSessions, onSelectE
     if (!allSessions || allSessions.length === 0) return undefined
     
     const today = new Date().toISOString().split('T')[0]
-    const previousSessions = allSessions
-      .filter(s => s.date !== today)
+    const previousSessions = [...allSessions]
+      .filter(s => s.date !== today && s.entries && s.entries.length > 0)
       .sort((a, b) => b.date.localeCompare(a.date))
     
     for (const session of previousSessions) {
       const entry = session.entries.find(e => e.exerciseId === exerciseId)
-      if (entry && entry.sets.length > 0) {
-        return entry.sets[0].weight
+      if (entry && entry.sets && entry.sets.length > 0) {
+        const weights = entry.sets.map(s => s.weight).filter(w => w > 0)
+        if (weights.length > 0) {
+          return Math.max(...weights)
+        }
       }
     }
     
@@ -103,9 +106,9 @@ export function ExerciseList({ exercises, currentSession, allSessions, onSelectE
                 )}
               </div>
               
-              {lastWeight !== undefined && (
+              {!isCompleted && lastWeight !== undefined && (
                 <div className="flex-shrink-0 text-right">
-                  <div className="text-sm text-foreground/70 font-mono font-semibold">
+                  <div className="text-base text-foreground font-mono font-bold">
                     {lastWeight}kg
                   </div>
                 </div>
