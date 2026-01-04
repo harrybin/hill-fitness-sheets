@@ -34,13 +34,9 @@ export function SessionHeader({ session, allSessions }: SessionHeaderProps) {
       <Calendar size={24} weight="bold" className="text-primary" />
       <div>
         <div className="text-base font-semibold text-foreground leading-tight">{today}</div>
-        <div className="text-xs text-foreground/70 leading-tight mt-0.5">
+        <div className="text-xs text-muted-foreground leading-tight mt-0.5">
           {lastTrainingDate ? `Letztes Training: ${lastTrainingDate}` : 'Neuer Eintrag'}
-          {completedCount > 0 && (
-            <span className="ml-2">
-              • {completedCount} {completedCount === 1 ? 'Übung' : 'Übungen'} absolviert
-            </span>
-          )}
+          {completedCount > 0 && ` • ${completedCount} ${completedCount === 1 ? 'Übung' : 'Übungen'} absolviert`}
         </div>
       </div>
     </div>
