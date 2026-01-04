@@ -1,14 +1,7 @@
 import { Exercise, Session } from "@/lib/types";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  CheckCircle,
-  Barbell,
-  XCircle,
-  ArrowUp,
-  ArrowDown,
-} from "@phosphor-icons/react";
-import { cn } from "@/lib/utils";
+import { Barbell } from "@phosphor-icons/react";
+import { CompletedExerciseCard } from "./CompletedExerciseCard";
+import { IncompleteExerciseCard } from "./IncompleteExerciseCard";
 
 interface ExerciseListProps {
   exercises: Exercise[];
@@ -87,125 +80,22 @@ export function ExerciseList({
         const isCompleted = !!entry;
         const lastWeight = getLastWeight(exercise.id);
 
-        return (
-          <Card
+        return isCompleted ? (
+          <CompletedExerciseCard
             key={exercise.id}
-            onClick={() => onSelectExercise(exercise)}
-            className={cn(
-              "p-4 cursor-pointer transition-all active:scale-[0.98]",
-              "hover:border-primary/50",
-              isCompleted && "bg-card/50 border-primary/30",
-              isOldSession && "bg-amber-950/20 border-amber-900/30"
-            )}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <h3 className="text-lg font-bold truncate">
-                    {exercise.name}
-                  </h3>
-                  {isCompleted &&
-                    (entry?.skipped ? (
-                      <>
-                        <XCircle
-                          size={20}
-                          weight="fill"
-                          className="text-red-500 shrink-0"
-                        />
-                        <Badge
-                          variant="outline"
-                          className="text-muted-foreground"
-                        >
-                          Übersprungen
-                        </Badge>
-                      </>
-                    ) : (
-                      <CheckCircle
-                        size={20}
-                        weight="fill"
-                        className="text-green-500 shrink-0"
-                      />
-                    ))}
-                </div>
-
-                {exercise.notes && (
-                  <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                    {exercise.notes}
-                  </p>
-                )}
-
-                {entry && !entry.skipped && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <span className="font-mono font-bold text-base">
-                      {entry.sets[0]?.weight}kg
-                    </span>
-                    <span className="text-muted-foreground">|</span>
-                    {entry.sets.map((set, idx) => (
-                      <div key={idx} className="flex items-center gap-2">
-                        <Badge variant="secondary" className="font-mono">
-                          Satz {set.setNumber}
-                        </Badge>
-                        <span className="font-mono font-bold text-base">
-                          {set.reps}
-                        </span>
-                      </div>
-                    ))}
-                    {exercise.suggestedWeight &&
-                      exercise.suggestedWeight !== entry.sets[0]?.weight && (
-                        <>
-                          <span className="text-muted-foreground">|</span>
-                          {exercise.suggestedWeight > entry.sets[0]?.weight ? (
-                            <ArrowUp
-                              size={18}
-                              weight="bold"
-                              className="text-orange-500 shrink-0"
-                            />
-                          ) : (
-                            <ArrowDown
-                              size={18}
-                              weight="bold"
-                              className="text-blue-500 shrink-0"
-                            />
-                          )}
-                          <span className="font-mono text-sm text-muted-foreground">
-                            {exercise.suggestedWeight}kg
-                          </span>
-                        </>
-                      )}
-                  </div>
-                )}
-              </div>
-
-              {!isCompleted && lastWeight !== undefined && (
-                <div className="shrink-0 text-right">
-                  <div className="text-base text-foreground font-mono font-bold">
-                    {lastWeight}kg
-                  </div>
-                  {exercise.suggestedWeight &&
-                    exercise.suggestedWeight !== lastWeight && (
-                      <div className="flex items-center justify-end gap-1 mt-1">
-                        {exercise.suggestedWeight > lastWeight ? (
-                          <ArrowUp
-                            size={16}
-                            weight="bold"
-                            className="text-orange-500"
-                          />
-                        ) : (
-                          <ArrowDown
-                            size={16}
-                            weight="bold"
-                            className="text-blue-500"
-                          />
-                        )}
-                        <span className="text-sm text-muted-foreground font-mono">
-                          {exercise.suggestedWeight}kg
-                        </span>
-                      </div>
-                    )}
-                </div>
-              )}
-            </div>
-          </Card>
+            exercise={exercise}
+            entry={entry}
+            isOldSession={isOldSession}
+            onSelect={onSelectExercise}
+          />
+        ) : (
+          <IncompleteExerciseCard
+            key={exercise.id}
+            exercise={exercise}
+            lastWeight={lastWeight}
+            isOldSession={isOldSession}
+            onSelect={onSelectExercise}
+          />
         );
       })}
     </div>
