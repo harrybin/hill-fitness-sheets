@@ -42,9 +42,20 @@ export function SessionHeader({ session, allSessions }: SessionHeaderProps) {
       <div>
         <div className="text-base font-semibold text-foreground leading-tight">{today}</div>
         <div className="text-xs text-foreground/70 leading-tight mt-0.5">
-          {completedCount} {completedCount === 1 ? 'Übung' : 'Übungen'} absolviert
-          {lastTrainingDate && (
-            <span className="ml-2">· Letztes Training: {lastTrainingDate}</span>
+          {completedCount === 0 ? (
+            <>
+              Neuer Eintrag
+              {lastTrainingDate && (
+                <span className="ml-2">· Letztes Training: {lastTrainingDate}</span>
+              )}
+            </>
+          ) : (
+            <>
+              {completedCount} {completedCount === 1 ? 'Übung' : 'Übungen'} absolviert
+              {lastTrainingDate && (
+                <span className="ml-2">· Letztes Training: {lastTrainingDate}</span>
+              )}
+            </>
           )}
         </div>
       </div>
