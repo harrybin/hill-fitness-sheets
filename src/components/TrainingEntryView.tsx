@@ -141,21 +141,21 @@ export function TrainingEntryView({
           <div className="flex items-center justify-between gap-2 mb-2">
             <Button
               variant="outline"
-              size="lg"
+              size="sm"
               onClick={onCancel}
-              className="h-12 px-4"
+              className="h-9 px-3"
             >
-              <ArrowLeft size={24} className="mr-2" />
+              <ArrowLeft size={18} className="mr-1" />
               Zurück
             </Button>
             {existingEntry && (
               <Button
                 variant="destructive"
-                size="lg"
+                size="sm"
                 onClick={handleDelete}
-                className="h-12 px-4"
+                className="h-9 w-9 p-0"
               >
-                <Trash size={24} weight="bold" />
+                <Trash size={18} weight="bold" />
               </Button>
             )}
           </div>
