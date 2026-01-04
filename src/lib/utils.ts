@@ -1,358 +1,447 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
-import * as XLSX from 'xlsx'
-import { Exercise, Session } from './types'
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+import * as XLSX from "xlsx";
+import { Exercise, Session } from "./types";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 export function base64ToArrayBuffer(base64: string): ArrayBuffer {
-  const binaryString = atob(base64)
-  const bytes = new Uint8Array(binaryString.length)
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
   for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i)
+    bytes[i] = binaryString.charCodeAt(i);
   }
-  return bytes.buffer
+  return bytes.buffer;
 }
 
 export function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer)
-  let binary = ''
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
   for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i])
+    binary += String.fromCharCode(bytes[i]);
   }
-  return btoa(binary)
+  return btoa(binary);
 }
 
 export function parseXLSX(arrayBuffer: ArrayBuffer): {
-  exercises: Exercise[]
+  exercises: Exercise[];
   metadata: {
-    trainingGoal?: string
-    legalNotice?: string
-    notes?: string
-  }
-  sessions: Session[]
+    trainingGoal?: string;
+    legalNotice?: string;
+    notes?: string;
+  };
+  sessions: Session[];
 } {
-  const workbook = XLSX.read(arrayBuffer, { type: 'array' })
-  
-  const sheetName = workbook.SheetNames.find(name =>
-    name.toLowerCase().includes('ubungen') ||
-    name.toLowerCase().includes('exercise')
-  ) || workbook.SheetNames[0]
-  
+  const workbook = XLSX.read(arrayBuffer, { type: "array" });
+
+  console.log("Available sheets:", workbook.SheetNames);
+
+  const sheetName =
+    workbook.SheetNames.find((name) => {
+      const lowerName = name
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      return lowerName.includes("ubungen") || lowerName.includes("exercise");
+    }) || workbook.SheetNames[0];
+
+  console.log("Selected sheet:", sheetName);
+
   if (!sheetName) {
-    throw new Error('Keine Übungsblatt gefunden')
+    throw new Error("Keine Übungsblatt gefunden");
   }
-  
-  const worksheet = workbook.Sheets[sheetName]
-  const data: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
-  
-  const exercises: Exercise[] = []
+
+  const worksheet = workbook.Sheets[sheetName];
+  const data: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+  console.log("First 10 rows of data:", data.slice(0, 10));
+
+  const exercises: Exercise[] = [];
   const metadata: {
-    trainingGoal?: string
-    legalNotice?: string
-    notes?: string
-  } = {}
-  
+    trainingGoal?: string;
+    legalNotice?: string;
+    notes?: string;
+  } = {};
+
   const ignoredKeywords = [
-    'trainingsziel',
-    'training goal',
-    'rechtliche hinweise',
-    'legal notice',
-    'hinweise',
-    'notizen',
-    'notes',
-    'bei bedarf',
-    'copyright'
-  ]
-  
+    "trainingsziel",
+    "training goal",
+    "rechtliche hinweise",
+    "legal notice",
+    "hinweise",
+    "notizen",
+    "notes",
+    "bei bedarf",
+    "copyright",
+  ];
+
   const isMetadataRow = (text: string): boolean => {
-    const lowerText = text.toLowerCase().trim()
-    return ignoredKeywords.some(keyword => lowerText.includes(keyword))
-  }
-  
-  let startIndex = 0
+    const lowerText = text.toLowerCase().trim();
+    return ignoredKeywords.some((keyword) => lowerText.includes(keyword));
+  };
+
+  let startIndex = 0;
   for (let i = 0; i < data.length; i++) {
-    const row = data[i]
-    
-    const secondCell = String(row[1] || '').toLowerCase().trim()
-    
-    if (secondCell === 'ubungen' || secondCell === 'exercises' || secondCell === 'übungen') {
-      startIndex = i + 1
-      break
+    const row = data[i];
+
+    const secondCell = String(row[1] || "")
+      .toLowerCase()
+      .trim();
+    const normalizedSecondCell = secondCell
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
+    if (
+      normalizedSecondCell === "ubungen" ||
+      normalizedSecondCell === "exercises" ||
+      secondCell === "übungen"
+    ) {
+      startIndex = i + 1;
+      break;
     }
-    
-    const cellBStr = String(row[1] || '').trim()
-    
+
+    const cellBStr = String(row[1] || "").trim();
+
     if (cellBStr && isMetadataRow(cellBStr)) {
-      const value = String(row[2] || '').trim()
-      const lowerCellB = cellBStr.toLowerCase()
-      
-      if (lowerCellB.includes('trainingsziel') || lowerCellB.includes('training goal')) {
-        metadata.trainingGoal = value
-      } else if (lowerCellB.includes('rechtliche') || lowerCellB.includes('legal')) {
-        metadata.legalNotice = value
-      } else if (lowerCellB.includes('hinweise') || lowerCellB.includes('notiz') || lowerCellB.includes('notes')) {
+      const value = String(row[2] || "").trim();
+      const lowerCellB = cellBStr.toLowerCase();
+
+      if (
+        lowerCellB.includes("trainingsziel") ||
+        lowerCellB.includes("training goal")
+      ) {
+        metadata.trainingGoal = value;
+      } else if (
+        lowerCellB.includes("rechtliche") ||
+        lowerCellB.includes("legal")
+      ) {
+        metadata.legalNotice = value;
+      } else if (
+        lowerCellB.includes("hinweise") ||
+        lowerCellB.includes("notiz") ||
+        lowerCellB.includes("notes")
+      ) {
         if (!metadata.legalNotice) {
-          metadata.notes = value
+          metadata.notes = value;
         }
       }
     }
   }
-  
+
+  console.log(
+    `Starting to parse exercises from row ${startIndex}, total rows: ${data.length}`
+  );
+
   for (let i = startIndex; i < data.length; i++) {
-    const row = data[i]
-    
-    if (!row || row.length === 0) continue
-    
-    const cellBStr = String(row[1] || '').trim()
-    
-    if (!cellBStr || cellBStr === '') continue
-    
-    if (isMetadataRow(cellBStr)) continue
-    
-    const exerciseName = cellBStr
-    const notes = String(row[2] || '').trim()
-    
+    const row = data[i];
+
+    if (!row || row.length === 0) {
+      console.log(`Row ${i}: Empty row, skipping`);
+      continue;
+    }
+
+    const cellBStr = String(row[1] || "").trim();
+
+    if (!cellBStr || cellBStr === "") {
+      console.log(`Row ${i}: Cell B is empty, skipping`);
+      continue;
+    }
+
+    if (isMetadataRow(cellBStr)) {
+      console.log(`Row ${i}: Metadata row (${cellBStr}), skipping`);
+      continue;
+    }
+
+    const exerciseName = cellBStr;
+    const notes = String(row[2] || "").trim();
+
+    console.log(
+      `Row ${i}: Adding exercise "${exerciseName}" with notes "${notes}"`
+    );
+
     exercises.push({
       id: `exercise-${i}`,
       name: exerciseName,
       notes: notes || undefined,
-      order: exercises.length
-    })
+      order: exercises.length,
+    });
   }
-  
-  console.log(`Parsed ${exercises.length} exercises from sheet "${sheetName}"`)
-  
-  const sessions: Session[] = []
-  
+
+  console.log(`Parsed ${exercises.length} exercises from sheet "${sheetName}"`);
+  console.log(
+    "Exercise names:",
+    exercises.map((e) => e.name)
+  );
+
+  const sessions: Session[] = [];
+
   const parseExcelDate = (value: any): string | null => {
-    if (!value) return null
-    
-    if (typeof value === 'string') {
-      const trimmed = value.trim()
+    if (!value) return null;
+
+    if (typeof value === "string") {
+      const trimmed = value.trim();
       if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-        return trimmed
+        return trimmed;
       }
-      
+
       if (/^\d{1,2}\.\d{1,2}\.\d{2,4}$/.test(trimmed)) {
-        const parts = trimmed.split('.')
-        let year = parts[2]
+        const parts = trimmed.split(".");
+        let year = parts[2];
         if (year.length === 2) {
-          year = '20' + year
+          year = "20" + year;
         }
-        const month = parts[1].padStart(2, '0')
-        const day = parts[0].padStart(2, '0')
-        return `${year}-${month}-${day}`
+        const month = parts[1].padStart(2, "0");
+        const day = parts[0].padStart(2, "0");
+        return `${year}-${month}-${day}`;
       }
-      
+
       if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(trimmed)) {
-        const parts = trimmed.split('/')
-        const month = parts[0].padStart(2, '0')
-        const day = parts[1].padStart(2, '0')
-        let year = parts[2]
+        const parts = trimmed.split("/");
+        const month = parts[0].padStart(2, "0");
+        const day = parts[1].padStart(2, "0");
+        let year = parts[2];
         if (year.length === 2) {
-          year = '20' + year
+          year = "20" + year;
         }
-        return `${year}-${month}-${day}`
+        return `${year}-${month}-${day}`;
       }
     }
-    
-    if (typeof value === 'number') {
-      const excelEpoch = new Date(1899, 11, 30)
-      const date = new Date(excelEpoch.getTime() + value * 86400000)
-      const year = date.getFullYear()
-      const month = String(date.getMonth() + 1).padStart(2, '0')
-      const day = String(date.getDate()).padStart(2, '0')
-      return `${year}-${month}-${day}`
+
+    if (typeof value === "number") {
+      const excelEpoch = new Date(1899, 11, 30);
+      const date = new Date(excelEpoch.getTime() + value * 86400000);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
     }
-    
+
     try {
-      const date = new Date(value)
+      const date = new Date(value);
       if (!isNaN(date.getTime())) {
-        const year = date.getFullYear()
-        const month = String(date.getMonth() + 1).padStart(2, '0')
-        const day = String(date.getDate()).padStart(2, '0')
-        return `${year}-${month}-${day}`
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
       }
     } catch (e) {
-      return null
+      return null;
     }
-    
-    return null
-  }
-  
-  let dateRowIndex = -1
+
+    return null;
+  };
+
+  let dateRowIndex = -1;
   for (let i = 0; i < Math.min(data.length, 15); i++) {
-    const row = data[i]
-    const cellBStr = String(row[1] || '').toLowerCase().trim()
-    if (cellBStr.includes('datum')) {
-      dateRowIndex = i
-      break
+    const row = data[i];
+    const cellBStr = String(row[1] || "")
+      .toLowerCase()
+      .trim();
+    if (cellBStr.includes("datum")) {
+      dateRowIndex = i;
+      break;
     }
   }
-  
+
   if (dateRowIndex >= 0) {
-    const dateRow = data[dateRowIndex]
-    const trainingDates: { whCol: number, kgCol: number, date: string }[] = []
-    
-    console.log('Scanning date row:', dateRow)
-    
+    const dateRow = data[dateRowIndex];
+    const trainingDates: { whCol: number; kgCol: number; date: string }[] = [];
+
+    console.log("Scanning date row:", dateRow);
+
     for (let colIdx = 3; colIdx < dateRow.length; colIdx++) {
-      const cellValue = dateRow[colIdx]
-      
-      if (!cellValue) continue
-      
-      const cellStr = String(cellValue).trim()
-      if (cellStr === '' || cellStr === '/' || cellStr.toLowerCase() === 'wh' || cellStr.toLowerCase() === 'kg') {
-        continue
+      const cellValue = dateRow[colIdx];
+
+      if (!cellValue) continue;
+
+      const cellStr = String(cellValue).trim();
+      if (
+        cellStr === "" ||
+        cellStr === "/" ||
+        cellStr.toLowerCase() === "wh" ||
+        cellStr.toLowerCase() === "kg"
+      ) {
+        continue;
       }
-      
-      const parsedDate = parseExcelDate(cellValue)
+
+      const parsedDate = parseExcelDate(cellValue);
       if (parsedDate) {
-        const whCol = colIdx
-        const kgCol = colIdx + 1
-        trainingDates.push({ whCol, kgCol, date: parsedDate })
-        console.log(`Found training date "${cellValue}" at column ${colIdx}: ${parsedDate}`)
-        colIdx++
+        const whCol = colIdx;
+        const kgCol = colIdx + 1;
+        trainingDates.push({ whCol, kgCol, date: parsedDate });
+        console.log(
+          `Found training date "${cellValue}" at column ${colIdx}: ${parsedDate}`
+        );
+        colIdx++;
       }
     }
-    
+
     if (trainingDates.length > 0) {
-      console.log(`Found ${trainingDates.length} training dates in header`)
-      
+      console.log(`Found ${trainingDates.length} training dates in header`);
+
       for (let exerciseIdx = 0; exerciseIdx < exercises.length; exerciseIdx++) {
-        const exercise = exercises[exerciseIdx]
-        const exerciseRowIdx = startIndex + exerciseIdx
-        
-        if (exerciseRowIdx >= data.length) continue
-        const exerciseRow = data[exerciseRowIdx]
-        
+        const exercise = exercises[exerciseIdx];
+        const exerciseRowIdx = startIndex + exerciseIdx;
+
+        if (exerciseRowIdx >= data.length) continue;
+        const exerciseRow = data[exerciseRowIdx];
+
         for (const { whCol, kgCol, date } of trainingDates) {
-          const repsValue = exerciseRow[whCol]
-          const weightValue = exerciseRow[kgCol]
-          
-          if (!weightValue && !repsValue) continue
-          
-          const repsStr = String(repsValue || '').trim()
-          const weightStr = String(weightValue || '').trim()
-          
-          if (repsStr === '/' || weightStr === '/' || repsStr === '' || weightStr === '') continue
-          
-          const reps = parseInt(repsStr)
-          const weight = parseFloat(weightStr)
-          
-          if (isNaN(weight) || weight === 0 || isNaN(reps) || reps === 0) continue
-          
-          let session = sessions.find(s => s.date === date)
+          const repsValue = exerciseRow[whCol];
+          const weightValue = exerciseRow[kgCol];
+
+          if (!weightValue && !repsValue) continue;
+
+          const repsStr = String(repsValue || "").trim();
+          const weightStr = String(weightValue || "").trim();
+
+          if (
+            repsStr === "/" ||
+            weightStr === "/" ||
+            repsStr === "" ||
+            weightStr === ""
+          )
+            continue;
+
+          const reps = parseInt(repsStr);
+          const weight = parseFloat(weightStr);
+
+          if (isNaN(weight) || weight === 0 || isNaN(reps) || reps === 0)
+            continue;
+
+          let session = sessions.find((s) => s.date === date);
           if (!session) {
-            session = { date, entries: [] }
-            sessions.push(session)
+            session = { date, entries: [] };
+            sessions.push(session);
           }
-          
-          let entry = session.entries.find(e => e.exerciseId === exercise.id)
+
+          let entry = session.entries.find((e) => e.exerciseId === exercise.id);
           if (!entry) {
             entry = {
               id: `entry-${date}-${exercise.id}`,
               exerciseId: exercise.id,
               date: date,
-              sets: []
-            }
-            session.entries.push(entry)
+              sets: [],
+            };
+            session.entries.push(entry);
           }
-          
+
           entry.sets.push({
             setNumber: entry.sets.length + 1,
             weight,
-            reps
-          })
+            reps,
+          });
         }
       }
-      
-      console.log(`Successfully imported ${sessions.length} sessions from exercise sheet`)
+
+      console.log(
+        `Successfully imported ${sessions.length} sessions from exercise sheet`
+      );
       if (sessions.length > 0) {
-        console.log('Session dates:', sessions.map(s => s.date).sort())
-        const totalEntries = sessions.reduce((sum, s) => sum + s.entries.length, 0)
-        const totalSets = sessions.reduce((sum, s) => 
-          sum + s.entries.reduce((eSum, e) => eSum + e.sets.length, 0), 0
-        )
-        console.log(`Total entries: ${totalEntries}, Total sets: ${totalSets}`)
+        console.log("Session dates:", sessions.map((s) => s.date).sort());
+        const totalEntries = sessions.reduce(
+          (sum, s) => sum + s.entries.length,
+          0
+        );
+        const totalSets = sessions.reduce(
+          (sum, s) =>
+            sum + s.entries.reduce((eSum, e) => eSum + e.sets.length, 0),
+          0
+        );
+        console.log(`Total entries: ${totalEntries}, Total sets: ${totalSets}`);
       }
     }
   }
-  
-  const historySheetName = workbook.SheetNames.find(name =>
-    name.toLowerCase().includes('history') ||
-    name.toLowerCase().includes('historie')
-  )
-  
+
+  const historySheetName = workbook.SheetNames.find(
+    (name) =>
+      name.toLowerCase().includes("history") ||
+      name.toLowerCase().includes("historie")
+  );
+
   if (historySheetName) {
     try {
-      const historyData: any[][] = XLSX.utils.sheet_to_json(workbook.Sheets[historySheetName], { header: 1 })
-      
-      console.log(`Parsing ${historyData.length - 1} history rows from sheet "${historySheetName}"`)
-      
+      const historyData: any[][] = XLSX.utils.sheet_to_json(
+        workbook.Sheets[historySheetName],
+        { header: 1 }
+      );
+
+      console.log(
+        `Parsing ${
+          historyData.length - 1
+        } history rows from sheet "${historySheetName}"`
+      );
+
       for (let i = 1; i < historyData.length; i++) {
-        const row = historyData[i]
-        if (!row || row.length < 4) continue
-        
-        const dateStr = parseExcelDate(row[0])
+        const row = historyData[i];
+        if (!row || row.length < 4) continue;
+
+        const dateStr = parseExcelDate(row[0]);
         if (!dateStr) {
-          console.warn(`Row ${i}: Invalid date format:`, row[0])
-          continue
+          console.warn(`Row ${i}: Invalid date format:`, row[0]);
+          continue;
         }
-        
-        const exerciseName = String(row[1] || '').trim()
-        const weight = parseFloat(String(row[2] || '0'))
-        const reps = parseInt(String(row[3] || '0'))
-        const setNumber = parseInt(String(row[4] || '1'))
-        
+
+        const exerciseName = String(row[1] || "").trim();
+        const weight = parseFloat(String(row[2] || "0"));
+        const reps = parseInt(String(row[3] || "0"));
+        const setNumber = parseInt(String(row[4] || "1"));
+
         if (!exerciseName || isNaN(weight) || isNaN(reps)) {
-          console.warn(`Row ${i}: Invalid data:`, { exerciseName, weight, reps })
-          continue
+          console.warn(`Row ${i}: Invalid data:`, {
+            exerciseName,
+            weight,
+            reps,
+          });
+          continue;
         }
-        
-        const exercise = exercises.find(ex => 
-          ex.name.toLowerCase() === exerciseName.toLowerCase()
-        )
-        
+
+        const exercise = exercises.find(
+          (ex) => ex.name.toLowerCase() === exerciseName.toLowerCase()
+        );
+
         if (!exercise) {
-          console.warn(`Row ${i}: Exercise "${exerciseName}" not found in exercise list`)
-          continue
+          console.warn(
+            `Row ${i}: Exercise "${exerciseName}" not found in exercise list`
+          );
+          continue;
         }
-        
-        let session = sessions.find(s => s.date === dateStr)
+
+        let session = sessions.find((s) => s.date === dateStr);
         if (!session) {
-          session = { date: dateStr, entries: [] }
-          sessions.push(session)
+          session = { date: dateStr, entries: [] };
+          sessions.push(session);
         }
-        
-        let entry = session.entries.find(e => e.exerciseId === exercise.id)
+
+        let entry = session.entries.find((e) => e.exerciseId === exercise.id);
         if (!entry) {
           entry = {
             id: `entry-${dateStr}-${exercise.id}`,
             exerciseId: exercise.id,
             date: dateStr,
-            sets: []
-          }
-          session.entries.push(entry)
+            sets: [],
+          };
+          session.entries.push(entry);
         }
-        
+
         entry.sets.push({
           setNumber: setNumber || entry.sets.length + 1,
           weight,
-          reps
-        })
+          reps,
+        });
       }
-      
-      console.log(`Additionally imported ${sessions.length} total sessions including history sheet`)
+
+      console.log(
+        `Additionally imported ${sessions.length} total sessions including history sheet`
+      );
     } catch (error) {
-      console.error('Error parsing history:', error)
+      console.error("Error parsing history:", error);
     }
   }
-  
-  return { exercises, metadata, sessions }
+
+  return { exercises, metadata, sessions };
 }
 
 export function updateXLSXWithSessions(
@@ -361,47 +450,56 @@ export function updateXLSXWithSessions(
   exercises: Exercise[]
 ): string {
   try {
-    const arrayBuffer = base64ToArrayBuffer(base64Data)
-    const workbook = XLSX.read(arrayBuffer, { type: 'array' })
-    
-    const historySheetName = 'History'
+    const arrayBuffer = base64ToArrayBuffer(base64Data);
+    const workbook = XLSX.read(arrayBuffer, { type: "array" });
+
+    const historySheetName = "History";
     if (workbook.SheetNames.includes(historySheetName)) {
-      delete workbook.Sheets[historySheetName]
-      workbook.SheetNames = workbook.SheetNames.filter(name => name !== historySheetName)
+      delete workbook.Sheets[historySheetName];
+      workbook.SheetNames = workbook.SheetNames.filter(
+        (name) => name !== historySheetName
+      );
     }
-    
+
     const historyData: any[][] = [
-      ['Date', 'Exercise', 'Weight', 'Reps', 'Set']
-    ]
-    
-    const sortedSessions = [...sessions].sort((a, b) => a.date.localeCompare(b.date))
-    
-    sortedSessions.forEach(session => {
-      session.entries.forEach(entry => {
-        const exercise = exercises.find(ex => ex.id === entry.exerciseId)
-        if (!exercise) return
-        
-        const sortedSets = [...entry.sets].sort((a, b) => a.setNumber - b.setNumber)
-        
-        sortedSets.forEach(set => {
+      ["Date", "Exercise", "Weight", "Reps", "Set"],
+    ];
+
+    const sortedSessions = [...sessions].sort((a, b) =>
+      a.date.localeCompare(b.date)
+    );
+
+    sortedSessions.forEach((session) => {
+      session.entries.forEach((entry) => {
+        const exercise = exercises.find((ex) => ex.id === entry.exerciseId);
+        if (!exercise) return;
+
+        const sortedSets = [...entry.sets].sort(
+          (a, b) => a.setNumber - b.setNumber
+        );
+
+        sortedSets.forEach((set) => {
           historyData.push([
             session.date,
             exercise.name,
             set.weight,
             set.reps,
-            set.setNumber
-          ])
-        })
-      })
-    })
-    
-    const newSheet = XLSX.utils.aoa_to_sheet(historyData)
-    XLSX.utils.book_append_sheet(workbook, newSheet, historySheetName)
-    
-    const updatedBuffer = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' })
-    return arrayBufferToBase64(updatedBuffer)
+            set.setNumber,
+          ]);
+        });
+      });
+    });
+
+    const newSheet = XLSX.utils.aoa_to_sheet(historyData);
+    XLSX.utils.book_append_sheet(workbook, newSheet, historySheetName);
+
+    const updatedBuffer = XLSX.write(workbook, {
+      type: "array",
+      bookType: "xlsx",
+    });
+    return arrayBufferToBase64(updatedBuffer);
   } catch (error) {
-    console.error('Error updating XLSX:', error)
-    return base64Data
+    console.error("Error updating XLSX:", error);
+    return base64Data;
   }
 }

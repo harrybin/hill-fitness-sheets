@@ -139,3 +139,65 @@ npm run kill         # Kill process on port 5000 (Mac/Linux)
 3. **German language defaults**: UI strings use German; detect English in sheet imports
 4. **Type safety**: Use existing types from [src/lib/types.ts](src/lib/types.ts); extend as needed
 5. **Session consistency**: Always check/create today's session before modifying entries
+
+## Debugging & Testing with Browser Tools
+
+### Using Simple Browser for Quick Previews
+
+When debugging UI issues or verifying changes:
+
+1. **Start dev server** if not running: Use the "🚀 dev" task (runs on port 5000)
+2. **Open Simple Browser**: Use `open_simple_browser` tool with URL `http://localhost:5000`
+3. **Advantages**: Fast preview without leaving VS Code; ideal for quick visual checks
+
+### Using Playwright MCP for Interactive Debugging
+
+For complex interactions, testing user flows, or investigating runtime issues:
+
+**Initial Setup**:
+
+- `browser_navigate` - Navigate to `http://localhost:5000`
+- `browser_snapshot` - Capture accessibility tree (better than screenshots for actions)
+- `browser_console_messages` - Check for console errors/warnings
+- `browser_network_requests` - Inspect API calls, XLSX downloads, Google Sheets requests
+
+**Interactive Testing**:
+
+- `browser_click` - Click buttons, exercise cards, settings icons (requires element ref from snapshot)
+- `browser_type` - Fill input fields (exercise names, Google Sheet ID, etc.)
+- `browser_fill_form` - Fill multiple form fields at once
+- `browser_select_option` - Interact with select dropdowns
+- `browser_wait_for` - Wait for dynamic content (e.g., after sync operations)
+
+**Debugging Workflows**:
+
+1. **UI Verification**: snapshot → click/type → snapshot → verify changes
+2. **Error Investigation**: console_messages → network_requests → evaluate JavaScript
+3. **Sync Testing**: navigate → fill_form (sheet ID) → click (sync button) → wait_for → network_requests
+4. **Mobile Responsiveness**: `browser_resize` to test different viewport sizes (e.g., 375x667 for mobile)
+
+**Best Practices**:
+
+- Always call `browser_snapshot` before interactive commands to get current element refs
+- Use `browser_console_messages` and `browser_network_requests` to diagnose failures
+- For screenshot documentation: `browser_take_screenshot` with filename parameter
+- Handle dialogs with `browser_handle_dialog` (OAuth popups, alerts)
+- Use `browser_evaluate` to inspect localStorage state or run custom JS
+
+**Example Debug Flow**:
+
+```
+1. browser_navigate → http://localhost:5000
+2. browser_snapshot → Identify exercise list, settings button
+3. browser_console_messages → Check for JavaScript errors
+4. browser_click → Open settings (using ref from snapshot)
+5. browser_type → Enter Google Sheet ID
+6. browser_click → Save settings
+7. browser_network_requests → Verify Google Sheets API call
+8. browser_console_messages → Confirm no errors
+```
+
+### When to Use Each Tool
+
+- **Simple Browser**: Quick visual checks, CSS/layout verification, rapid iteration
+- **Playwright MCP**: Multi-step user flows, debugging sync issues, testing offline functionality, verifying touch targets, investigating console errors or network failures
