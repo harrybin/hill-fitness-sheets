@@ -8,7 +8,7 @@ import {
 } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { SetInput } from "@/components/SetInput";
-import { ArrowLeft, Check } from "@phosphor-icons/react";
+import { ArrowLeft, Check, Trash } from "@phosphor-icons/react";
 
 interface TrainingEntryViewProps {
   exercise: Exercise;
@@ -84,6 +84,20 @@ export function TrainingEntryView({
     };
 
     onComplete(entry);
+  };
+
+  const handleDelete = () => {
+    if (!existingEntry) return;
+
+    const entry: TrainingEntry = {
+      id: existingEntry.id,
+      exerciseId: exercise.id,
+      date: new Date().toISOString().split("T")[0],
+      sets: [],
+    };
+
+    onUpdate(entry);
+    onCancel();
   };
 
   const adjustWeight = (delta: number) => {
@@ -200,14 +214,26 @@ export function TrainingEntryView({
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 p-3 bg-background border-t border-border">
-        <Button
-          size="lg"
-          className="w-full h-24 text-lg font-bold"
-          onClick={handleComplete}
-        >
-          <Check size={24} weight="bold" className="mr-2" />
-          Übung abschließen
-        </Button>
+        <div className="flex gap-3">
+          {existingEntry && (
+            <Button
+              size="lg"
+              variant="destructive"
+              className="h-24 px-6"
+              onClick={handleDelete}
+            >
+              <Trash size={24} weight="bold" />
+            </Button>
+          )}
+          <Button
+            size="lg"
+            className="flex-1 h-24 text-lg font-bold"
+            onClick={handleComplete}
+          >
+            <Check size={24} weight="bold" className="mr-2" />
+            Übung abschließen
+          </Button>
+        </div>
       </div>
     </div>
   );
