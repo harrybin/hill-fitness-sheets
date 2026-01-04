@@ -103,9 +103,9 @@ export function ExerciseList({ exercises, currentSession, allSessions, onSelectE
                 )}
               </div>
               
-              {!isCompleted && lastWeight !== undefined && (
+              {lastWeight !== undefined && (
                 <div className="flex-shrink-0 text-right">
-                  <div className="text-sm text-muted-foreground font-mono">
+                  <div className="text-sm text-foreground/70 font-mono font-semibold">
                     {lastWeight}kg
                   </div>
                 </div>
