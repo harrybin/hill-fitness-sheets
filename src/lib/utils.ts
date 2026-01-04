@@ -1,83 +1,83 @@
 import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import * as XLSX from 'xlsx'
 import * as XLSX from 'xlsx'
 import { Exercise, Session, AppSettings } from './types'
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+export function base64ToArrayB
 }
 
 export function base64ToArrayBuffer(base64: string): ArrayBuffer {
-  const binaryString = atob(base64)
-  const bytes = new Uint8Array(binaryString.length)
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i)
-  }
-  return bytes.buffer
-}
-
-export function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer)
   let binary = ''
-  for (let i = 0; i < bytes.length; i++) {
     binary += String.fromCharCode(bytes[i])
-  }
   return btoa(binary)
-}
 
-export function parseXLSX(arrayBuffer: ArrayBuffer): { 
-  exercises: Exercise[]
-  metadata: Partial<AppSettings>
+  e
   sessions: Session[]
-} {
-  const workbook = XLSX.read(arrayBuffer, { type: 'array' })
-  
-  const sheetName = workbook.SheetNames.find(name => 
-    name.toLowerCase().includes('übung') || 
+ 
+
     name.toLowerCase().includes('exercise') ||
-    name.toLowerCase().includes('muskel')
   ) || workbook.SheetNames[0]
-  
-  if (!sheetName) {
-    throw new Error('Keine Arbeitsblätter in der Datei gefunden')
+  if (!sheetName)
   }
+  const worksheet = workbook.Sheets[sheetNa
   
-  const worksheet = workbook.Sheets[sheetName]
-  const data = XLSX.utils.sheet_to_json<any>(worksheet, { header: 1 })
+    throw new Error('
+ 
+
   
-  if (data.length === 0) {
-    throw new Error('Die Datei enthält keine Daten')
-  }
+    'trainingsziel', 't
+    'bei bedarf', 'copyright', '
   
-  const exercises: Exercise[] = []
-  const metadata: Partial<AppSettings> = {}
-  let headerRowIndex = -1
-  
-  const metadataKeywords = [
-    'trainingsziel', 'training goal', 'ziel',
-    'rechtliche hinweise', 'legal notice', 'hinweise', 'rechtlich',
-    'bei bedarf', 'copyright', '©',
-  ]
-  
-  const isMetadataRow = (text: string): boolean => {
-    const normalized = text.toLowerCase().trim()
-    if (normalized.length === 0) return true
+   
     
-    return metadataKeywords.some(keyword => 
-      normalized === keyword || 
-      normalized.startsWith(keyword + ':') ||
+  
       normalized.startsWith(keyword + ' ')
-    )
   }
-  
-  for (let i = 0; i < Math.min(data.length, 20); i++) {
-    const row = data[i]
+  for (let i = 0; i < Math.min(data.length, 20
     if (!row) continue
+    const firstCell = String(
+  
+      (firstCell.in
+      (firstCell === 'nr' && (secondCell === 'übungen' || secondC
+   
+  
+    if (firstCell.includes('trainingsziel') ||
+    } else if (firstCell.includes('rechtliche hinweise') || firstCell.
+  
+    }
+  
+  
+  
     
-    const firstCell = String(row[0] || '').toLowerCase().trim()
-    const secondCell = String(row[1] || '').toLowerCase().trim()
+    const cellB = row[1]
     
-    if (
+  
+    
+    const hasEmptyCellA = cellAStr === ''
+    let exerciseName: string = ''
+    
+   
+  
+      notes = cellCStr !== '' ? cellCStr : undefined
+      exerciseName = cellAStr
+    }
+    
+      exerciseName.length > 0 && 
+      exerciseName.toLowerCase()
+    ) {
+        id: `exercise-${Date.now()}-${i}-$
+     
+   
+  
+  const historySheetName = workbook.SheetNames.find(nam
+    name.toLowerCase().
+  )
+  le
+  if (historySheetName) {
+    const historyData = XLSX.utils.sheet_to_json<any>(historyWor
+    
+      
       (firstCell.includes('nr') && secondCell.includes('übung')) ||
       (firstCell.includes('number') && secondCell.includes('exercise')) ||
       (firstCell === 'nr' && (secondCell === 'übungen' || secondCell === 'übung'))
@@ -158,33 +158,33 @@ export function parseXLSX(arrayBuffer: ArrayBuffer): {
       const sessionsMap = new Map<string, Session>()
       
       for (let i = 1; i < historyData.length; i++) {
-        const row = historyData[i]
+    const wbout = XLSX.write(workb
         if (!row || row.length < 5) continue
-        
+    cons
         const date = String(row[0] || '').trim()
-        const exerciseName = String(row[1] || '').trim()
+}
         const setNumber = Number(row[2])
         const weight = Number(row[3])
         const reps = Number(row[4])
-        
+
         if (!date || !exerciseName || isNaN(setNumber) || isNaN(weight) || isNaN(reps)) continue
-        
+
         const exercise = exercises.find(e => e.name === exerciseName)
         if (!exercise) continue
         
         if (!sessionsMap.has(date)) {
           sessionsMap.set(date, { date, entries: [] })
-        }
+
         
-        const session = sessionsMap.get(date)!
+
         let entry = session.entries.find(e => e.exerciseId === exercise.id)
-        
+
         if (!entry) {
-          entry = {
+
             id: `${exercise.id}-${date}`,
-            exerciseId: exercise.id,
+
             date: date,
-            sets: []
+
           }
           session.entries.push(entry)
         }
@@ -192,30 +192,30 @@ export function parseXLSX(arrayBuffer: ArrayBuffer): {
         entry.sets.push({ setNumber, weight, reps })
       }
       
-      sessions = Array.from(sessionsMap.values())
+
     }
   }
-  
-  return { exercises, metadata, sessions }
+
+
 }
 
 export function updateXLSXWithSessions(
-  xlsxData: string,
+
   sessions: Session[],
   exercises: Exercise[]
 ): string {
-  try {
+
     const arrayBuffer = base64ToArrayBuffer(xlsxData)
     const workbook = XLSX.read(arrayBuffer, { type: 'array' })
-    
+
     const historySheetName = 'Training History'
     if (workbook.SheetNames.includes(historySheetName)) {
       delete workbook.Sheets[historySheetName]
       workbook.SheetNames = workbook.SheetNames.filter(name => name !== historySheetName)
-    }
-    
+
+
     const historyData: any[][] = [['Datum', 'Übung', 'Satz', 'Gewicht (kg)', 'Wiederholungen']]
-    
+
     sessions
       .sort((a, b) => b.date.localeCompare(a.date))
       .forEach(session => {
@@ -226,22 +226,22 @@ export function updateXLSXWithSessions(
           entry.sets.forEach(set => {
             historyData.push([
               session.date,
-              exerciseName,
+
               set.setNumber,
-              set.weight,
+
               set.reps
             ])
           })
-        })
+
       })
-    
+
     const historyWorksheet = XLSX.utils.aoa_to_sheet(historyData)
     XLSX.utils.book_append_sheet(workbook, historyWorksheet, historySheetName)
     
     const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })
     return arrayBufferToBase64(wbout)
-  } catch (error) {
+
     console.error('Failed to update XLSX:', error)
-    return xlsxData
+
   }
-}
+
