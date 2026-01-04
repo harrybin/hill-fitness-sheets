@@ -17,9 +17,11 @@ function App() {
     null
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const today = new Date().toISOString().split("T")[0];
-  const currentSession = sessions.find((s) => s.date === today);
+  const viewDate = selectedDate || today;
+  const currentSession = sessions.find((s) => s.date === viewDate);
 
   const handleCompleteEntry = (entry: any) => {
     completeEntry(entry);
@@ -37,7 +39,15 @@ function App() {
       <div className="max-w-2xl mx-auto bg-card border border-border rounded-lg shadow-lg overflow-hidden">
         <div className="sticky top-0 z-10 bg-card border-b border-border">
           <div className="flex items-center justify-between p-3">
-            <SessionHeader session={currentSession} allSessions={sessions} />
+            <SessionHeader
+              session={currentSession}
+              allSessions={sessions}
+              selectedDate={viewDate}
+              onSelectSession={(date) => {
+                setSelectedDate(date);
+                setSelectedExercise(null);
+              }}
+            />
             <Button
               variant="outline"
               size="icon"
@@ -66,6 +76,7 @@ function App() {
               currentSession={currentSession}
               allSessions={sessions}
               onSelectExercise={setSelectedExercise}
+              selectedDate={viewDate}
             />
           )}
         </div>

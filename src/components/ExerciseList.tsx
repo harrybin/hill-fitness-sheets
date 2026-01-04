@@ -9,6 +9,7 @@ interface ExerciseListProps {
   currentSession?: Session;
   allSessions?: Session[];
   onSelectExercise: (exercise: Exercise) => void;
+  selectedDate?: string;
 }
 
 export function ExerciseList({
@@ -16,7 +17,11 @@ export function ExerciseList({
   currentSession,
   allSessions,
   onSelectExercise,
+  selectedDate,
 }: ExerciseListProps) {
+  const todayDateString = new Date().toISOString().split("T")[0];
+  const isOldSession =
+    selectedDate && selectedDate.replace(" ?", "").trim() !== todayDateString;
   const getExerciseStatus = (exerciseId: string) => {
     const entry = currentSession?.entries.find(
       (e) => e.exerciseId === exerciseId
@@ -83,7 +88,8 @@ export function ExerciseList({
             className={cn(
               "p-4 cursor-pointer transition-all active:scale-[0.98]",
               "hover:border-primary/50",
-              isCompleted && "bg-card/50 border-primary/30"
+              isCompleted && "bg-card/50 border-primary/30",
+              isOldSession && "bg-amber-950/20 border-amber-900/30"
             )}
           >
             <div className="flex items-start justify-between gap-4">
