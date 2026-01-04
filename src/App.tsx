@@ -9,6 +9,7 @@ import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 import { Toaster } from "@/components/ui/sonner";
 import { Gear } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 function App() {
   const {
@@ -97,22 +98,18 @@ function App() {
 
       <footer className="max-w-2xl mx-auto mt-4 px-4 pb-4 text-xs text-muted-foreground">
         <div className="flex gap-4">
-          <a
-            href="/DATENSCHUTZ.md"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            to="/DATENSCHUTZ.md"
             className="hover:text-foreground transition-colors underline"
           >
             Datenschutz
-          </a>
-          <a
-            href="/NUTZUNGSBEDINGUNGEN.md"
-            target="_blank"
-            rel="noopener noreferrer"
+          </Link>
+          <Link
+            to="/NUTZUNGSBEDINGUNGEN.md"
             className="hover:text-foreground transition-colors underline"
           >
             Nutzungsbedingungen
-          </a>
+          </Link>
         </div>
       </footer>
     </div>
