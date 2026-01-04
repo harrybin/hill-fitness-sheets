@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { parseXLSX, updateXLSXWithSessions, exportXLSXWithFormatting } from "../utils";
+import {
+  parseXLSX,
+  updateXLSXWithSessions,
+  exportXLSXWithFormatting,
+} from "../utils";
 import * as XLSX from "xlsx";
 import { Exercise, Session } from "../types";
 
@@ -27,7 +31,10 @@ describe("CRITICAL: Merged Cell Handling", () => {
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.aoa_to_sheet(data);
     XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-    const arrayBuffer = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
+    const arrayBuffer = XLSX.write(workbook, {
+      type: "array",
+      bookType: "xlsx",
+    });
 
     const result = parseXLSX(arrayBuffer);
 
@@ -70,7 +77,10 @@ describe("CRITICAL: Merged Cell Handling", () => {
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.aoa_to_sheet(data);
     XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-    const arrayBuffer = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
+    const arrayBuffer = XLSX.write(workbook, {
+      type: "array",
+      bookType: "xlsx",
+    });
 
     const result = parseXLSX(arrayBuffer);
 
@@ -102,7 +112,10 @@ describe("CRITICAL: Merged Cell Handling", () => {
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.aoa_to_sheet(data);
     XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-    const arrayBuffer = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
+    const arrayBuffer = XLSX.write(workbook, {
+      type: "array",
+      bookType: "xlsx",
+    });
 
     const result = parseXLSX(arrayBuffer);
 
@@ -137,7 +150,10 @@ describe("CRITICAL: Merged Cell Handling", () => {
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.aoa_to_sheet(data);
     XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-    const arrayBuffer = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
+    const arrayBuffer = XLSX.write(workbook, {
+      type: "array",
+      bookType: "xlsx",
+    });
 
     const result = parseXLSX(arrayBuffer);
 
@@ -202,7 +218,10 @@ describe("Multi-Sheet Session Import", () => {
     const sheet2 = XLSX.utils.aoa_to_sheet(data2);
     XLSX.utils.book_append_sheet(workbook, sheet2, "Einheit 9-16");
 
-    const arrayBuffer = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
+    const arrayBuffer = XLSX.write(workbook, {
+      type: "array",
+      bookType: "xlsx",
+    });
     const result = parseXLSX(arrayBuffer);
 
     // Should have 3 sessions total (2 from sheet 1, 1 from sheet 2)
@@ -239,7 +258,10 @@ describe("Multi-Sheet Session Import", () => {
     const sheet2 = XLSX.utils.aoa_to_sheet(data2);
     XLSX.utils.book_append_sheet(workbook, sheet2, "Sheet2");
 
-    const arrayBuffer = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
+    const arrayBuffer = XLSX.write(workbook, {
+      type: "array",
+      bookType: "xlsx",
+    });
     const result = parseXLSX(arrayBuffer);
 
     // Should only have 2 exercises (not duplicated)
@@ -295,7 +317,10 @@ describe("Multi-Sheet Session Import", () => {
     const sheet2 = XLSX.utils.aoa_to_sheet(data2);
     XLSX.utils.book_append_sheet(workbook, sheet2, "Sheet2");
 
-    const arrayBuffer = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
+    const arrayBuffer = XLSX.write(workbook, {
+      type: "array",
+      bookType: "xlsx",
+    });
     const result = parseXLSX(arrayBuffer);
 
     // Should have 1 session with 2 exercises
@@ -307,7 +332,10 @@ describe("Multi-Sheet Session Import", () => {
     expect(session.entries.length).toBeGreaterThanOrEqual(1);
 
     // Should have sets from both exercises (non-zero)
-    const totalSets = session.entries.reduce((sum, e) => sum + e.sets.length, 0);
+    const totalSets = session.entries.reduce(
+      (sum, e) => sum + e.sets.length,
+      0
+    );
     expect(totalSets).toBeGreaterThan(0);
   });
 });
@@ -335,7 +363,10 @@ describe("Set Data Parsing", () => {
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.aoa_to_sheet(data);
     XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-    const arrayBuffer = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
+    const arrayBuffer = XLSX.write(workbook, {
+      type: "array",
+      bookType: "xlsx",
+    });
 
     const result = parseXLSX(arrayBuffer);
 
@@ -368,7 +399,10 @@ describe("Set Data Parsing", () => {
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.aoa_to_sheet(data);
     XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-    const arrayBuffer = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
+    const arrayBuffer = XLSX.write(workbook, {
+      type: "array",
+      bookType: "xlsx",
+    });
 
     const result = parseXLSX(arrayBuffer);
 
@@ -400,7 +434,10 @@ describe("Set Data Parsing", () => {
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.aoa_to_sheet(data);
     XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-    const arrayBuffer = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
+    const arrayBuffer = XLSX.write(workbook, {
+      type: "array",
+      bookType: "xlsx",
+    });
 
     const result = parseXLSX(arrayBuffer);
 
@@ -433,7 +470,10 @@ describe("Set Data Parsing", () => {
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.aoa_to_sheet(data);
     XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-    const arrayBuffer = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
+    const arrayBuffer = XLSX.write(workbook, {
+      type: "array",
+      bookType: "xlsx",
+    });
 
     const result = parseXLSX(arrayBuffer);
 
@@ -467,7 +507,10 @@ describe("Set Data Parsing", () => {
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.aoa_to_sheet(data);
     XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-    const arrayBuffer = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
+    const arrayBuffer = XLSX.write(workbook, {
+      type: "array",
+      bookType: "xlsx",
+    });
 
     const result = parseXLSX(arrayBuffer);
 
@@ -502,7 +545,10 @@ describe("Legacy History Sheet Support", () => {
     const historySheet = XLSX.utils.aoa_to_sheet(historyData);
     XLSX.utils.book_append_sheet(workbook, historySheet, "History");
 
-    const arrayBuffer = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
+    const arrayBuffer = XLSX.write(workbook, {
+      type: "array",
+      bookType: "xlsx",
+    });
     const result = parseXLSX(arrayBuffer);
 
     expect(result.sessions).toHaveLength(1);
@@ -510,10 +556,14 @@ describe("Legacy History Sheet Support", () => {
     expect(result.sessions[0].entries).toHaveLength(2);
 
     const entry1 = result.sessions[0].entries.find(
-      (e) => result.exercises.find((ex) => ex.id === e.exerciseId)?.name === "Bankdrücken"
+      (e) =>
+        result.exercises.find((ex) => ex.id === e.exerciseId)?.name ===
+        "Bankdrücken"
     );
     const entry2 = result.sessions[0].entries.find(
-      (e) => result.exercises.find((ex) => ex.id === e.exerciseId)?.name === "Kniebeugen"
+      (e) =>
+        result.exercises.find((ex) => ex.id === e.exerciseId)?.name ===
+        "Kniebeugen"
     );
 
     expect(entry1?.sets).toHaveLength(2);
@@ -537,7 +587,10 @@ describe("Legacy History Sheet Support", () => {
     const historySheet = XLSX.utils.aoa_to_sheet(historyData);
     XLSX.utils.book_append_sheet(workbook, historySheet, "History");
 
-    const arrayBuffer = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
+    const arrayBuffer = XLSX.write(workbook, {
+      type: "array",
+      bookType: "xlsx",
+    });
     const result = parseXLSX(arrayBuffer);
 
     expect(result.sessions).toHaveLength(1);
@@ -561,7 +614,10 @@ describe("Legacy History Sheet Support", () => {
     const historySheet = XLSX.utils.aoa_to_sheet(historyData);
     XLSX.utils.book_append_sheet(workbook, historySheet, "Historie");
 
-    const arrayBuffer = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
+    const arrayBuffer = XLSX.write(workbook, {
+      type: "array",
+      bookType: "xlsx",
+    });
     const result = parseXLSX(arrayBuffer);
 
     expect(result.sessions).toHaveLength(1);

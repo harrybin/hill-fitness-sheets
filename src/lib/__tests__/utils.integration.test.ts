@@ -130,7 +130,11 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
         name.toLowerCase().includes("einheit")
       );
 
-      console.log(`Found ${einheitSheets.length} Einheit sheets: ${einheitSheets.join(", ")}`);
+      console.log(
+        `Found ${einheitSheets.length} Einheit sheets: ${einheitSheets.join(
+          ", "
+        )}`
+      );
 
       // Parse and verify sessions from all sheets are merged
       const result = parseXLSX(arrayBuffer);
@@ -189,7 +193,10 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
       const totalSets1 = result1.sessions.reduce(
         (sum, session) =>
           sum +
-          session.entries.reduce((entrySum, entry) => entrySum + entry.sets.length, 0),
+          session.entries.reduce(
+            (entrySum, entry) => entrySum + entry.sets.length,
+            0
+          ),
         0
       );
 
@@ -208,7 +215,10 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
       const totalSets2 = result2.sessions.reduce(
         (sum, session) =>
           sum +
-          session.entries.reduce((entrySum, entry) => entrySum + entry.sets.length, 0),
+          session.entries.reduce(
+            (entrySum, entry) => entrySum + entry.sets.length,
+            0
+          ),
         0
       );
 
@@ -341,7 +351,9 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
       // All exerciseIds in sessions should match existing exercises
       result.sessions.forEach((session) => {
         session.entries.forEach((entry) => {
-          const exercise = result.exercises.find((ex) => ex.id === entry.exerciseId);
+          const exercise = result.exercises.find(
+            (ex) => ex.id === entry.exerciseId
+          );
           expect(exercise).toBeDefined();
         });
       });
