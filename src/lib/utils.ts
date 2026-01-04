@@ -401,7 +401,7 @@ function parseSessionsFromSheet(
 
   if (dateRowIndex >= 0) {
     const dateRow = data[dateRowIndex];
-    
+
     // Also find the Einheit row (row 8) to map Einheit numbers to columns
     let einheitRowIndex = -1;
     for (let i = 0; i < Math.min(data.length, 20); i++) {
@@ -417,7 +417,7 @@ function parseSessionsFromSheet(
       }
       if (einheitRowIndex >= 0) break;
     }
-    
+
     const trainingSessions: {
       whCol: number;
       kgCol: number;
@@ -459,7 +459,7 @@ function parseSessionsFromSheet(
               // Space them 3 days apart, counting backwards from today
               const baseDate = new Date();
               baseDate.setDate(baseDate.getDate() - (num - 1) * 3);
-              parsedDate = baseDate.toISOString().split("T")[0];
+              parsedDate = baseDate.toISOString().split("T")[0] + " ?";
               console.log(
                 `No date for Einheit ${num} at column ${colIdx}, generated date: ${parsedDate}`
               );
@@ -471,7 +471,12 @@ function parseSessionsFromSheet(
       if (parsedDate) {
         const whCol = colIdx;
         const kgCol = colIdx + 1;
-        trainingSessions.push({ whCol, kgCol, date: parsedDate, einheitNumber });
+        trainingSessions.push({
+          whCol,
+          kgCol,
+          date: parsedDate,
+          einheitNumber,
+        });
         console.log(
           `Found training session at column ${colIdx}: ${parsedDate} (WH: ${whCol}, KG: ${kgCol})${
             einheitNumber ? ` [Einheit ${einheitNumber}]` : ""

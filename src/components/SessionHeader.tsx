@@ -62,19 +62,27 @@ export function SessionHeader({ session, allSessions }: SessionHeaderProps) {
 
   const formatDate = (dateString: string): string => {
     try {
-      const dateParts = dateString.split("-");
+      // Check if date has "?" suffix (generated date)
+      const hasQuestionMark = dateString.trim().endsWith("?");
+      const cleanDateString = hasQuestionMark
+        ? dateString.trim().slice(0, -1).trim()
+        : dateString;
+
+      const dateParts = cleanDateString.split("-");
       if (dateParts.length === 3) {
         const year = parseInt(dateParts[0]);
         const month = parseInt(dateParts[1]) - 1;
         const day = parseInt(dateParts[2]);
         const date = new Date(year, month, day);
 
-        return date.toLocaleDateString("de-DE", {
+        const formatted = date.toLocaleDateString("de-DE", {
           weekday: "long",
           day: "2-digit",
           month: "2-digit",
           year: "numeric",
         });
+
+        return hasQuestionMark ? formatted + " ?" : formatted;
       }
     } catch (error) {
       console.error("Error formatting date:", error, dateString);
