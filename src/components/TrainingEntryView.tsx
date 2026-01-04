@@ -8,6 +8,7 @@ import {
 } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { SetInput } from "@/components/SetInput";
+import { WeightInput } from "@/components/WeightInput";
 import { ArrowLeft, Check, Trash, XCircle } from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -133,14 +134,6 @@ export function TrainingEntryView({
     onComplete(entry);
   };
 
-  const adjustWeight = (delta: number) => {
-    setWeight(Math.max(0, weight + delta));
-  };
-
-  const adjustSuggestedWeight = (delta: number) => {
-    setSuggestedWeight(Math.max(0, suggestedWeight + delta));
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <div className="sticky top-0 z-10 bg-background border-b-2 border-border">
@@ -199,66 +192,7 @@ export function TrainingEntryView({
             Gewicht
           </label>
 
-          <div className="flex items-center justify-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => adjustWeight(-5)}
-              className="h-11 w-11 p-0 text-xs"
-            >
-              -5
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => adjustWeight(-1)}
-              className="h-11 w-11 p-0 text-xs"
-            >
-              -1
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => adjustWeight(-0.5)}
-              className="h-11 w-11 p-0 text-xs"
-            >
-              -0.5
-            </Button>
-
-            <div className="flex-1 max-w-[140px]">
-              <div className="text-center font-mono font-bold text-5xl text-primary">
-                {weight}
-              </div>
-              <div className="text-center text-xs text-muted-foreground mt-0.5">
-                kg
-              </div>
-            </div>
-
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => adjustWeight(0.5)}
-              className="h-11 w-11 p-0 text-xs"
-            >
-              +0.5
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => adjustWeight(1)}
-              className="h-11 w-11 p-0 text-xs"
-            >
-              +1
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => adjustWeight(5)}
-              className="h-11 w-11 p-0 text-xs"
-            >
-              +5
-            </Button>
-          </div>
+          <WeightInput value={weight} onChange={setWeight} size="large" />
         </div>
 
         <div className="border-t border-border my-4"></div>
@@ -274,66 +208,11 @@ export function TrainingEntryView({
             Gewichtsvorschlag für nächstes Mal
           </label>
 
-          <div className="flex items-center justify-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => adjustSuggestedWeight(-5)}
-              className="h-11 w-11 p-0 text-xs"
-            >
-              -5
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => adjustSuggestedWeight(-1)}
-              className="h-11 w-11 p-0 text-xs"
-            >
-              -1
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => adjustSuggestedWeight(-0.5)}
-              className="h-11 w-11 p-0 text-xs"
-            >
-              -0.5
-            </Button>
-
-            <div className="flex-1 max-w-[140px]">
-              <div className="text-center font-mono font-bold text-3xl text-primary">
-                {suggestedWeight}
-              </div>
-              <div className="text-center text-xs text-muted-foreground mt-0.5">
-                kg
-              </div>
-            </div>
-
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => adjustSuggestedWeight(0.5)}
-              className="h-11 w-11 p-0 text-xs"
-            >
-              +0.5
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => adjustSuggestedWeight(1)}
-              className="h-11 w-11 p-0 text-xs"
-            >
-              +1
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => adjustSuggestedWeight(5)}
-              className="h-11 w-11 p-0 text-xs"
-            >
-              +5
-            </Button>
-          </div>
+          <WeightInput
+            value={suggestedWeight}
+            onChange={setSuggestedWeight}
+            size="small"
+          />
 
           <p className="text-xs text-muted-foreground mt-2 text-center">
             Wird beim nächsten Training als Startwert verwendet
