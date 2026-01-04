@@ -16,6 +16,7 @@ export interface TrainingEntry {
   exerciseId: string;
   date: string;
   sets: TrainingSet[];
+  skipped?: boolean;
 }
 
 export interface Session {

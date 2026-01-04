@@ -704,16 +704,21 @@ export function exportXLSXWithFormatting(
         const exercise = exercises.find((ex) => ex.id === entry.exerciseId);
         if (!exercise) return;
 
-        const sortedSets = [...entry.sets].sort(
-          (a, b) => a.setNumber - b.setNumber
-        );
-
         const row: any[] = [session.date, exercise.name];
 
-        sortedSets.forEach((set) => {
-          row.push(set.weight);
-          row.push(set.reps);
-        });
+        if (entry.skipped) {
+          // Übersprungene Übung: alle Werte mit "/" füllen
+          row.push("/", "/", "/", "/");
+        } else {
+          const sortedSets = [...entry.sets].sort(
+            (a, b) => a.setNumber - b.setNumber
+          );
+
+          sortedSets.forEach((set) => {
+            row.push(set.weight);
+            row.push(set.reps);
+          });
+        }
 
         trainingsData.push(row);
       });

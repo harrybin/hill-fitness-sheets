@@ -1,7 +1,7 @@
 import { Exercise, Session } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Barbell } from "@phosphor-icons/react";
+import { CheckCircle, Barbell, XCircle } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 interface ExerciseListProps {
@@ -26,7 +26,7 @@ export function ExerciseList({
     const entry = currentSession?.entries.find(
       (e) => e.exerciseId === exerciseId
     );
-    if (!entry || entry.sets.length === 0) {
+    if (!entry || (entry.sets.length === 0 && !entry.skipped)) {
       return undefined;
     }
     return entry;
@@ -98,13 +98,28 @@ export function ExerciseList({
                   <h3 className="text-lg font-bold truncate">
                     {exercise.name}
                   </h3>
-                  {isCompleted && (
-                    <CheckCircle
-                      size={20}
-                      weight="fill"
-                      className="text-primary shrink-0"
-                    />
-                  )}
+                  {isCompleted &&
+                    (entry?.skipped ? (
+                      <>
+                        <XCircle
+                          size={20}
+                          weight="fill"
+                          className="text-red-500 shrink-0"
+                        />
+                        <Badge
+                          variant="outline"
+                          className="text-muted-foreground"
+                        >
+                          Übersprungen
+                        </Badge>
+                      </>
+                    ) : (
+                      <CheckCircle
+                        size={20}
+                        weight="fill"
+                        className="text-green-500 shrink-0"
+                      />
+                    ))}
                 </div>
 
                 {exercise.notes && (
@@ -113,7 +128,7 @@ export function ExerciseList({
                   </p>
                 )}
 
-                {entry && (
+                {entry && !entry.skipped && (
                   <div className="flex items-center gap-3 text-sm">
                     <span className="font-mono font-bold text-base">
                       {entry.sets[0]?.weight}kg

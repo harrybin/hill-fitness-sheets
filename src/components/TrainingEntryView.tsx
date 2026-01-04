@@ -8,7 +8,7 @@ import {
 } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { SetInput } from "@/components/SetInput";
-import { ArrowLeft, Check, Trash } from "@phosphor-icons/react";
+import { ArrowLeft, Check, Trash, XCircle } from "@phosphor-icons/react";
 
 interface TrainingEntryViewProps {
   exercise: Exercise;
@@ -100,6 +100,18 @@ export function TrainingEntryView({
     onCancel();
   };
 
+  const handleSkip = () => {
+    const entry: TrainingEntry = {
+      id: existingEntry?.id || `${exercise.id}-${Date.now()}`,
+      exerciseId: exercise.id,
+      date: new Date().toISOString().split("T")[0],
+      sets: [],
+      skipped: true,
+    };
+
+    onComplete(entry);
+  };
+
   const adjustWeight = (delta: number) => {
     setWeight(Math.max(0, weight + delta));
   };
@@ -108,15 +120,27 @@ export function TrainingEntryView({
     <div className="min-h-screen bg-background">
       <div className="sticky top-0 z-10 bg-background border-b-2 border-border">
         <div className="p-3">
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={onCancel}
-            className="mb-2 h-12 px-4"
-          >
-            <ArrowLeft size={24} className="mr-2" />
-            Zurück
-          </Button>
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={onCancel}
+              className="h-12 px-4"
+            >
+              <ArrowLeft size={24} className="mr-2" />
+              Zurück
+            </Button>
+            {existingEntry && (
+              <Button
+                variant="destructive"
+                size="lg"
+                onClick={handleDelete}
+                className="h-12 px-4"
+              >
+                <Trash size={24} weight="bold" />
+              </Button>
+            )}
+          </div>
 
           <div className="mb-2">
             <h1 className="text-2xl font-bold mb-0.5 truncate">
@@ -215,16 +239,14 @@ export function TrainingEntryView({
 
       <div className="fixed bottom-0 left-0 right-0 p-3 bg-background border-t border-border">
         <div className="flex gap-3">
-          {existingEntry && (
-            <Button
-              size="lg"
-              variant="destructive"
-              className="h-24 px-6"
-              onClick={handleDelete}
-            >
-              <Trash size={24} weight="bold" />
-            </Button>
-          )}
+          <Button
+            size="lg"
+            variant="outline"
+            className="h-24 px-8"
+            onClick={handleSkip}
+          >
+            <XCircle size={24} weight="bold" className="text-red-500" />
+          </Button>
           <Button
             size="lg"
             className="flex-1 h-24 text-lg font-bold"
