@@ -174,7 +174,13 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         notes = cellB ? String(cellB).trim() : undefined
       }
       
-      if (exerciseName && exerciseName.length > 0 && !isMetadataRow(exerciseName)) {
+      if (
+        exerciseName && 
+        exerciseName.length > 0 && 
+        exerciseName !== 'undefined' &&
+        exerciseName.toLowerCase() !== 'undefined' &&
+        !isMetadataRow(exerciseName)
+      ) {
         exercises.push({
           id: `exercise-${Date.now()}-${i}`,
           name: exerciseName,

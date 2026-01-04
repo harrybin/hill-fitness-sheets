@@ -11,12 +11,23 @@ import { Gear } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 
 function App() {
-  const [exercises] = useKV<Exercise[]>('exercises', [])
+  const [exercises, setExercises] = useKV<Exercise[]>('exercises', [])
   const [sessions, setSessions] = useKV<Session[]>('sessions', [])
   const [settings] = useKV<AppSettings>('settings', { defaultSetsPerExercise: 2 })
   
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  
+  const validExercises = (exercises || []).filter(ex => 
+    ex.name && 
+    ex.name.trim() !== '' && 
+    ex.name !== 'undefined' &&
+    ex.name.toLowerCase() !== 'undefined'
+  )
+  
+  if (validExercises.length !== (exercises || []).length) {
+    setExercises(() => validExercises)
+  }
   
   const today = new Date().toISOString().split('T')[0]
   const currentSession = (sessions || []).find(s => s.date === today)
@@ -79,7 +90,7 @@ function App() {
           />
         ) : (
           <ExerciseList
-            exercises={exercises || []}
+            exercises={validExercises || []}
             currentSession={currentSession}
             onSelectExercise={setSelectedExercise}
           />

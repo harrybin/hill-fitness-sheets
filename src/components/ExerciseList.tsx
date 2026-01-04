@@ -15,7 +15,14 @@ export function ExerciseList({ exercises, currentSession, onSelectExercise }: Ex
     return currentSession?.entries.find(e => e.exerciseId === exerciseId)
   }
   
-  if (exercises.length === 0) {
+  const validExercises = exercises.filter(ex => 
+    ex.name && 
+    ex.name.trim() !== '' && 
+    ex.name !== 'undefined' &&
+    ex.name.toLowerCase() !== 'undefined'
+  )
+  
+  if (validExercises.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center">
         <Barbell size={64} className="text-muted-foreground mb-4" />
@@ -43,7 +50,7 @@ export function ExerciseList({ exercises, currentSession, onSelectExercise }: Ex
   
   return (
     <div className="p-4 space-y-3">
-      {exercises.map((exercise) => {
+      {validExercises.map((exercise) => {
         const entry = getExerciseStatus(exercise.id)
         const isCompleted = !!entry
         
