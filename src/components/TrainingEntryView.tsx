@@ -105,11 +105,11 @@ export function TrainingEntryView({
         <div className="p-3">
           <Button
             variant="ghost"
-            size="sm"
+            size="lg"
             onClick={onCancel}
-            className="mb-2 h-8 px-2"
+            className="mb-2 h-12 px-4"
           >
-            <ArrowLeft size={20} className="mr-1" />
+            <ArrowLeft size={24} className="mr-2" />
             Zurück
           </Button>
           
