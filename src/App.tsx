@@ -154,6 +154,15 @@ function App() {
   const today = new Date().toISOString().split('T')[0]
   const currentSession = (sessions || []).find(s => s.date === today)
   
+  useEffect(() => {
+    if (selectedExercise && currentSession) {
+      const updatedEntry = currentSession.entries.find(e => e.exerciseId === selectedExercise.id)
+      if (updatedEntry && updatedEntry.sets.length === 0) {
+        setSelectedExercise(null)
+      }
+    }
+  }, [currentSession, selectedExercise])
+  
   const handleCompleteEntry = (entry: TrainingEntry) => {
     setSessions((prevSessions) => {
       const existingSessions = prevSessions || []

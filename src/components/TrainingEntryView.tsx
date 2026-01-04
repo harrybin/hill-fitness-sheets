@@ -63,6 +63,14 @@ export function TrainingEntryView({
     }
   }, [existingEntry])
   
+  useEffect(() => {
+    const entry = currentSession?.entries.find(e => e.exerciseId === exercise.id)
+    if (entry) {
+      setSets(entry.sets)
+      setCurrentSetIndex(entry.sets.length)
+    }
+  }, [currentSession, exercise.id])
+  
   const totalSets = defaultSets
   const isLastSet = currentSetIndex >= totalSets - 1
   
@@ -98,6 +106,15 @@ export function TrainingEntryView({
   }
   
   const handleDeleteSet = (setIndex: number) => {
+    const updatedSets = sets.filter((_, idx) => idx !== setIndex)
+    const renumberedSets = updatedSets.map((set, idx) => ({
+      ...set,
+      setNumber: idx + 1
+    }))
+    
+    setSets(renumberedSets)
+    setCurrentSetIndex(renumberedSets.length)
+    
     const today = new Date().toISOString().split('T')[0]
     
     setSessions((prevSessions) => {
@@ -106,23 +123,18 @@ export function TrainingEntryView({
       
       if (sessionIndex >= 0) {
         const updatedSessions = [...existingSessions]
-        const currentEntry = updatedSessions[sessionIndex].entries.find(
-          e => e.exerciseId === exercise.id
-        )
-        
-        if (!currentEntry) return existingSessions
-        
-        const updatedSets = currentEntry.sets.filter((_, idx) => idx !== setIndex)
-        const renumberedSets = updatedSets.map((set, idx) => ({
-          ...set,
-          setNumber: idx + 1
-        }))
         
         if (renumberedSets.length === 0) {
           updatedSessions[sessionIndex].entries = updatedSessions[sessionIndex].entries.filter(
             e => e.exerciseId !== exercise.id
           )
         } else {
+          const currentEntry = updatedSessions[sessionIndex].entries.find(
+            e => e.exerciseId === exercise.id
+          )
+          
+          if (!currentEntry) return existingSessions
+          
           const entry: TrainingEntry = {
             id: currentEntry.id,
             exerciseId: exercise.id,
@@ -138,9 +150,6 @@ export function TrainingEntryView({
             updatedSessions[sessionIndex].entries[entryIndex] = entry
           }
         }
-        
-        setSets(renumberedSets)
-        setCurrentSetIndex(renumberedSets.length)
         
         return updatedSessions
       }
