@@ -281,17 +281,14 @@ export function TrainingEntryView({
               </Button>
             </div>
             
-            <div className="grid grid-cols-3 gap-2 mt-3">
+            <div className="grid grid-cols-4 gap-2 mt-3">
               {[-3, -2, 2, 3].map((delta) => (
                 <Button
                   key={delta}
                   variant="secondary"
                   size="sm"
                   onClick={() => adjustReps(delta)}
-                  className={cn(
-                    "h-8 px-3 text-xs",
-                    delta > 0 && "col-start-2"
-                  )}
+                  className="h-8 px-2 text-xs"
                 >
                   {delta > 0 ? '+' : ''}{delta}
                 </Button>
