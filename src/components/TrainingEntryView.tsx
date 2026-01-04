@@ -104,7 +104,7 @@ export function TrainingEntryView({
       <div className="sticky top-0 z-10 bg-background border-b border-border">
         <div className="p-3">
           <Button
-            variant="ghost"
+            variant="outline"
             size="lg"
             onClick={onCancel}
             className="mb-2 h-12 px-4"
