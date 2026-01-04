@@ -7,7 +7,8 @@ import {
   PreviousTraining,
 } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Plus, Minus, Check } from "@phosphor-icons/react";
+import { SetInput } from "@/components/SetInput";
+import { ArrowLeft, Check } from "@phosphor-icons/react";
 
 interface TrainingEntryViewProps {
   exercise: Exercise;
@@ -87,14 +88,6 @@ export function TrainingEntryView({
 
   const adjustWeight = (delta: number) => {
     setWeight(Math.max(0, weight + delta));
-  };
-
-  const adjustReps = (setNum: 1 | 2, delta: number) => {
-    if (setNum === 1) {
-      setRepsSet1(Math.max(0, repsSet1 + delta));
-    } else {
-      setRepsSet2(Math.max(0, repsSet2 + delta));
-    }
   };
 
   return (
@@ -201,141 +194,9 @@ export function TrainingEntryView({
 
         <div className="border-t border-border my-4"></div>
 
-        <div>
-          <label className="text-sm font-semibold text-muted-foreground mb-2 block uppercase tracking-wide">
-            Satz 1
-          </label>
-          <div className="flex items-center justify-center gap-1">
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => adjustReps(1, -1)}
-              className="h-12 w-12 rounded-full p-0"
-            >
-              <Minus size={20} weight="bold" />
-            </Button>
+        <SetInput setNumber={1} reps={repsSet1} onRepsChange={setRepsSet1} />
 
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => setRepsSet1(Math.max(0, repsSet1 - 3))}
-              className="h-11 w-11 p-0 text-3xl font-bold text-primary"
-            >
-              {Math.max(0, repsSet1 - 3)}
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => setRepsSet1(Math.max(0, repsSet1 - 1))}
-              className="h-11 w-11 p-0 text-3xl font-bold text-primary"
-            >
-              {Math.max(0, repsSet1 - 1)}
-            </Button>
-
-            <div className="flex-1 max-w-[120px]">
-              <div className="text-center font-mono font-bold text-5xl text-primary">
-                {repsSet1}
-              </div>
-              <div className="text-center text-xs text-muted-foreground mt-0.5">
-                Wdh.
-              </div>
-            </div>
-
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => setRepsSet1(repsSet1 + 1)}
-              className="h-11 w-11 p-0 text-3xl font-bold text-primary"
-            >
-              {repsSet1 + 1}
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => setRepsSet1(repsSet1 + 3)}
-              className="h-11 w-11 p-0 text-3xl font-bold text-primary"
-            >
-              {repsSet1 + 3}
-            </Button>
-
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => adjustReps(1, 1)}
-              className="h-12 w-12 rounded-full p-0"
-            >
-              <Plus size={20} weight="bold" />
-            </Button>
-          </div>
-        </div>
-
-        <div>
-          <label className="text-sm font-semibold text-muted-foreground mb-2 block uppercase tracking-wide">
-            Satz 2
-          </label>
-          <div className="flex items-center justify-center gap-1">
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => adjustReps(2, -1)}
-              className="h-12 w-12 rounded-full p-0"
-            >
-              <Minus size={20} weight="bold" />
-            </Button>
-
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => setRepsSet2(Math.max(0, repsSet2 - 3))}
-              className="h-11 w-11 p-0 text-3xl font-bold text-primary"
-            >
-              {Math.max(0, repsSet2 - 3)}
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => setRepsSet2(Math.max(0, repsSet2 - 1))}
-              className="h-11 w-11 p-0 text-3xl font-bold text-primary"
-            >
-              {Math.max(0, repsSet2 - 1)}
-            </Button>
-
-            <div className="flex-1 max-w-[120px]">
-              <div className="text-center font-mono font-bold text-5xl text-primary">
-                {repsSet2}
-              </div>
-              <div className="text-center text-xs text-muted-foreground mt-0.5">
-                Wdh.
-              </div>
-            </div>
-
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => setRepsSet2(repsSet2 + 1)}
-              className="h-11 w-11 p-0 text-3xl font-bold text-primary"
-            >
-              {repsSet2 + 1}
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => setRepsSet2(repsSet2 + 3)}
-              className="h-11 w-11 p-0 text-3xl font-bold text-primary"
-            >
-              {repsSet2 + 3}
-            </Button>
-
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => adjustReps(2, 1)}
-              className="h-12 w-12 rounded-full p-0"
-            >
-              <Plus size={20} weight="bold" />
-            </Button>
-          </div>
-        </div>
+        <SetInput setNumber={2} reps={repsSet2} onRepsChange={setRepsSet2} />
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 p-3 bg-background border-t border-border">
