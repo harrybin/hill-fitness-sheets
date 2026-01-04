@@ -28,11 +28,7 @@ import {
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import QRCodeSVG from "react-qr-code";
-import {
-  base64ToArrayBuffer,
-  arrayBufferToBase64,
-  exportXLSXWithFormatting,
-} from "@/lib/utils";
+import { arrayBufferToBase64, exportXLSXWithFormatting } from "@/lib/utils";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -148,9 +144,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       <DialogContent className="sm:max-w-md max-h-[90vh] p-4">
         <DialogHeader className="pb-2">
           <DialogTitle className="text-base">Einstellungen</DialogTitle>
-          <DialogDescription className="text-xs">
+          {/* <DialogDescription className="text-xs">
             Trainingseinstellungen
-          </DialogDescription>
+          </DialogDescription> */}
         </DialogHeader>
 
         <div className="space-y-4 overflow-y-auto max-h-[calc(90vh-8rem)]">
