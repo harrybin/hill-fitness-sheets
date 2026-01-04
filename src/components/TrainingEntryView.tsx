@@ -289,9 +289,6 @@ export function TrainingEntryView({
                   size="sm"
                   onClick={() => adjustReps(delta)}
                   className="h-8 px-2 text-xs"
-                >
-                  {delta > 0 ? '+' : ''}{delta}
-                </Button>
               ))}
             </div>
           </div>
