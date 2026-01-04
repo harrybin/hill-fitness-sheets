@@ -133,8 +133,8 @@ export function TrainingEntryView({
 
       <div className="p-3 space-y-4 pb-32">
         <div>
-          <label className="text-xs font-semibold text-muted-foreground mb-2 block uppercase tracking-wide">
-            Gewicht (beide Sätze)
+          <label className="text-sm font-semibold text-muted-foreground mb-2 block uppercase tracking-wide">
+            Gewicht
           </label>
 
           <div className="flex items-center justify-center gap-2">
@@ -202,8 +202,8 @@ export function TrainingEntryView({
         <div className="border-t border-border my-4"></div>
 
         <div>
-          <label className="text-xs font-semibold text-muted-foreground mb-2 block uppercase tracking-wide">
-            Satz 1 - Wiederholungen
+          <label className="text-sm font-semibold text-muted-foreground mb-2 block uppercase tracking-wide">
+            Satz 1
           </label>
           <div className="flex items-center justify-center gap-1">
             <Button
@@ -270,8 +270,8 @@ export function TrainingEntryView({
         </div>
 
         <div>
-          <label className="text-xs font-semibold text-muted-foreground mb-2 block uppercase tracking-wide">
-            Satz 2 - Wiederholungen
+          <label className="text-sm font-semibold text-muted-foreground mb-2 block uppercase tracking-wide">
+            Satz 2
           </label>
           <div className="flex items-center justify-center gap-1">
             <Button
