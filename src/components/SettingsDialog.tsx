@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useApp } from "@/contexts/AppContext";
 import {
   Dialog,
@@ -7,10 +7,25 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { FileArrowDown, FileXls, DownloadSimple } from "@phosphor-icons/react";
+import {
+  FileArrowDown,
+  FileXls,
+  DownloadSimple,
+  Trash,
+} from "@phosphor-icons/react";
 import { toast } from "sonner";
 import QRCodeSVG from "react-qr-code";
 import {
@@ -27,6 +42,7 @@ interface SettingsDialogProps {
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { settings, setSettings, loadFromXLSX, sessions, exercises } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const exportStoredFile = () => {
     if (!settings.importedFile) {
@@ -110,6 +126,23 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     }
   };
 
+  const handleClearApp = () => {
+    try {
+      localStorage.clear();
+      toast.success("App geleert", {
+        description: "Alle Daten wurden gelöscht",
+      });
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    } catch (error) {
+      toast.error("Fehler beim Leeren", {
+        description:
+          error instanceof Error ? error.message : "Unbekannter Fehler",
+      });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[90vh] p-4">
@@ -172,6 +205,19 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                   >
                     <DownloadSimple size={14} />
                     Export
+                  </Button>
+                  <Separator className="my-6" />
+                  <div className="text-sm font-semibold text-foreground truncate">
+                    App Daten
+                  </div>
+                  <Button
+                    onClick={() => setShowClearConfirm(true)}
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-1.5 text-xs h-8 text-destructive hover:text-destructive"
+                  >
+                    <Trash size={14} />
+                    App Cache leeren
                   </Button>
                 </div>
               )}
@@ -301,6 +347,27 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           </div>
         </div>
       </DialogContent>
+
+      <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>App wirklich leeren?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Alle gespeicherten Übungen, Trainingseinheiten und Einstellungen
+              werden unwiderruflich gelöscht. Die App wird danach neu geladen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleClearApp}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Alle Daten löschen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
