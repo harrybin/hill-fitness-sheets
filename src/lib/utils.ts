@@ -1,3 +1,113 @@
+// --- STATISTICS UTILITIES ---
+import type { TrainingEntry, TrainingSet } from "./types";
+
+/**
+ * Returns a map of YYYY-MM (month) to number of sessions in that month.
+ */
+export function getMonthlyTrainingFrequency(
+  sessions: Session[]
+): Record<string, number> {
+  const freq: Record<string, number> = {};
+  for (const session of sessions) {
+    const month = session.date.slice(0, 7); // YYYY-MM
+    freq[month] = (freq[month] || 0) + 1;
+  }
+  return freq;
+}
+
+/**
+ * Returns a map of YYYY-MM-DD (date) to number of sessions on that day.
+ */
+export function getDailyTrainingFrequency(
+  sessions: Session[]
+): Record<string, number> {
+  const freq: Record<string, number> = {};
+  for (const session of sessions) {
+    freq[session.date] = (freq[session.date] || 0) + 1;
+  }
+  return freq;
+}
+
+/**
+ * Returns a map of exerciseId to array of {date, volume} (volume = sum of weight*reps for all sets in entry).
+ */
+export function getExerciseVolumeHistory(
+  sessions: Session[]
+): Record<string, { date: string; volume: number }[]> {
+  const result: Record<string, { date: string; volume: number }[]> = {};
+  for (const session of sessions) {
+    for (const entry of session.entries) {
+      const volume = entry.sets.reduce(
+        (sum, set) => sum + set.weight * set.reps,
+        0
+      );
+      if (!result[entry.exerciseId]) result[entry.exerciseId] = [];
+      result[entry.exerciseId].push({ date: session.date, volume });
+    }
+  }
+  return result;
+}
+
+/**
+ * Returns a map of exerciseId to best (max) weight ever lifted (across all sets).
+ */
+export function getExercisePRs(
+  sessions: Session[]
+): Record<string, { date: string; weight: number; reps: number }> {
+  const prs: Record<string, { date: string; weight: number; reps: number }> =
+    {};
+  for (const session of sessions) {
+    for (const entry of session.entries) {
+      for (const set of entry.sets) {
+        const prev = prs[entry.exerciseId];
+        if (
+          !prev ||
+          set.weight > prev.weight ||
+          (set.weight === prev.weight && set.reps > prev.reps)
+        ) {
+          prs[entry.exerciseId] = {
+            date: session.date,
+            weight: set.weight,
+            reps: set.reps,
+          };
+        }
+      }
+    }
+  }
+  return prs;
+}
+
+/**
+ * Returns a map of exerciseId to array of {date, maxWeight, avgWeight, avgReps} for progress charts.
+ */
+export function getExerciseProgression(
+  sessions: Session[]
+): Record<
+  string,
+  { date: string; maxWeight: number; avgWeight: number; avgReps: number }[]
+> {
+  const result: Record<
+    string,
+    { date: string; maxWeight: number; avgWeight: number; avgReps: number }[]
+  > = {};
+  for (const session of sessions) {
+    for (const entry of session.entries) {
+      const weights = entry.sets.map((s) => s.weight);
+      const reps = entry.sets.map((s) => s.reps);
+      const maxWeight = Math.max(...weights);
+      const avgWeight = weights.reduce((a, b) => a + b, 0) / weights.length;
+      const avgReps = reps.reduce((a, b) => a + b, 0) / reps.length;
+      if (!result[entry.exerciseId]) result[entry.exerciseId] = [];
+      result[entry.exerciseId].push({
+        date: session.date,
+        maxWeight,
+        avgWeight,
+        avgReps,
+      });
+    }
+  }
+  return result;
+}
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import * as XLSX from "xlsx";

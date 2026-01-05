@@ -42,15 +42,10 @@ function App() {
     setSelectedExercise(null);
   };
 
-  const handleCancelEntry = () => {
-    setSelectedExercise(null);
-  };
-
   return (
     <div className="min-h-screen bg-background text-foreground p-2 sm:p-4 md:p-6">
       <Toaster />
       <PWAInstallBanner />
-
       <div className="max-w-2xl mx-auto bg-card border border-border rounded-lg shadow-lg overflow-hidden">
         <div className="sticky top-0 z-10 bg-card border-b border-border">
           <div className="flex items-center justify-between p-3">
@@ -79,6 +74,13 @@ function App() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
+                  onSelect={() => (window.location.hash = "#/statistiken")}
+                  className="flex items-center gap-2"
+                  data-testid="statistics-menu-item"
+                >
+                  📊 Statistiken
+                </DropdownMenuItem>
+                <DropdownMenuItem
                   onSelect={() => setSettingsOpen(true)}
                   className="flex items-center gap-2"
                   data-testid="settings-menu-item"
@@ -96,11 +98,10 @@ function App() {
             </DropdownMenu>
           </div>
         </div>
-
         <div className="pb-20">
           {selectedExercise ? (
             <TrainingEntryView
-              exercise={selectedExercise}
+              exercise={selectedExercise as Exercise}
               currentSession={currentSession}
               allSessions={sessions}
               defaultSets={2}
@@ -108,7 +109,7 @@ function App() {
               onComplete={handleCompleteEntry}
               onUpdate={updateEntry}
               onUpdateExercise={updateExercise}
-              onCancel={handleCancelEntry}
+              onCancel={() => setSelectedExercise(null)}
             />
           ) : (
             <ExerciseList
@@ -121,7 +122,6 @@ function App() {
           )}
         </div>
       </div>
-
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
       <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />
     </div>

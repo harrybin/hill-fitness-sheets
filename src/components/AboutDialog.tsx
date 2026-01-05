@@ -20,6 +20,14 @@ export function AboutDialog({ open, onOpenChange }: AboutDialogProps) {
           <DialogTitle>Über</DialogTitle>
         </DialogHeader>
         <div className="bg-muted/50 p-2.5 rounded-md space-y-3">
+          <div className="text-xs bg-background/80 border border-border rounded p-2 mb-2">
+            <span className="font-semibold">Trainingsstatistiken:</span> Die App
+            zeigt dir automatisch Statistiken zu Trainingshäufigkeit,
+            Fortschritt und Bestleistungen an. Alle Auswertungen erfolgen
+            offline auf deinem Gerät – deine Daten bleiben privat. Die
+            Statistiken helfen dir, Motivation und Fortschritt im Blick zu
+            behalten.
+          </div>
           <div className="space-y-1.5">
             <div className="text-xs">
               <span className="font-semibold text-foreground">Version: </span>
