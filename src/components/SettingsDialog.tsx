@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { FileArrowDown, DownloadSimple, Trash } from "@phosphor-icons/react";
 import { toast } from "sonner";
-import QRCodeSVG from "react-qr-code";
+// import QRCodeSVG from "react-qr-code";
 import { arrayBufferToBase64, exportXLSXWithFormatting } from "@/lib/utils";
 
 interface SettingsDialogProps {
@@ -222,83 +222,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             </>
           )}
 
-          <Separator />
-
-          <div className="space-y-2">
-            <Label className="text-sm">Über</Label>
-            <div className="bg-muted/50 p-2.5 rounded-md space-y-3">
-              <div className="space-y-1.5">
-                <div className="text-xs">
-                  <span className="font-semibold text-foreground">
-                    Version:{" "}
-                  </span>
-                  <span className="text-muted-foreground font-mono">
-                    1.0.{import.meta.env.VITE_GIT_COMMIT_HASH || "dev"}
-                  </span>
-                  {import.meta.env.VITE_BUILD_DATE && (
-                    <span className="text-muted-foreground/70 ml-1">
-                      •{" "}
-                      {new Date(
-                        import.meta.env.VITE_BUILD_DATE
-                      ).toLocaleDateString("de-DE", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "2-digit",
-                      })}
-                    </span>
-                  )}
-                </div>
-                <div className="text-xs">
-                  <span className="font-semibold text-foreground">Autor: </span>
-                  <span className="text-muted-foreground">Harald Binkle</span>
-                </div>
-                <div className="text-xs">
-                  <span className="font-semibold text-foreground">
-                    Lizenz:{" "}
-                  </span>
-                  <span className="text-muted-foreground">
-                    MIT (kostenlos frei verfügbar)
-                  </span>
-                </div>
-                <div className="text-xs">
-                  <span className="font-semibold text-foreground">
-                    Quellcode:{" "}
-                  </span>
-                  <a
-                    href="https://github.com/harrybin/hill-fitness-sheets"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
-                  >
-                    GitHub
-                  </a>
-                </div>
-                <div className="text-xs">
-                  <span className="font-semibold text-foreground">
-                    Download:{" "}
-                  </span>
-                  <a
-                    href="https://hill-fitness.harrybin.de/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
-                  >
-                    hill-fitness.harrybin.de
-                  </a>
-                </div>
-              </div>
-
-              <div className="flex justify-center pt-1">
-                <div className="bg-white p-2 rounded-md">
-                  <QRCodeSVG
-                    value="https://hill-fitness.harrybin.de/"
-                    size={128}
-                    level="M"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Über-Abschnitt entfernt, jetzt eigenes Dialog */}
         </div>
       </DialogContent>
 

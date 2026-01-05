@@ -5,10 +5,16 @@ import { ExerciseList } from "@/components/ExerciseList";
 import { TrainingEntryView } from "@/components/TrainingEntryView";
 import { SessionHeader } from "@/components/SessionHeader";
 import { SettingsDialog } from "@/components/SettingsDialog";
+import { AboutDialog } from "@/components/AboutDialog";
 import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 import { Toaster } from "@/components/ui/sonner";
-import { Gear } from "@phosphor-icons/react";
-import { Button } from "@/components/ui/button";
+import { Gear, DotsThreeVertical, Info } from "@phosphor-icons/react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 function App() {
   const {
@@ -25,6 +31,7 @@ function App() {
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [aboutOpen, setAboutOpen] = useState(false);
 
   const today = new Date().toISOString().split("T")[0];
   const viewDate = selectedDate || today;
@@ -56,15 +63,37 @@ function App() {
                 setSelectedExercise(null);
               }}
             />
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setSettingsOpen(true)}
-              className="h-9 w-9"
-              data-testid="settings-button"
-            >
-              <Gear size={20} />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-accent focus:outline-none focus:ring-2 focus:ring-accent"
+                  aria-label="Mehr"
+                  data-testid="more-menu-button"
+                >
+                  <DotsThreeVertical
+                    size={28}
+                    color="currentColor"
+                    weight="bold"
+                  />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onSelect={() => setSettingsOpen(true)}
+                  className="flex items-center gap-2"
+                  data-testid="settings-menu-item"
+                >
+                  <Gear size={18} /> Einstellungen
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => setAboutOpen(true)}
+                  className="flex items-center gap-2"
+                  data-testid="about-menu-item"
+                >
+                  <Info size={18} /> Über
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
@@ -93,7 +122,8 @@ function App() {
         </div>
       </div>
 
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />     
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />
     </div>
   );
 }
