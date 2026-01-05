@@ -12,8 +12,10 @@ import "./main.css";
 import "./styles/theme.css";
 import "./index.css";
 
+const root = createRoot(document.getElementById("root")!);
+
 function render() {
-  createRoot(document.getElementById("root")!).render(
+  root.render(
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <AppProvider>
         {window.location.hash === "#/statistiken" ? (
