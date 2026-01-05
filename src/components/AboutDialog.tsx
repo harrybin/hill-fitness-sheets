@@ -32,7 +32,8 @@ export function AboutDialog({ open, onOpenChange }: AboutDialogProps) {
             <div className="text-xs">
               <span className="font-semibold text-foreground">Version: </span>
               <span className="text-muted-foreground font-mono">
-                {import.meta.env.VITE_APP_VERSION}.{import.meta.env.VITE_GIT_COMMIT_HASH || "dev"}
+                {import.meta.env.VITE_APP_VERSION}.
+                {import.meta.env.VITE_GIT_COMMIT_HASH || "dev"}
               </span>
               {import.meta.env.VITE_BUILD_DATE && (
                 <span className="text-muted-foreground/70 ml-1">
