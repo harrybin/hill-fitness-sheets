@@ -103,7 +103,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
     setExercises(newExercises);
     if (loadedSessions && loadedSessions.length > 0) {
-      console.log("Setting sessions to:", loadedSessions);
+      // Sessions already have dateInterpolated flag from parsing, no need to add "?" marker
+      console.log(
+        "Loaded sessions:",
+        loadedSessions.map((s) => ({
+          date: s.date,
+          interpolated: s.dateInterpolated,
+          entries: s.entries.length,
+        }))
+      );
       setSessions(loadedSessions);
     }
     setSettings((prev) => ({
@@ -115,6 +123,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const completeEntry = (entry: TrainingEntry, date: string) => {
     setSessions((prevSessions) => {
       const prev = prevSessions || [];
+      // Date is now clean (no "?" marker), just use it directly
       const sessionIndex = prev.findIndex((s) => s.date === date);
       let updatedSessions: Session[];
 
@@ -140,6 +149,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateEntry = (entry: TrainingEntry, date: string) => {
     setSessions((prevSessions) => {
       const prev = prevSessions || [];
+      // Date is now clean (no "?" marker), just use it directly
       const sessionIndex = prev.findIndex((s) => s.date === date);
       let updatedSessions: Session[];
 

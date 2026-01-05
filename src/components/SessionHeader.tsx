@@ -29,17 +29,13 @@ export function SessionHeader({
 
   const todayDateString = new Date().toISOString().split("T")[0];
   const currentDateString = selectedDate || todayDateString;
-  const isOldSession =
-    currentDateString.replace(" ?", "").trim() !== todayDateString;
+  const isOldSession = currentDateString !== todayDateString;
+
+  // Check if current session has interpolated date
+  const isCurrentSessionInterpolated = session?.dateInterpolated || false;
 
   const displayDate = (() => {
-    // Check if the currentDateString has a "?" suffix
-    const hasQuestionMark = currentDateString.trim().endsWith("?");
-    const cleanDateString = hasQuestionMark
-      ? currentDateString.trim().slice(0, -1).trim()
-      : currentDateString;
-
-    const dateParts = cleanDateString.split("-");
+    const dateParts = currentDateString.split("-");
     if (dateParts.length === 3) {
       const year = parseInt(dateParts[0]);
       const month = parseInt(dateParts[1]) - 1;
@@ -53,12 +49,13 @@ export function SessionHeader({
         year: "numeric",
       });
 
-      return hasQuestionMark ? formatted + " ?" : formatted;
+      // Add "?" only if session is interpolated
+      return isCurrentSessionInterpolated ? formatted + " ?" : formatted;
     }
     return currentDateString;
   })();
 
-  const completedCount = session?.entries.length || 0;
+  const completedCount = session?.entries.filter((e) => !e.skipped).length || 0;
 
   const previousSession = (allSessions || [])
     .filter((s) => {
@@ -90,15 +87,9 @@ export function SessionHeader({
     }
   }
 
-  const formatDate = (dateString: string): string => {
+  const formatDate = (dateString: string, isInterpolated?: boolean): string => {
     try {
-      // Check if date has "?" suffix (generated date)
-      const hasQuestionMark = dateString.trim().endsWith("?");
-      const cleanDateString = hasQuestionMark
-        ? dateString.trim().slice(0, -1).trim()
-        : dateString;
-
-      const dateParts = cleanDateString.split("-");
+      const dateParts = dateString.split("-");
       if (dateParts.length === 3) {
         const year = parseInt(dateParts[0]);
         const month = parseInt(dateParts[1]) - 1;
@@ -112,7 +103,8 @@ export function SessionHeader({
           year: "numeric",
         });
 
-        return hasQuestionMark ? formatted + " ?" : formatted;
+        // Add "?" only if date is interpolated
+        return isInterpolated ? formatted + " ?" : formatted;
       }
     } catch (error) {
       console.error("Error formatting date:", error, dateString);
@@ -176,18 +168,16 @@ export function SessionHeader({
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="text-sm font-semibold text-foreground">
-                            {formatDate(s.date)}
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {s.entries.length} Übung
-                            {s.entries.length === 1 ? "" : "en"} abgeschlossen
+                            {formatDate(s.date, s.dateInterpolated)}
                           </div>
                         </div>
-                        <div className="text-lg font-mono font-bold text-primary">
-                          {s.entries.reduce(
-                            (total, entry) => total + entry.sets.length,
-                            0
-                          )}
+                        <div className="flex items-center gap-1.5">
+                          <div className="text-xs text-muted-foreground">
+                            Abgeschl. Übungen
+                          </div>
+                          <div className="text-lg font-mono font-bold text-primary">
+                            {s.entries.filter((e) => !e.skipped).length}
+                          </div>
                         </div>
                       </div>
                     </div>

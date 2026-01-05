@@ -1,3 +1,34 @@
+// Import-Regeln für XLSX-Parser:
+// - Eine Einheit (Session) wird nur importiert, wenn mindestens eine Übung in mindestens einem Satz eine Wiederholungszahl (Reps) hat.
+// - Hat eine zu importierende Einheit für eine Übung in beiden Sätzen keinen Zahlenwert (Reps), wird diese Übung in dieser Einheit mit skipped: true markiert.
+/**
+ * Returns an array of top N exercises most frequently skipped (skipped: true).
+ */
+export function getTopSkippedExercises(
+  sessions: Session[],
+  exercises: Exercise[],
+  topN: number = 5
+): Array<{ name: string; count: number; id: string }> {
+  const skipCounts: Record<string, number> = {};
+  for (const session of sessions) {
+    for (const entry of session.entries) {
+      if (entry.skipped) {
+        skipCounts[entry.exerciseId] = (skipCounts[entry.exerciseId] || 0) + 1;
+      }
+    }
+  }
+  // Map to exercise names
+  const result = exercises
+    .map((ex) => ({
+      id: ex.id,
+      name: ex.name,
+      count: skipCounts[ex.id] || 0,
+    }))
+    .filter((ex) => ex.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, topN);
+  return result;
+}
 // --- STATISTICS UTILITIES ---
 import type { TrainingEntry, TrainingSet } from "./types";
 
@@ -92,6 +123,10 @@ export function getExerciseProgression(
   > = {};
   for (const session of sessions) {
     for (const entry of session.entries) {
+      // Skip entries that were skipped or have no sets
+      if (entry.skipped || entry.sets.length === 0) {
+        continue;
+      }
       const weights = entry.sets.map((s) => s.weight);
       const reps = entry.sets.map((s) => s.reps);
       const maxWeight = Math.max(...weights);
@@ -191,6 +226,16 @@ function parseExcelDate(value: any): string | null {
   return null;
 }
 
+/**
+ * Parses an XLSX ArrayBuffer and returns exercises, metadata, and sessions.
+ *
+ * Import-Regeln:
+ * - Eine Trainingseinheit (Session) wird nur importiert, wenn mindestens eine Übung in mindestens einem Satz eine Wiederholungszahl (Reps) hat.
+ * - Hat eine zu importierende Einheit für eine Übung in beiden Sätzen keinen Zahlenwert (Reps), wird diese Übung in dieser Einheit mit `skipped: true` markiert.
+ *
+ * @param arrayBuffer XLSX file as ArrayBuffer
+ * @returns { exercises, metadata, sessions }
+ */
 export function parseXLSX(arrayBuffer: ArrayBuffer): {
   exercises: Exercise[];
   metadata: {
@@ -236,6 +281,13 @@ export function parseXLSX(arrayBuffer: ArrayBuffer): {
     sessions.forEach((session) => {
       const existingSession = allSessions.find((s) => s.date === session.date);
       if (existingSession) {
+        console.log(
+          `Merging session with date ${session.date}: existing has dateInterpolated=${existingSession.dateInterpolated}, new session has dateInterpolated=${session.dateInterpolated}`
+        );
+        // Preserve the dateInterpolated flag if either session has it
+        if (session.dateInterpolated && !existingSession.dateInterpolated) {
+          existingSession.dateInterpolated = session.dateInterpolated;
+        }
         // Merge entries
         session.entries.forEach((entry) => {
           const existingEntry = existingSession.entries.find(
@@ -468,248 +520,516 @@ function parseSheetData(data: any[][]): {
   return { exercises, metadata };
 }
 
+/**
+ * Interpolates dates for training sessions where dates are missing.
+ * Splits dates evenly between known date points.
+ * Returns array with both the session info and whether date was interpolated.
+ *
+ * Example:
+ * Input:  [{date: '2025-11-18'}, {date: null}, {date: null}, {date: '2025-11-21'}]
+ * Output: [{date: '2025-11-18', interpolated: false}, {date: '2025-11-19', interpolated: true}, {date: '2025-11-20', interpolated: true}, {date: '2025-11-21', interpolated: false}]
+ */
+function interpolateSessionDates(
+  sessions: Array<{ whCol: number; kgCol: number; date: string | null }>
+): Array<{
+  whCol: number;
+  kgCol: number;
+  date: string;
+  interpolated: boolean;
+}> {
+  if (sessions.length === 0) {
+    return [];
+  }
+
+  const result: Array<{
+    whCol: number;
+    kgCol: number;
+    date: string;
+    interpolated: boolean;
+  }> = [];
+  let i = 0;
+
+  while (i < sessions.length) {
+    // If this session has a date, add it to result
+    if (sessions[i].date) {
+      result.push({
+        whCol: sessions[i].whCol,
+        kgCol: sessions[i].kgCol,
+        date: sessions[i].date!,
+        interpolated: false,
+      });
+      i++;
+      continue;
+    }
+
+    // Collect consecutive undated sessions
+    const unddatedSessions = [sessions[i]];
+    i++;
+    while (i < sessions.length && !sessions[i].date) {
+      unddatedSessions.push(sessions[i]);
+      i++;
+    }
+
+    // Find the next dated session or use today as fallback
+    const nextDatedSession = sessions[i];
+    const lastDatedSession =
+      result.length > 0 ? result[result.length - 1] : null;
+
+    if (!lastDatedSession && !nextDatedSession) {
+      // No dates at all - use today for all
+      const today = new Date().toISOString().split("T")[0];
+      for (const undated of unddatedSessions) {
+        result.push({
+          whCol: undated.whCol,
+          kgCol: undated.kgCol,
+          date: today,
+          interpolated: true,
+        });
+      }
+      console.log(`  → All to today: ${today}`);
+      continue;
+    }
+
+    if (!lastDatedSession && nextDatedSession) {
+      // First sessions are undated, next one has date
+      const startDate = new Date(nextDatedSession.date!);
+      const endDate = new Date(nextDatedSession.date!);
+      const daysBetween = 0;
+      const intervalDays =
+        unddatedSessions.length > 0
+          ? Math.max(1, Math.floor(daysBetween / (unddatedSessions.length + 1)))
+          : 1;
+
+      for (let j = 0; j < unddatedSessions.length; j++) {
+        const date = new Date(startDate);
+        date.setDate(
+          date.getDate() - (unddatedSessions.length - j) * intervalDays
+        );
+        result.push({
+          whCol: unddatedSessions[j].whCol,
+          kgCol: unddatedSessions[j].kgCol,
+          date: date.toISOString().split("T")[0],
+          interpolated: true,
+        });
+      }
+      continue;
+    }
+
+    if (lastDatedSession && !nextDatedSession) {
+      // Last sessions are undated - interpolate between last known date and today
+      const startDate = new Date(lastDatedSession.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const daysBetween = Math.floor(
+        (today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      const intervalDays = Math.max(
+        1,
+        Math.floor(daysBetween / (unddatedSessions.length + 1))
+      );
+
+      for (let j = 0; j < unddatedSessions.length; j++) {
+        const date = new Date(startDate);
+        date.setDate(date.getDate() + (j + 1) * intervalDays);
+        result.push({
+          whCol: unddatedSessions[j].whCol,
+          kgCol: unddatedSessions[j].kgCol,
+          date: date.toISOString().split("T")[0],
+          interpolated: true,
+        });
+      }
+      continue;
+    }
+
+    // Both before and after have dates - interpolate
+    const startDate = new Date(lastDatedSession!.date);
+    const endDate = new Date(nextDatedSession!.date);
+    const daysBetween = Math.floor(
+      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const intervalDays = Math.max(
+      1,
+      Math.floor(daysBetween / (unddatedSessions.length + 1))
+    );
+
+    for (let j = 0; j < unddatedSessions.length; j++) {
+      const date = new Date(startDate);
+      date.setDate(date.getDate() + (j + 1) * intervalDays);
+      result.push({
+        whCol: unddatedSessions[j].whCol,
+        kgCol: unddatedSessions[j].kgCol,
+        date: date.toISOString().split("T")[0],
+        interpolated: true,
+      });
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Parsed jede Sheet-Tabelle und erzeugt Sessions gemäß folgender Regeln:
+ * - Eine Einheit (Session) wird nur importiert, wenn mindestens eine Übung in mindestens einem Satz eine Wiederholungszahl (Reps) hat.
+ * - Hat eine Übung in einer importierten Einheit in beiden Sätzen keine Wiederholungszahl, wird sie mit `skipped: true` markiert.
+ */
 function parseSessionsFromSheet(
   data: any[][],
   exercises: Exercise[]
 ): Session[] {
   const sessions: Session[] = [];
+  let hasAnyDateInSheet = false;
 
   // Find exercise start row
   let startIndex = 0;
   for (let i = 0; i < data.length; i++) {
     const row = data[i];
-    const secondCell = String(row[1] || "")
+    const secondCell = String(row?.[1] ?? "")
       .toLowerCase()
       .trim();
     const normalizedSecondCell = secondCell
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "");
-
     if (
       normalizedSecondCell === "ubungen" ||
       normalizedSecondCell === "exercises" ||
-      secondCell === "übungen"
+      normalizedSecondCell === "muskel"
     ) {
+      // Use the last detected header so we align with the actual training table
       startIndex = i + 1;
-      break;
     }
   }
 
-  // Find the date row - Row with "Datum:" in column 0
-  let dateRowIndex = -1;
-  for (let i = 0; i < Math.min(data.length, 20); i++) {
-    const row = data[i];
-    const cellA = String(row[0] || "")
-      .toLowerCase()
-      .trim();
-    if (cellA.includes("datum")) {
-      dateRowIndex = i;
-      console.log(`Found "Datum:" row at index ${i}`);
-      break;
-    }
-  }
-
-  if (dateRowIndex >= 0) {
-    const dateRow = data[dateRowIndex];
-
-    // Also find the Einheit row (row 8) to map Einheit numbers to columns
-    let einheitRowIndex = -1;
-    for (let i = 0; i < Math.min(data.length, 20); i++) {
-      const row = data[i];
-      for (let j = 0; j < row.length; j++) {
-        const cell = String(row[j] || "")
-          .toLowerCase()
-          .trim();
-        if (cell === "einheit:") {
-          einheitRowIndex = i;
-          break;
+  // Map Einheit numbers by column (if present)
+  // NOTE: "Einheit:" is in one column, the number is in the next
+  // But WH is in the "Einheit:" column and KG is in the number column
+  // So we store the EINHEIT COLUMN (where WH is), not the number column
+  const einheitByCol: Record<number, string> = {};
+  for (const row of data) {
+    if (!row) continue;
+    for (let colIdx = 0; colIdx < row.length; colIdx++) {
+      const cell = row[colIdx];
+      if (typeof cell === "string" && cell.toLowerCase().includes("einheit")) {
+        const value = row[colIdx + 1];
+        if (value != null && String(value).trim() !== "") {
+          einheitByCol[colIdx] = String(value).trim(); // FIX: store the Einheit HEADER column, not the number column
         }
       }
-      if (einheitRowIndex >= 0) break;
     }
+  }
 
-    const trainingSessions: {
+  // First, create sessions for ALL Einheiten (based on column structure)
+  // Then fill in dates where available
+  const sessionsByCol: Map<
+    number,
+    {
       whCol: number;
       kgCol: number;
-      date: string;
-      einheitNumber?: number;
-    }[] = [];
-
-    console.log("Scanning date row:", dateRow);
-    if (einheitRowIndex >= 0) {
-      console.log("Scanning Einheit row at index", einheitRowIndex);
+      date: string | null;
+      einheitNumber?: string;
     }
+  > = new Map();
 
-    // Dates and WH/KG pairs start at column 6
-    // Pattern: date at col 6, WH/KG at 6,7; date at col 8, WH/KG at 8,9; etc.
-    const maxCol = Math.max(
-      dateRow.length,
-      einheitRowIndex >= 0 ? data[einheitRowIndex].length : 0
-    );
-    for (let colIdx = 6; colIdx < maxCol; colIdx += 2) {
-      const dateValue = dateRow[colIdx];
+  // Initialize sessions for all Einheit columns
+  for (const [colIdxStr, einheitNum] of Object.entries(einheitByCol)) {
+    const colIdx = parseInt(colIdxStr);
+    sessionsByCol.set(colIdx, {
+      whCol: colIdx,
+      kgCol: colIdx + 1,
+      date: null,
+      einheitNumber: einheitNum,
+    });
+  }
 
-      let parsedDate = parseExcelDate(dateValue);
-      let einheitNumber: number | undefined;
+  // Create set of valid Einheit columns for validation later
+  const einheitCols = new Set(
+    Object.keys(einheitByCol).map((k) => parseInt(k))
+  );
 
-      // If no date found, try to get Einheit number and generate a date
-      if (!parsedDate && einheitRowIndex >= 0) {
-        const einheitRow = data[einheitRowIndex];
-        // Einheit numbers are typically at colIdx+1 (after "Einheit:" text)
-        if (colIdx + 1 < einheitRow.length) {
-          const einheitValue = einheitRow[colIdx + 1];
-          if (einheitValue != null && einheitValue !== "") {
-            const num =
-              typeof einheitValue === "number"
-                ? einheitValue
-                : parseInt(String(einheitValue));
-            if (!isNaN(num) && num > 0) {
-              einheitNumber = num;
-              // Generate a synthetic date based on Einheit number
-              // Space them 3 days apart, counting backwards from today
-              const baseDate = new Date();
-              baseDate.setDate(baseDate.getDate() - (num - 1) * 3);
-              parsedDate = baseDate.toISOString().split("T")[0] + " ?";
-              console.log(
-                `No date for Einheit ${num} at column ${colIdx}, generated date: ${parsedDate}`
-              );
+  // Fill in dates from the Datum row
+  for (let rowIdx = 0; rowIdx < Math.min(startIndex, data.length); rowIdx++) {
+    const row = data[rowIdx];
+    if (!row) continue;
+
+    const hasDateLabel = row.some((cell) => {
+      if (typeof cell !== "string") return false;
+      const lower = cell.toLowerCase();
+      return lower.includes("datum") || lower.includes("date");
+    });
+
+    if (!hasDateLabel) continue;
+
+    row.forEach((cell, colIdx) => {
+      if (colIdx < 5) return; // Training data starts at later columns
+      if (typeof cell === "string") {
+        const lower = cell.toLowerCase();
+        if (lower.includes("datum") || lower.includes("date")) {
+          return;
+        }
+      }
+
+      const dateStr = parseExcelDate(cell);
+      if (!dateStr) return;
+
+      // Try to find the session at this column
+      let session = sessionsByCol.get(colIdx);
+
+      if (!session) {
+        // Try the next column (date might be one column to the left of Einheit header)
+        session = sessionsByCol.get(colIdx + 1);
+        if (session) {
+          session.date = dateStr;
+        }
+      }
+
+      if (!session) {
+        // Try to find the nearest Einheit column to the right
+        for (
+          let searchCol = colIdx + 1;
+          searchCol <= colIdx + 8;
+          searchCol += 2
+        ) {
+          if (einheitCols.has(searchCol)) {
+            session = sessionsByCol.get(searchCol);
+            if (session) {
+              session.date = dateStr;
+              break;
             }
           }
         }
       }
 
-      if (parsedDate) {
-        const whCol = colIdx;
-        const kgCol = colIdx + 1;
-        trainingSessions.push({
-          whCol,
-          kgCol,
-          date: parsedDate,
-          einheitNumber,
+      if (session) {
+        session.date = dateStr;
+        hasAnyDateInSheet = true;
+      } else {
+        // Create new session if no Einheit was defined for this column
+        sessionsByCol.set(colIdx, {
+          whCol: colIdx,
+          kgCol: colIdx + 1,
+          date: dateStr,
+          einheitNumber: einheitByCol[colIdx] ?? einheitByCol[colIdx + 1],
         });
-        console.log(
-          `Found training session at column ${colIdx}: ${parsedDate} (WH: ${whCol}, KG: ${kgCol})${
-            einheitNumber ? ` [Einheit ${einheitNumber}]` : ""
-          }`
-        );
+        hasAnyDateInSheet = true;
       }
-    }
+    });
+  }
 
-    if (trainingSessions.length > 0) {
-      console.log(
-        `Found ${trainingSessions.length} training sessions in this sheet`
-      );
+  // Secondary pass: detect dates anywhere in the header area, but ignore small integers
+  // IMPORTANT: Only search rows AFTER the Datum row to avoid parsing header row numbers as dates
+  // ONLY SEARCH COLUMNS THAT HAVE ACTUAL EINHEITEN
+  const headerRowLimit = Math.min(startIndex, data.length);
+  const datumRowIndex = 11;
 
-      for (let exerciseIdx = 0; exerciseIdx < exercises.length; exerciseIdx++) {
-        const exercise = exercises[exerciseIdx];
-        // Each exercise spans 2 rows (Satz 1 and Satz 2)
-        const exerciseRowIdx1 = startIndex + exerciseIdx * 2;
-        const exerciseRowIdx2 = startIndex + exerciseIdx * 2 + 1;
+  for (let rowIdx = datumRowIndex + 1; rowIdx < headerRowLimit; rowIdx++) {
+    const row = data[rowIdx];
+    if (!row) continue;
 
-        if (exerciseRowIdx1 >= data.length) continue;
+    for (let colIdx = 0; colIdx < row.length; colIdx++) {
+      if (colIdx < 5) continue; // Ignore metadata columns
 
-        const exerciseRow1 = data[exerciseRowIdx1];
-        const exerciseRow2 =
-          exerciseRowIdx2 < data.length ? data[exerciseRowIdx2] : null;
+      // ONLY check columns that have Einheiten defined
+      if (!einheitCols.has(colIdx)) continue;
 
-        for (const { whCol, kgCol, date } of trainingSessions) {
-          // Get data for Satz 1
-          const reps1 = exerciseRow1[whCol];
-          const weight1 = exerciseRow1[kgCol];
-
-          // Get data for Satz 2 from the next row
-          const reps2 = exerciseRow2 ? exerciseRow2[whCol] : null;
-          const weight2Raw = exerciseRow2 ? exerciseRow2[kgCol] : null;
-
-          // CRITICAL FIX: Merged cells in Excel only have values in the first row
-          // If Satz 2 has reps but no weight, use weight from Satz 1 (merged cell behavior)
-          const weight2 =
-            (weight2Raw === undefined || weight2Raw === null) &&
-            reps2 != null &&
-            reps2 !== "/" &&
-            String(reps2).trim() !== ""
-              ? weight1
-              : weight2Raw;
-
-          const sets = [];
-
-          // Process Satz 1
-          if (reps1 != null && weight1 != null) {
-            const repsStr1 = String(reps1).trim();
-            const weightStr1 = String(weight1).trim();
-
-            if (
-              repsStr1 !== "/" &&
-              weightStr1 !== "/" &&
-              repsStr1 !== "" &&
-              weightStr1 !== ""
-            ) {
-              const repsNum1 = parseInt(repsStr1);
-              const weightNum1 = parseFloat(weightStr1.replace(",", "."));
-
-              if (
-                !isNaN(weightNum1) &&
-                weightNum1 > 0 &&
-                !isNaN(repsNum1) &&
-                repsNum1 > 0
-              ) {
-                sets.push({ setNumber: 1, weight: weightNum1, reps: repsNum1 });
-              }
-            }
-          }
-
-          // Process Satz 2
-          if (reps2 != null && weight2 != null) {
-            const repsStr2 = String(reps2).trim();
-            const weightStr2 = String(weight2).trim();
-
-            if (
-              repsStr2 !== "/" &&
-              weightStr2 !== "/" &&
-              repsStr2 !== "" &&
-              weightStr2 !== ""
-            ) {
-              const repsNum2 = parseInt(repsStr2);
-              const weightNum2 = parseFloat(weightStr2.replace(",", "."));
-
-              if (
-                !isNaN(weightNum2) &&
-                weightNum2 > 0 &&
-                !isNaN(repsNum2) &&
-                repsNum2 > 0
-              ) {
-                sets.push({ setNumber: 2, weight: weightNum2, reps: repsNum2 });
-              }
-            }
-          }
-
-          if (sets.length === 0) continue;
-
-          let session = sessions.find((s) => s.date === date);
-          if (!session) {
-            session = { date, entries: [] };
-            sessions.push(session);
-          }
-
-          let entry = session.entries.find((e) => e.exerciseId === exercise.id);
-          if (!entry) {
-            entry = {
-              id: `entry-${date}-${exercise.id}`,
-              exerciseId: exercise.id,
-              date: date,
-              sets: [],
-            };
-            session.entries.push(entry);
-          }
-
-          entry.sets.push(...sets);
-        }
+      const cell = row[colIdx];
+      if (typeof cell === "number" && cell < 60) {
+        continue;
       }
 
-      console.log(`Imported ${sessions.length} sessions from this sheet`);
+      const dateStr = parseExcelDate(cell);
+      if (!dateStr) continue;
+
+      const session = sessionsByCol.get(colIdx);
+      if (session && !session.date) {
+        // Update session with found date
+        session.date = dateStr;
+        hasAnyDateInSheet = true;
+      }
     }
   }
 
+  // Convert map to array, sorted by column index
+  const trainingSessions = Array.from(sessionsByCol.values()).sort(
+    (a, b) => a.whCol - b.whCol
+  );
+
+  // CRITICAL FIX: Only keep sessions that correspond to actual Einheit columns
+  // Filter out any stray sessions created in wrong columns
+  const validSessions = trainingSessions.filter((s) => {
+    // Keep session if:
+    // 1. Its column has an Einheit, OR
+    // 2. It's within the expected range (col 5 to col 21, step 2)
+    if (einheitCols.has(s.whCol)) return true;
+
+    // Fallback: keep if it looks like it's in the typical Einheit position (odd columns 7, 9, 11, etc)
+    if (s.whCol >= 7 && s.whCol <= 21 && (s.whCol - 7) % 2 === 0) return true;
+
+    return false;
+  });
+
+  if (validSessions.length === 0) {
+    return sessions;
+  }
+
+  if (!hasAnyDateInSheet) {
+    console.log(
+      "⚠️  Skipping sheet: no dates found in header; ignoring undated Einheiten"
+    );
+    return sessions;
+  }
+
+  // Interpolate missing dates: fill gaps between known dates
+  const sessionsWithInterpolatedDates = interpolateSessionDates(validSessions);
+
+  console.log(
+    `Found ${sessionsWithInterpolatedDates.length} training sessions in this sheet`
+  );
+
+  for (const {
+    whCol,
+    kgCol,
+    date,
+    interpolated: interpolatedFlag = false,
+  } of sessionsWithInterpolatedDates) {
+    let hasAnyReps = false; // true if any exercise yields at least one set
+    const entries: any[] = [];
+
+    for (let exerciseIdx = 0; exerciseIdx < exercises.length; exerciseIdx++) {
+      const exercise = exercises[exerciseIdx];
+      const exerciseRowIdx1 = startIndex + exerciseIdx * 2;
+      const exerciseRowIdx2 = startIndex + exerciseIdx * 2 + 1;
+      if (exerciseRowIdx1 >= data.length) continue;
+
+      const exerciseRow1 = data[exerciseRowIdx1];
+      const exerciseRow2 =
+        exerciseRowIdx2 < data.length ? data[exerciseRowIdx2] : null;
+
+      const isRow1Empty =
+        !exerciseRow1 ||
+        ((exerciseRow1[whCol] == null ||
+          String(exerciseRow1[whCol]).trim() === "") &&
+          (exerciseRow1[kgCol] == null ||
+            String(exerciseRow1[kgCol]).trim() === ""));
+      const isRow2Empty =
+        !exerciseRow2 ||
+        ((exerciseRow2[whCol] == null ||
+          String(exerciseRow2[whCol]).trim() === "") &&
+          (exerciseRow2[kgCol] == null ||
+            String(exerciseRow2[kgCol]).trim() === ""));
+
+      const reps1 = exerciseRow1?.[whCol];
+      const weight1 = exerciseRow1?.[kgCol];
+      const reps2 = exerciseRow2 ? exerciseRow2[whCol] : null;
+      const weight2Raw = exerciseRow2 ? exerciseRow2[kgCol] : null;
+
+      const weight2 =
+        (weight2Raw === undefined || weight2Raw === null) &&
+        reps2 != null &&
+        reps2 !== "/" &&
+        String(reps2).trim() !== ""
+          ? weight1
+          : weight2Raw;
+
+      // Check if both reps are empty/missing (for skipped unit detection)
+      const reps1Str = reps1 != null ? String(reps1).trim() : "";
+      const reps2Str = reps2 != null ? String(reps2).trim() : "";
+      const bothRepsEmpty =
+        (reps1Str === "" || reps1Str === "/") &&
+        (reps2Str === "" || reps2Str === "/");
+
+      const sets: TrainingSet[] = [];
+
+      // Satz 1
+      if (reps1 != null) {
+        const repsStr1 = String(reps1).trim();
+        const weightStr1 = weight1 != null ? String(weight1).trim() : "";
+        const weightMissing =
+          weightStr1 === "" || weightStr1 === "/" || weight1 == null;
+        if (repsStr1 !== "/" && repsStr1 !== "") {
+          const repsNum1 = parseInt(repsStr1);
+          const weightNum1Raw = parseFloat(weightStr1.replace(",", "."));
+          const weightNum1 = !isNaN(weightNum1Raw) ? weightNum1Raw : 0;
+          const hasValidWeight = weightNum1 > 0;
+          if (
+            !isNaN(repsNum1) &&
+            repsNum1 > 0 &&
+            (hasValidWeight || weightMissing)
+          ) {
+            sets.push({
+              setNumber: 1,
+              weight: hasValidWeight ? weightNum1 : 0,
+              reps: repsNum1,
+            });
+          }
+        }
+      }
+
+      // Satz 2
+      if (reps2 != null) {
+        const repsStr2 = String(reps2).trim();
+        const weightStr2 = weight2 != null ? String(weight2).trim() : "";
+        const weightMissing =
+          weightStr2 === "" || weightStr2 === "/" || weight2 == null;
+        if (repsStr2 !== "/" && repsStr2 !== "") {
+          const repsNum2 = parseInt(repsStr2);
+          const weightNum2Raw = parseFloat(weightStr2.replace(",", "."));
+          const weightNum2 = !isNaN(weightNum2Raw) ? weightNum2Raw : 0;
+          const hasValidWeight = weightNum2 > 0;
+          if (
+            !isNaN(repsNum2) &&
+            repsNum2 > 0 &&
+            (hasValidWeight || weightMissing)
+          ) {
+            sets.push({
+              setNumber: 2,
+              weight: hasValidWeight ? weightNum2 : 0,
+              reps: repsNum2,
+            });
+          }
+        }
+      }
+
+      if (sets.length > 0) {
+        hasAnyReps = true;
+      }
+
+      const entry: any = {
+        id: `entry-${date}-${exercise.id}`,
+        exerciseId: exercise.id,
+        date,
+        sets,
+      };
+      // Mark as skipped if both reps are empty/missing (per import rules)
+      if (bothRepsEmpty) {
+        entry.skipped = true;
+      }
+      entries.push(entry);
+    }
+
+    // Session only counts if at least one exercise has reps
+    if (!hasAnyReps) {
+      console.log(
+        `⚠️  Filtering out session at col ${whCol}, date ${date}: no reps found in any exercise`
+      );
+      continue;
+    }
+
+    const totalSets = entries.reduce(
+      (sum, entry) => sum + (entry.sets ? entry.sets.length : 0),
+      0
+    );
+
+    if (totalSets < 4) {
+      console.log(
+        `⚠️  Filtering out session at col ${whCol}, date ${date}: only ${totalSets} sets found (looks empty)`
+      );
+      continue;
+    }
+
+    const sessionToAdd = { date, entries, dateInterpolated: interpolatedFlag };
+    sessions.push(sessionToAdd);
+  }
+
+  console.log(`Imported ${sessions.length} sessions from this sheet`);
   return sessions;
 }
 

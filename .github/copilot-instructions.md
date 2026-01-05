@@ -37,28 +37,26 @@ Hill Fitness Sheets is a Progressive Web App for tracking gym training sessions 
 
 **Reference Files**:
 
-- [Example sheet for parsing/import/export reference](Example-Sheet.xlsx)
-- [Visual representation of expected sheet structure](Example-Sheet-image.png)
+- [Example sheet for parsing/import/export reference](src/lib/__tests__/fixtures/Example-Sheet.xlsx)
 
 **Sheet Structure Requirements**:
 
-The Google Sheets workbook uses multiple sheets (e.g., "Einheit 1-8", "Einheit 9-16", "Einheit 17-24") where each sheet is a continuation of the previous, providing more columns for additional training sessions:
+Das Google Sheets Workbook besteht aus mehreren Sheets (z. B. "Einheit 1-8", "Einheit 9-16", "Einheit 17-24"), wobei jedes Sheet eine Fortsetzung des vorherigen ist und zusätzliche Spalten für weitere Trainingseinheiten bietet.
 
-**Per-Sheet Layout**:
+**Pro Sheet Aufbau:**
 
-- **Column A**: Nr (exercise number/ID)
-- **Column B**: Übungen (exercise name) - required for parsing
-- **Column C**: Notiz (notes/instructions, e.g., "Achse 1 Fußteller", "enger Griff")
-- **Column D**: WH-Zahl (rep range, e.g., "10-12", "12-15")
-- **Column E**: Sätze (Set indicator: "Satz 1", "Satz 2")
-- **Columns F+**: Training sessions (Einheit 1, 2, 3...) as column pairs:
-  - Each session has 2 columns: **WH** (reps performed) | **KG** (weight used)
-  - Each exercise spans 2 rows (Satz 1 and Satz 2)
-  - **CRITICAL**: Weight cells (KG column) are merged across both rows in Excel
-    - Only row 1 (Satz 1) contains the weight value when imported
-    - Row 2 (Satz 2) has `undefined` for weight due to merged cell behavior
-    - Both sets use the same weight (this is the intended training methodology)
-    - Import logic: If Satz 2 has reps but no weight, use weight from Satz 1
+- **Spalte A**: Nr (Übungsnummer/ID)
+- **Spalte B**: Übungen (Übungsname) – erforderlich für das Parsen
+- **Spalte C**: Notiz (Hinweise/Instruktionen, z. B. "Achse 1 Fußteller", "enger Griff")
+- **Spalte D**: WH-Zahl (Wiederholungsbereich, z. B. "10-12", "12-15")
+- **Spalte E**: Sätze (Satz-Indikator: "Satz 1", "Satz 2")
+- **Spalten F+**: Trainingseinheiten (Einheit 1, 2, 3...) als Spaltenpaare:
+  - Jede Einheit besteht aus 2 Spalten: **WH** (Wiederholungen pro Satz) | **KG** (Gewicht für beide Sätze)
+  - Jede Übung wird pro Einheit in zwei Zeilen dargestellt (eine Zeile pro Satz: Satz 1 und Satz 2)
+  - **WICHTIG**: Die Gewichtszelle (KG-Spalte) ist in Excel für beide Sätze zusammengeführt (merged cell)
+    - Das Gewicht steht nur in der ersten Zeile (Satz 1); die zweite Zeile (Satz 2) ist leer/undefined
+    - Beide Sätze verwenden das gleiche Gewicht (dies entspricht der Trainingsmethode)
+    - Import-Logik: Wenn Satz 2 Wiederholungen, aber kein Gewicht hat, wird das Gewicht aus Satz 1 übernommen
 
 **Exercise Detection**:
 

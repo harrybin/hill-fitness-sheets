@@ -6,11 +6,22 @@ import { VitePWA } from "vite-plugin-pwa";
 import sparkPlugin from "@github/spark/spark-vite-plugin";
 import createIconImportProxy from "@github/spark/vitePhosphorIconProxyPlugin";
 import { resolve } from "path";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 const projectRoot = process.env.PROJECT_ROOT || import.meta.dirname;
 
+// Read version from package.json
+const packageJson = JSON.parse(
+  readFileSync(join(projectRoot, "package.json"), "utf-8")
+);
+const appVersion = packageJson.version || "0.0.0";
+
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    "import.meta.env.VITE_APP_VERSION": JSON.stringify(appVersion),
+  },
   plugins: [
     react(),
     tailwindcss(),

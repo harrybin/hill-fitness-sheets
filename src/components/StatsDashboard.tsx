@@ -1,3 +1,4 @@
+import { getTopSkippedExercises } from "../lib/utils";
 import React, { useState } from "react";
 import {
   Dialog,
@@ -24,6 +25,12 @@ export const StatsDashboard: React.FC<StatsDashboardProps> = ({
   sessions,
   exercises,
 }) => {
+  // Top 5 ausgelassene Übungen
+  const topSkipped = getTopSkippedExercises(sessions, exercises, 5);
+  const skippedChartData = topSkipped.map((ex) => ({
+    label: ex.name,
+    value: ex.count,
+  }));
   // Modal-Dialog für Rohdatenanzeige
   const [modal, setModal] = useState<null | {
     type: "vol" | "prog";
@@ -75,16 +82,18 @@ export const StatsDashboard: React.FC<StatsDashboardProps> = ({
       });
     });
     Object.entries(byDate).forEach(([date, weights]) => {
-      sumProgression.push({
-        date,
-        maxWeight: weights.reduce((a, b) => a + b, 0),
-      });
-      avgProgression.push({
-        date,
-        maxWeight: Math.round(
-          weights.reduce((a, b) => a + b, 0) / weights.length
-        ),
-      });
+      if (weights.length > 0) {
+        const sum = weights.reduce((a, b) => a + b, 0);
+        const avg = Math.round(sum / weights.length);
+        sumProgression.push({
+          date,
+          maxWeight: sum,
+        });
+        avgProgression.push({
+          date,
+          maxWeight: avg,
+        });
+      }
     });
     sumProgression.sort((a, b) => a.date.localeCompare(b.date));
     avgProgression.sort((a, b) => a.date.localeCompare(b.date));
@@ -135,6 +144,23 @@ export const StatsDashboard: React.FC<StatsDashboardProps> = ({
       <div className="p-4 space-y-6">
         <section>
           <h3 className="font-semibold mb-2">
+            Häufig ausgelassene Übungen
+            <span className="text-xs text-muted-foreground align-middle ml-5">
+              (Top 5)
+            </span>
+          </h3>
+          <div className="w-full max-w-xs mx-auto">
+            {skippedChartData.length > 0 ? (
+              <BarChart data={skippedChartData} horizontal />
+            ) : (
+              <div className="text-xs text-muted-foreground">
+                Keine ausgelassenen Übungen
+              </div>
+            )}
+          </div>
+        </section>
+        <section>
+          <h3 className="font-semibold mb-2">
             Trainingshäufigkeit
             <span className="text-xs text-muted-foreground align-middle ml-5">
               (# Tainings / Monat)
@@ -142,31 +168,6 @@ export const StatsDashboard: React.FC<StatsDashboardProps> = ({
           </h3>
           <div className="w-full max-w-xs mx-auto">
             <BarChart data={freqData} />
-          </div>
-        </section>
-        <div className="my-4 border-t border-border" /> {/*Divider */}
-        <section>
-          <h3 className="font-semibold mb-2">
-            Trainingsvolumen Verlauf{" "}
-            <span className="text-xs text-muted-foreground align-middle ml-5">
-              (Σ&nbsp;(Gewicht&nbsp;×&nbsp;Wiederholungen))
-            </span>
-          </h3>
-          <div className="w-full max-w-xs mx-auto mb-2">
-            {/* Graph oben */}
-            {selectedVol.length > 1 && (
-              <div
-                style={{ cursor: "pointer" }}
-                onClick={() => setModal({ type: "vol", ex: selectedExercise })}
-              >
-                <AnimatedLineChart
-                  data={selectedVol.map((v) => ({
-                    label: v.date.slice(5, 7) + "/" + v.date.slice(2, 4),
-                    value: v.volume,
-                  }))}
-                />
-              </div>
-            )}
           </div>
         </section>
         <div className="my-4 border-t border-border" /> {/*Divider */}
@@ -195,8 +196,30 @@ export const StatsDashboard: React.FC<StatsDashboardProps> = ({
             )}
           </div>
         </section>
-        <div className="my-4 border-t border-border" /> {/*Divider */}
-        {/* Auswahl und Export unterhalb des Graphen */}
+        <section>
+          <h3 className="font-semibold mb-2">
+            Trainingsvolumen Verlauf{" "}
+            <span className="text-xs text-muted-foreground align-middle ml-5">
+              (Σ&nbsp;(Gewicht&nbsp;×&nbsp;Wiederholungen))
+            </span>
+          </h3>
+          <div className="w-full max-w-xs mx-auto mb-2">
+            {/* Graph oben */}
+            {selectedVol.length > 1 && (
+              <div
+                style={{ cursor: "pointer" }}
+                onClick={() => setModal({ type: "vol", ex: selectedExercise })}
+              >
+                <AnimatedLineChart
+                  data={selectedVol.map((v) => ({
+                    label: v.date.slice(5, 7) + "/" + v.date.slice(2, 4),
+                    value: v.volume,
+                  }))}
+                />
+              </div>
+            )}
+          </div>
+        </section>
         <div className="mt-2">
           <select
             className="w-full rounded border border-border bg-background px-2 py-1 text-sm"

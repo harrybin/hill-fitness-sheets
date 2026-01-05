@@ -34,8 +34,8 @@ function App() {
   const [aboutOpen, setAboutOpen] = useState(false);
 
   const today = new Date().toISOString().split("T")[0];
-  const viewDate = selectedDate || today;
-  const currentSession = sessions.find((s) => s.date === viewDate);
+  const selectedDateClean = selectedDate || today;
+  const currentSession = sessions.find((s) => s.date === selectedDateClean);
 
   const handleCompleteEntry = (entry: any, date: string) => {
     completeEntry(entry, date);
@@ -52,7 +52,7 @@ function App() {
             <SessionHeader
               session={currentSession}
               allSessions={sessions}
-              selectedDate={viewDate}
+              selectedDate={selectedDateClean}
               onSelectSession={(date) => {
                 setSelectedDate(date);
                 setSelectedExercise(null);
@@ -105,7 +105,7 @@ function App() {
               currentSession={currentSession}
               allSessions={sessions}
               defaultSets={2}
-              selectedDate={viewDate}
+              selectedDate={selectedDateClean}
               onComplete={handleCompleteEntry}
               onUpdate={updateEntry}
               onUpdateExercise={updateExercise}
@@ -117,7 +117,7 @@ function App() {
               currentSession={currentSession}
               allSessions={sessions}
               onSelectExercise={setSelectedExercise}
-              selectedDate={viewDate}
+              selectedDate={selectedDateClean}
             />
           )}
         </div>

@@ -1,3 +1,38 @@
+import { parseXLSX } from "../utils";
+describe("XLSX Import Rules", () => {
+  it("should not import a session if no exercise has reps", () => {
+    // All exercises have no reps in both sets for both sessions
+    const data = [
+      ["", "Übungen", "Notiz"],
+      ["", "Bankdrücken", ""],
+      ["", "", ""],
+      ["", "Kniebeugen", ""],
+      ["", "", ""],
+      ["", "", "", "", "", "Einheit:", "1", "2"],
+      ["Datum:", "", "", "", "", "", "2024-01-10", "2024-01-11"],
+      ["", "Übungen", "Notiz", "WH-Zahl", "Sätze"],
+      ["", "Bankdrücken", "", "", "Satz 1", "", "", ""],
+      ["", "", "", "", "Satz 2", "", "", ""],
+      ["", "Kniebeugen", "", "", "Satz 1", "", "", ""],
+      ["", "", "", "", "Satz 2", "", "", ""],
+      ["", "Bankdrücken", "", "", "Satz 1", "", "", ""],
+      ["", "", "", "", "Satz 2", "", "", ""],
+      ["", "Kniebeugen", "", "", "Satz 1", "", "", ""],
+      ["", "", "", "", "Satz 2", "", "", ""],
+    ];
+    const XLSX = require("xlsx");
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+    const arrayBuffer = XLSX.write(workbook, {
+      type: "array",
+      bookType: "xlsx",
+    });
+    const result = parseXLSX(arrayBuffer);
+    // No session should be imported
+    expect(result.sessions.length).toBe(0);
+  });
+});
 import { describe, it, expect } from "vitest";
 import {
   base64ToArrayBuffer,

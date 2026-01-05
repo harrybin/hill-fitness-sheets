@@ -10,7 +10,73 @@ import * as XLSX from "xlsx";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 
+// Import-Regeln für XLSX-Parser:
+// - Eine Einheit (Session) wird nur importiert, wenn mindestens eine Übung in mindestens einem Satz eine Wiederholungszahl (Reps) hat.
+// - Hat eine zu importierende Einheit für eine Übung in beiden Sätzen keinen Zahlenwert (Reps), wird diese Übung in dieser Einheit mit skipped: true markiert.
+
 describe("Integration Tests with Example-Sheet.xlsx", () => {
+  it("should import only sessions with reps and mark skipped exercises", () => {
+    // Sheet with two sessions: one with reps, one without
+    const data = [
+      ["", "Übungen", "Notiz"],
+      ["", "Bankdrücken", ""],
+      ["", "", ""],
+      ["", "Kniebeugen", ""],
+      ["", "", ""],
+      // Einheit row
+      ["", "", "", "", "", "Einheit:", "1", "2"],
+      // Datum row
+      ["Datum:", "", "", "", "", "", "2024-01-10", "2024-01-11"],
+      // Header
+      ["", "Übungen", "Notiz", "WH-Zahl", "Sätze"],
+      // Bankdrücken Satz 1 & 2, Einheit 1 (has reps)
+      ["", "Bankdrücken", "", "", "Satz 1", "", 10, ""],
+      ["", "", "", "", "Satz 2", "", 8, ""],
+      // Kniebeugen Satz 1 & 2, Einheit 1 (no reps)
+      ["", "Kniebeugen", "", "", "Satz 1", "", "", ""],
+      ["", "", "", "", "Satz 2", "", "", ""],
+      // Bankdrücken Satz 1 & 2, Einheit 2 (no reps)
+      ["", "Bankdrücken", "", "", "Satz 1", "", "", ""],
+      ["", "", "", "", "Satz 2", "", "", ""],
+      // Kniebeugen Satz 1 & 2, Einheit 2 (no reps)
+      ["", "Kniebeugen", "", "", "Satz 1", "", "", ""],
+      ["", "", "", "", "Satz 2", "", "", ""],
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+    const arrayBuffer = XLSX.write(workbook, {
+      type: "array",
+      bookType: "xlsx",
+    });
+    const result = parseXLSX(arrayBuffer);
+
+    // Only the first session (2024-01-10) should be imported
+    expect(result.sessions.length).toBe(1);
+    expect(result.sessions[0].date).toBe("2024-01-10");
+
+    // Bankdrücken should have sets, Kniebeugen should be skipped
+    const bank = result.sessions[0].entries.find(
+      (entry) =>
+        entry.exerciseId &&
+        result.exercises.find(
+          (ex) => ex.id === entry.exerciseId && ex.name === "Bankdrücken"
+        )
+    );
+    const knie = result.sessions[0].entries.find(
+      (entry) =>
+        entry.exerciseId &&
+        result.exercises.find(
+          (ex) => ex.id === entry.exerciseId && ex.name === "Kniebeugen"
+        )
+    );
+
+    expect(bank?.sets.length).toBeGreaterThan(0);
+    expect(bank?.skipped).not.toBe(true);
+    expect(knie?.sets.length).toBe(0);
+    expect(knie?.skipped).toBe(true);
+  });
   const exampleSheetPath = resolve(__dirname, "fixtures", "Example-Sheet.xlsx");
   let exampleSheetBuffer: ArrayBuffer;
 

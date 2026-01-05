@@ -40,16 +40,36 @@ export function ExerciseList({
   };
 
   const todayDateString = new Date().toISOString().split("T")[0];
-  const isOldSession =
-    selectedDate && selectedDate.replace(" ?", "").trim() !== todayDateString;
+  const selectedDateClean = selectedDate?.replace(" ?", "").trim();
+
+  // Determine if this is an old session:
+  // Only old sessions (not today) should have the different background color
+  const isOldSession = currentSession
+    ? currentSession.date !== todayDateString
+    : selectedDateClean && selectedDateClean !== todayDateString;
+
   const getExerciseStatus = (exerciseId: string) => {
     const entry = currentSession?.entries.find(
       (e) => e.exerciseId === exerciseId
     );
-    if (!entry || (entry.sets.length === 0 && !entry.skipped)) {
-      return undefined;
+
+    // Show entry if it exists AND (has sets OR is marked as skipped)
+    if (entry && (entry.sets.length > 0 || entry.skipped)) {
+      return entry;
     }
-    return entry;
+
+    // For old sessions, if exercise is missing from entries, create a skipped entry to display it
+    if (isOldSession && !entry && selectedDateClean) {
+      return {
+        id: `entry-${selectedDateClean}-${exerciseId}`,
+        exerciseId: exerciseId,
+        date: selectedDateClean,
+        sets: [],
+        skipped: true,
+      };
+    }
+
+    return undefined;
   };
 
   const getLastWeight = (exerciseId: string): number | undefined => {

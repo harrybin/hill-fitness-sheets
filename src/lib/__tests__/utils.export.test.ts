@@ -1,3 +1,6 @@
+// Import-Regeln für XLSX-Parser:
+// - Eine Einheit (Session) wird nur importiert, wenn mindestens eine Übung in mindestens einem Satz eine Wiederholungszahl (Reps) hat.
+// - Hat eine zu importierende Einheit für eine Übung in beiden Sätzen keinen Zahlenwert (Reps), wird diese Übung in dieser Einheit mit skipped: true markiert.
 import { describe, it, expect } from "vitest";
 import {
   arrayBufferToBase64,

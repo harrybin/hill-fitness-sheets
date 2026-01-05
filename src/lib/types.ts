@@ -23,6 +23,7 @@ export interface TrainingEntry {
 export interface Session {
   date: string;
   entries: TrainingEntry[];
+  dateInterpolated?: boolean;
 }
 
 export interface AppSettings {
