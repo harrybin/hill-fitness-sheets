@@ -52,14 +52,24 @@ export const StatsDashboard: React.FC<StatsDashboardProps> = ({
   return (
     <div className="p-4 space-y-6">
       <section>
-        <h3 className="font-semibold mb-2">Trainingshäufigkeit (Monat)</h3>
+        <h3 className="font-semibold mb-2">
+          Trainingshäufigkeit
+          <span className="text-xs text-muted-foreground align-middle ml-5">
+            (# Tainings / Monat)
+          </span>
+        </h3>
         <div className="w-full max-w-xs mx-auto">
           <BarChart data={freqData} />
         </div>
       </section>
       <div className="my-4 border-t border-border" /> {/*Divider */}
       <section>
-        <h3 className="font-semibold mb-2">Trainingsvolumen Verlauf</h3>
+        <h3 className="font-semibold mb-2">
+          Trainingsvolumen Verlauf{" "}
+          <span className="text-xs text-muted-foreground align-middle ml-5">
+            (Σ&nbsp;(Gewicht&nbsp;×&nbsp;Wiederholungen))
+          </span>
+        </h3>
         <div className="w-full max-w-xs mx-auto mb-2">
           {/* Graph oben */}
           {selectedVol.length > 1 && (
@@ -69,7 +79,7 @@ export const StatsDashboard: React.FC<StatsDashboardProps> = ({
             >
               <AnimatedLineChart
                 data={selectedVol.map((v) => ({
-                  label: v.date.slice(5),
+                  label: v.date.slice(5, 7) + "/" + v.date.slice(2, 4),
                   value: v.volume,
                 }))}
               />
@@ -95,7 +105,10 @@ export const StatsDashboard: React.FC<StatsDashboardProps> = ({
       <div className="my-4 border-t border-border" /> {/*Divider */}
       <section>
         <h3 className="font-semibold mb-2">
-          Fortschritt (max. Gewicht pro Einheit)
+          Fortschritt
+          <span className="text-xs text-muted-foreground align-middle ml-5">
+            (max&nbsp;Gewicht&nbsp;pro&nbsp;Einheit)
+          </span>
         </h3>
         <div className="w-full max-w-xs mx-auto mb-2">
           {/* Graph oben */}
@@ -106,7 +119,7 @@ export const StatsDashboard: React.FC<StatsDashboardProps> = ({
             >
               <AnimatedLineChart
                 data={progression[selectedExercise.id].map((p) => ({
-                  label: p.date.slice(5),
+                  label: p.date.slice(5, 7) + "/" + p.date.slice(2, 4),
                   value: p.maxWeight,
                 }))}
                 color="#10b981"

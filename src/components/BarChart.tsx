@@ -1,4 +1,26 @@
 import React from "react";
+import { Bar } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+import ChartDataLabels from "chartjs-plugin-datalabels";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ChartDataLabels
+);
 
 interface BarChartProps {
   data: { label: string; value: number }[];
@@ -6,61 +28,47 @@ interface BarChartProps {
   height?: number;
 }
 
-// Simple SVG bar chart, mobile-optimized, no dependencies
 export const BarChart: React.FC<BarChartProps> = ({
   data,
   maxBars = 8,
   height = 120,
 }) => {
   const shown = data.slice(-maxBars);
-  const maxValue = Math.max(...shown.map((d) => d.value), 1);
-  const barWidth = 100 / shown.length;
-  const topPadding = 20; // Abstand oben für Balkenspitze und Label
-
+  const chartData = {
+    labels: shown.map((d) => d.label),
+    datasets: [
+      {
+        label: "Trainingshäufigkeit",
+        data: shown.map((d) => d.value),
+        backgroundColor: "#f97316",
+      },
+    ],
+  };
+  const options = {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      title: { display: false },
+      datalabels: {
+        anchor: "end",
+        align: "start",
+        color: "#fff",
+        font: { weight: "bold", size: 12 },
+        formatter: (value) => value,
+        offset: -4,
+      },
+    },
+    scales: {
+      x: { grid: { display: false } },
+      y: { display: false },
+    },
+  };
   return (
-    <svg
-      viewBox={`0 0 100 ${height}`}
-      width="100%"
+    <Bar
+      data={chartData}
+      options={options}
+      plugins={[ChartDataLabels]}
       height={height}
-      className="block"
-    >
-      {shown.map((d, i) => {
-        // Balkenhöhe so berechnen, dass oben immer topPadding bleibt
-        const barHeight = (d.value / maxValue) * (height - topPadding - 24);
-        const barY = height - barHeight - 18;
-        const safeBarY = Math.max(barY, topPadding);
-        return (
-          <g key={d.label}>
-            <rect
-              x={i * barWidth + 6}
-              y={safeBarY}
-              width={barWidth - 8}
-              height={barHeight}
-              rx={2}
-              fill="#f97316"
-            />
-            <text
-              x={i * barWidth + barWidth / 2}
-              y={height - 4}
-              textAnchor="middle"
-              fontSize="10"
-              fill="#888"
-            >
-              {/* Monat/Jahr anzeigen, z.B. 01/24 */}
-              {d.label}
-            </text>
-            <text
-              x={i * barWidth + barWidth / 2}
-              y={safeBarY - 6}
-              textAnchor="middle"
-              fontSize="10"
-              fill="#fff"
-            >
-              {d.value}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
+    />
   );
 };
