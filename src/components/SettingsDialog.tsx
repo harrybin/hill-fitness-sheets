@@ -8,16 +8,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -113,15 +103,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] p-4">
-        <DialogHeader className="pb-2">
-          <DialogTitle className="text-base">Einstellungen</DialogTitle>
-          {/* <DialogDescription className="text-xs">
-            Trainingseinstellungen
-          </DialogDescription> */}
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Einstellungen</DialogTitle>
         </DialogHeader>
-
-        <div className="space-y-4 overflow-y-auto max-h-[calc(90vh-8rem)]">
+        <div className="bg-muted/50 p-2.5 rounded-md space-y-3">
           <div className="space-y-2">
             <Label className="text-sm">Google Sheets Datei</Label>
             <div className="space-y-2">
@@ -226,26 +212,33 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         </div>
       </DialogContent>
 
-      <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>App wirklich leeren?</AlertDialogTitle>
-            <AlertDialogDescription>
+      <Dialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>App wirklich leeren?</DialogTitle>
+            <DialogDescription>
               Alle gespeicherten Übungen, Trainingseinheiten und Einstellungen
               werden unwiderruflich gelöscht. Die App wird danach neu geladen.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleClearApp}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Alle Daten löschen
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="bg-muted/50 p-2.5 rounded-md">
+            <div className="flex gap-2 justify-end">
+              <Button
+                onClick={() => setShowClearConfirm(false)}
+                variant="outline"
+              >
+                Abbrechen
+              </Button>
+              <Button
+                onClick={handleClearApp}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Alle Daten löschen
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

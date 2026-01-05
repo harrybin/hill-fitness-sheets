@@ -746,7 +746,9 @@ function parseSessionsFromSheet(
   );
 
   // Fill in dates from the Datum row
-  for (let rowIdx = 0; rowIdx < Math.min(startIndex, data.length); rowIdx++) {
+  // Search MORE BROADLY - check ALL rows up to startIndex + buffer to handle test data structures
+  const dateSearchLimit = Math.min(startIndex + 5, data.length);
+  for (let rowIdx = 0; rowIdx < dateSearchLimit; rowIdx++) {
     const row = data[rowIdx];
     if (!row) continue;
 

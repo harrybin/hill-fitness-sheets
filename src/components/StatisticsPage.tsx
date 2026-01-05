@@ -18,8 +18,8 @@ export default function StatisticsPage() {
           <Button
             onClick={handleBack}
             variant="outline"
-            size="sm"
-            className="gap-1.5 text-xs h-8"
+            size="default"
+            className="gap-1.5 text-sm h-10"
           >
             ← Zurück
           </Button>

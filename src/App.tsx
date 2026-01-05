@@ -8,12 +8,18 @@ import { SettingsDialog } from "@/components/SettingsDialog";
 import { AboutDialog } from "@/components/AboutDialog";
 import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 import { Toaster } from "@/components/ui/sonner";
-import { Gear, DotsThreeVertical, Info } from "@phosphor-icons/react";
+import {
+  Gear,
+  DotsThreeVertical,
+  Info,
+  ChartLine,
+} from "@phosphor-icons/react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
 function App() {
@@ -72,27 +78,30 @@ function App() {
                   />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="start" side="left">
                 <DropdownMenuItem
                   onSelect={() => (window.location.hash = "#/statistiken")}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 px-4 py-2 text-base"
                   data-testid="statistics-menu-item"
                 >
-                  📊 Statistiken
+                  <ChartLine size={20} weight="bold" className="size-5" />{" "}
+                  Statistiken
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onSelect={() => setSettingsOpen(true)}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 px-4 py-2 text-base"
                   data-testid="settings-menu-item"
                 >
-                  <Gear size={18} /> Einstellungen
+                  <Gear size={20} weight="bold" className="size-5" />{" "}
+                  Einstellungen
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={() => setAboutOpen(true)}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 px-4 py-2 text-base"
                   data-testid="about-menu-item"
                 >
-                  <Info size={18} /> Über
+                  <Info size={20} weight="bold" className="size-5" /> Über
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
