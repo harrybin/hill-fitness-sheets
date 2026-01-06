@@ -144,7 +144,7 @@ export const StatsDashboard: React.FC<StatsDashboardProps> = ({
       <div className="p-4 space-y-6">
         <section>
           <h3 className="font-semibold mb-2">
-            Häufig ausgelassene Übungen
+            Ausgelassene Übungen
             <span className="text-xs text-muted-foreground align-middle ml-5">
               (Top 5)
             </span>

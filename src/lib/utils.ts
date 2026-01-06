@@ -1,4 +1,4 @@
-﻿import clsx, { type ClassValue, type ClassNameValue } from "clsx";
+﻿import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { Exercise, Session, TrainingEntry } from "./types";
 
@@ -39,153 +39,151 @@ export function getTopSkippedExercises(
   exercises: Exercise[],
   limit: number = 10
 ): {
-  exercise: Exercise;
-  skippedCount: number;
-  totalCount: number;
-  skipPercentage: number;
+  name: string;
+  count: number;
 }[] {
-  const skipCounts = new Map<string, { skipped: number; total: number }>();
+  const skipCounts = new Map<string, number>();
 
   for (const session of allSessions) {
     for (const entry of session.entries) {
-      const current = skipCounts.get(entry.exerciseId) || {
-        skipped: 0,
-        total: 0,
-      };
-      current.total++;
       if (entry.skipped) {
-        current.skipped++;
+        const exerciseName =
+          exercises.find((e) => e.id === entry.exerciseId)?.name ||
+          entry.exerciseId;
+        skipCounts.set(exerciseName, (skipCounts.get(exerciseName) || 0) + 1);
       }
-      skipCounts.set(entry.exerciseId, current);
     }
   }
 
   return Array.from(skipCounts.entries())
-    .map(([exerciseId, counts]) => ({
-      exercise: exercises.find((e) => e.id === exerciseId)!,
-      skippedCount: counts.skipped,
-      totalCount: counts.total,
-      skipPercentage: Math.round((counts.skipped / counts.total) * 100),
-    }))
-    .sort((a, b) => b.skipPercentage - a.skipPercentage)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
     .slice(0, limit);
 }
 
-// Get training frequency by month
+// Get training frequency by month - returns Record<month, count>
 export function getMonthlyTrainingFrequency(
   allSessions: Session[]
-): { month: string; count: number }[] {
-  const frequencyMap = new Map<string, number>();
+): Record<string, number> {
+  const frequencyMap: Record<string, number> = {};
 
   for (const session of allSessions) {
-    const [year, month] = session.date.split("-");
-    const monthKey = `${year}-${month}`;
-    frequencyMap.set(monthKey, (frequencyMap.get(monthKey) || 0) + 1);
+    const month = session.date.slice(0, 7); // YYYY-MM
+    frequencyMap[month] = (frequencyMap[month] || 0) + 1;
   }
 
-  return Array.from(frequencyMap.entries())
-    .map(([month, count]) => ({ month, count }))
-    .sort((a, b) => a.month.localeCompare(b.month));
+  return frequencyMap;
 }
 
 // Get daily training frequency
 export function getDailyTrainingFrequency(
   allSessions: Session[]
-): { date: string; exerciseCount: number; totalSets: number }[] {
-  return allSessions.map((session) => {
-    let totalSets = 0;
-    for (const entry of session.entries) {
-      totalSets += entry.sets.length;
-    }
-    return {
-      date: session.date,
-      exerciseCount: session.entries.length,
-      totalSets,
-    };
-  });
+): Record<string, number> {
+  const frequencyMap: Record<string, number> = {};
+
+  for (const session of allSessions) {
+    frequencyMap[session.date] = (frequencyMap[session.date] || 0) + 1;
+  }
+
+  return frequencyMap;
 }
 
 // Get exercise volume history (sets × reps × weight)
+// Returns: Record<exerciseId, array of {date, volume}>
 export function getExerciseVolumeHistory(
-  allSessions: Session[],
-  exerciseId: string
-): { date: string; volume: number; setCount: number }[] {
-  return allSessions
-    .map((session) => {
-      const entry = session.entries.find((e) => e.exerciseId === exerciseId);
-      if (!entry || entry.skipped) {
-        return null;
-      }
+  allSessions: Session[]
+): Record<string, { date: string; volume: number }[]> {
+  const result: Record<string, { date: string; volume: number }[]> = {};
+
+  for (const session of allSessions) {
+    for (const entry of session.entries) {
+      if (entry.skipped) continue;
+
       const volume = entry.sets.reduce(
         (sum, set) => sum + (set.weight || 0) * (set.reps || 0),
         0
       );
-      const setCount = entry.sets.length;
-      return { date: session.date, volume, setCount };
-    })
-    .filter((item) => item !== null) as {
-    date: string;
-    volume: number;
-    setCount: number;
-  }[];
+
+      if (!result[entry.exerciseId]) {
+        result[entry.exerciseId] = [];
+      }
+      result[entry.exerciseId].push({ date: session.date, volume });
+    }
+  }
+
+  return result;
 }
 
 // Get personal records by exercise
+// Returns: Record<exerciseId, {date, weight, reps}>
 export function getExercisePRs(
-  allSessions: Session[],
-  exerciseId: string
-): { date: string; weight: number; reps: number }[] {
-  const prs: { date: string; weight: number; reps: number }[] = [];
-  let maxWeight = 0;
+  allSessions: Session[]
+): Record<string, { date: string; weight: number; reps: number }> {
+  const prs: Record<string, { date: string; weight: number; reps: number }> =
+    {};
 
   for (const session of allSessions) {
-    const entry = session.entries.find((e) => e.exerciseId === exerciseId);
-    if (!entry || entry.skipped) continue;
+    for (const entry of session.entries) {
+      if (entry.skipped) continue;
 
-    for (const set of entry.sets) {
-      if ((set.weight || 0) > maxWeight) {
-        maxWeight = set.weight || 0;
-        prs.push({
-          date: session.date,
-          weight: set.weight || 0,
-          reps: set.reps || 0,
-        });
+      for (const set of entry.sets) {
+        const prev = prs[entry.exerciseId];
+        if (
+          !prev ||
+          (set.weight || 0) > prev.weight ||
+          ((set.weight || 0) === prev.weight && (set.reps || 0) > prev.reps)
+        ) {
+          prs[entry.exerciseId] = {
+            date: session.date,
+            weight: set.weight || 0,
+            reps: set.reps || 0,
+          };
+        }
       }
     }
   }
 
-  return prs.sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
+  return prs;
 }
 
 // Get exercise progression data
+// Returns: Record<exerciseId, array of {date, maxWeight, avgWeight, avgReps}>
 export function getExerciseProgression(
-  allSessions: Session[],
-  exerciseId: string
-): { date: string; weight: number; reps: number; setNumber: number }[] {
-  const progression: {
-    date: string;
-    weight: number;
-    reps: number;
-    setNumber: number;
-  }[] = [];
+  allSessions: Session[]
+): Record<
+  string,
+  { date: string; maxWeight: number; avgWeight: number; avgReps: number }[]
+> {
+  const result: Record<
+    string,
+    { date: string; maxWeight: number; avgWeight: number; avgReps: number }[]
+  > = {};
 
   for (const session of allSessions) {
-    const entry = session.entries.find((e) => e.exerciseId === exerciseId);
-    if (!entry || entry.skipped) continue;
+    for (const entry of session.entries) {
+      if (entry.skipped) continue;
 
-    for (const set of entry.sets) {
-      progression.push({
+      const weights = entry.sets.map((s) => s.weight || 0);
+      const reps = entry.sets.map((s) => s.reps || 0);
+
+      if (weights.length === 0 || reps.length === 0) continue;
+
+      const maxWeight = Math.max(...weights);
+      const avgWeight = weights.reduce((a, b) => a + b, 0) / weights.length;
+      const avgReps = reps.reduce((a, b) => a + b, 0) / reps.length;
+
+      if (!result[entry.exerciseId]) {
+        result[entry.exerciseId] = [];
+      }
+
+      result[entry.exerciseId].push({
         date: session.date,
-        weight: set.weight || 0,
-        reps: set.reps || 0,
-        setNumber: set.setNumber,
+        maxWeight,
+        avgWeight,
+        avgReps,
       });
     }
   }
 
-  return progression.sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
+  return result;
 }
