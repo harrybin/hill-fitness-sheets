@@ -58,15 +58,16 @@ flowchart TB
 ### 3. Recording Training
 
 ```mermaid
-flowchart TBcompletes workout] --> C2[TrainingEntryView.onComplete]
+flowchart TB
+    C1[User completes workout] --> C2[TrainingEntryView.onComplete]
     C2 --> C3[completeEntry in AppContext]
     C3 --> C4[setSessions updates state]
-    C4 --> C5[useEffect detects sessions change]
-    C5 --> C6[updateXLSXWithSessions auto-runs]
-    C6 --> C7[setSettings updates importedFile]
-    C4 --> C8[All components re-render with new session]
-    C7 --> C8[Save sessions to useKV]
+    C4 --> C5[useKV auto-saves sessions]
+    C4 --> C6[All components re-render with new session]
+    C7[importedFile.data preserved as-is] -.->|NOT updated| C4
 ```
+
+**Note:** Sessions are stored separately in localStorage. The original XLSX template in `settings.importedFile.data` is preserved unchanged. Data merging only happens during explicit export.
 
 ### 4. Export
 
@@ -120,28 +121,30 @@ AppProvider [provides context]
 
 ## Synchronization Flow
 
-**Context-driven automatic sync:**
+**Sessions are stored separately from the template XLSX:**
 
 ```mermaid
 sequenceDiagram
     participant User
     participant UI as TrainingEntryView
     participant Context as AppContext
-    participant Effect as useEffect
-    participant Utils as updateXLSXWithSessions
     participant Storage as useKV
 
     User->>UI: Records set
     UI->>Context: completeEntry(entry)
     Context->>Context: setSessions(updatedSessions)
-    Context->>Storage: useKV auto-saves
-    Storage-->>Effect: sessions changed
-    Effect->>Utils: updateXLSXWithSessions()
-    Utils-->>Effect: New XLSX Base64
-    Effect->>Context: setSettings(updated importedFile)
-    Context->>Storage: useKV auto-saves settings
+    Context->>Storage: useKV auto-saves sessions
     Context-->>UI: All components re-render
+    
+    Note over Storage: importedFile.data remains unchanged
+    
+    User->>UI: Clicks Export
+    UI->>Context: exportXLSXWithFormatting()
+    Context->>Context: Merges sessions into template
+    Context-->>UI: Download XLSX with data
 ```
+
+**Key Point:** The XLSX template (`settings.importedFile.data`) is a persistent reference and never modified during normal operation. Sessions are maintained separately in `localStorage`. Only during export is a fresh copy of the template merged with current session data.
 
 ## Key Implementation Files
 
@@ -157,9 +160,9 @@ sequenceDiagram
 ✅ **Automatic re-renders**: Context propagates changes instantly  
 ✅ **No prop drilling**: Direct context access via useApp()  
 ✅ **Offline-capable**: All data in useKV/localStorage  
-✅ **Single Source of Truth**: XLSX in localStorage  
-✅ **Persistence**: Data survives reload  
-✅ **Export anytime**: Current XLSX downloadable  
+✅ **Template preserved**: Original XLSX template never modified  
+✅ **Persistence**: Session data survives reload  
+✅ **Export on-demand**: Merge sessions into template during explicit export  
 
 ## Data Flow Diagram (Updated)
 
@@ -170,52 +173,30 @@ graph TB
     end
     
     subgraph Storage["useKV (localStorage)"]
-        XLSX["settings.importedFile<br/>(Base64 XLSX + History Sheet)<br/>⭐ Single Source of Truth"]
+        XLSX["settings.importedFile<br/>(Base64 XLSX template)<br/>⭐ Template Preserved"]
         META["settings.metadata<br/>(trainingGoal, legalNotice, notes)"]
-        EX["exercises<br/>(parsed)"]
-        SESS["sessions<br/>(parsed + runtime updates)"]
+        EX["exercises<br/>(parsed from XLSX)"]
+        SESS["sessions<br/>(runtime-only, independent)"]
     end
     
-    STATE -->|auto-sync| EX
-    STATE -->|auto-sync| SESS
-    STATE -->|auto-sync| XLSX
+    STATE -->|load once| EX
+    STATE -->|load/save| SESS
+    STATE -->|load once| XLSX
     
-    EX -->|useKV| STATE
-    SESS -->|useKV| STATE
-    XLSX -->|useKV| STATE
+    EX -->|useKV load| STATE
+    SESS -->|useKV save| STATE
+    XLSX -->|useKV load| STATE
     
-    SESS -->|useEffect triggers| XLSX
+    SESS -.->|NOT written to| XLSX
     
     style STATE fill:#4a9eff,stroke:#333,stroke-width:3px,color:#fff
     style XLSX fill:#ff8c42,stroke:#333,stroke-width:3px,color:#000
+    style SESS fill:#4a9eff,stroke:#333,stroke-width:2px,color:#fff
     style Context fill:#1a1a1a,stroke:#666,stroke-width:2px
     style Storage fill:#2a2a2a,stroke:#666,stroke-width:2px
 ```
 
-## Synchronization*Offline-capable**: All data in useKV/localStorage  
-✅ **Single Source of Truth**: XLSX in localStorage  
-✅ **Persistence**: Data survives reload  
-✅ **Export anytime**: Current XLSX can be exported  
-✅ **No duplication**: One central parseXLSX function  
-✅ **Automatic loading**: XLSX loaded automatically on startup
-
-## Data Flow Diagram
-
-```mermaid
-graph TB
-    subgraph Storage["useKV (localStorage)"]
-        XLSX["settings.importedFile<br/>(Base64 XLSX + History Sheet)<br/>⭐ Single Source of Truth"]
-        META["settings.metadata<br/>(trainingGoal, legalNotice, notes)"]
-        EX["exercises<br/>(parsed)"]
-        SESS["sessions<br/>(parsed + runtime updates)"]
-        
-        XLSX -->|parseXLSX read| EX
-        XLSX -->|parseXLSX read| META
-        XLSX -->|parseXLSX read| SESS
-        SESS -->|updateXLSXWithSessions write| XLSX
-    end
-    
-    style XLSX fill:#ff8c42,stroke:#333,stroke-width:3px,color:#000
-    style SESS fill:#4a9eff,stroke:#333,stroke-width:2px,color:#fff
-    style Storage fill:#2a2a2a,stroke:#666,stroke-width:2px
-```
+**Key Distinction:**
+- **sessions**: Runtime data, loaded from XLSX on startup, then stored independently in localStorage. Never written back to XLSX.
+- **importedFile**: Template reference, loaded once, preserved unchanged for exports.
+- **Export**: On-demand merge of current sessions into a fresh copy of the XLSX template via `exportXLSXWithFormatting()`.

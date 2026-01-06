@@ -3,7 +3,7 @@ import { Exercise, Session } from "./types";
 import { base64ToArrayBuffer } from "./utils";
 
 // Import-Regeln für XLSX-Parser:
-// - Eine Einheit (Session) wird nur importiert, wenn mindestens eine Übung in mindestens einem Satz eine Wiederholungszahl (Reps) hat.
+// - Eine Einheit (Session) wird nur importiert, wenn mindestens vier Übungen in mindestens einem Satz eine Wiederholungszahl (Reps) hat.
 // - Hat eine zu importierende Einheit für eine Übung in beiden Sätzen keinen Zahlenwert (Reps), wird diese Übung in dieser Einheit mit skipped: true markiert.
 
 function parseExcelDate(value: any): string | null {
@@ -479,7 +479,7 @@ function interpolateSessionDates(
 
     // Both before and after have dates - interpolate
     const startDate = new Date(lastDatedSession!.date);
-    const endDate = new Date(nextDatedSession!.date);
+    const endDate = new Date(nextDatedSession!.date || Date.now());
     const daysBetween = Math.floor(
       (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
     );
