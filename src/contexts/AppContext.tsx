@@ -1,11 +1,7 @@
 import { createContext, useContext, ReactNode, useEffect } from "react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Exercise, Session, AppSettings, TrainingEntry } from "@/lib/types";
-import {
-  parseXLSX,
-  base64ToArrayBuffer,
-  updateXLSXWithSessions,
-} from "@/lib/utils";
+import { parseXLSX, base64ToArrayBuffer } from "@/lib/utils";
 
 interface AppContextValue {
   exercises: Exercise[];
@@ -57,37 +53,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [settings?.importedFile, exercises, setExercises, setSessions]);
 
-  // Sync sessions back to XLSX when they change
-  useEffect(() => {
-    if (
-      settings?.importedFile &&
-      sessions &&
-      sessions.length > 0 &&
-      exercises &&
-      exercises.length > 0
-    ) {
-      console.log("Syncing sessions back to XLSX...");
-      const newData = updateXLSXWithSessions(
-        settings.importedFile.data,
-        sessions,
-        exercises
-      );
-      if (newData !== settings.importedFile.data) {
-        console.log("XLSX data updated with current sessions");
-        setSettings((prev) => {
-          if (!prev?.importedFile) return prev || {};
-          return {
-            ...prev,
-            importedFile: {
-              ...prev.importedFile,
-              data: newData,
-              lastModified: Date.now(),
-            },
-          };
-        });
-      }
-    }
-  }, [sessions, exercises, settings?.importedFile, setSettings]);
+  // Note: We no longer sync sessions back to importedFile during normal operation.
+  // The original template is preserved as-is in importedFile.data.
+  // Sessions are only written to the XLSX during the explicit export operation
+  // via exportXLSXWithFormatting() which applies data to a fresh copy of the template.
 
   const loadFromXLSX = (arrayBuffer: ArrayBuffer) => {
     console.log("loadFromXLSX called");

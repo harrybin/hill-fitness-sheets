@@ -291,12 +291,11 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
       // Exercises should be the same
       expect(result2.exercises.length).toBe(result1.exercises.length);
 
-      // Check that History sheet was created and can be parsed
+      // Should not create History sheet
       const updatedWorkbook = XLSX.read(updatedBuffer, { type: "array" });
-      expect(updatedWorkbook.SheetNames).toContain("History");
+      expect(updatedWorkbook.SheetNames).not.toContain("History");
 
-      // Parse from History sheet should give us the sessions back
-      // (may be different structure but same data)
+      // Sessions should still be parseable
       expect(result2.sessions.length).toBeGreaterThan(0);
     });
 
@@ -360,36 +359,18 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
       // Should be a valid XLSX file
       const exportedWorkbook = XLSX.read(exportedBuffer, { type: "array" });
 
-      // Should have Trainings sheet
-      expect(exportedWorkbook.SheetNames).toContain("Trainings");
+      // Should NOT create a new Trainings sheet (data goes into existing Einheit columns)
+      expect(exportedWorkbook.SheetNames).not.toContain("Trainings");
 
-      const trainingsSheet = exportedWorkbook.Sheets["Trainings"];
-      const trainingsData: any[][] = XLSX.utils.sheet_to_json(trainingsSheet, {
-        header: 1,
+      // Original sheets should be preserved
+      const originalWorkbook = XLSX.read(arrayBuffer, { type: "array" });
+      originalWorkbook.SheetNames.forEach((name) => {
+        expect(exportedWorkbook.SheetNames).toContain(name);
       });
 
-      // Check headers
-      expect(trainingsData[0]).toEqual([
-        "Datum",
-        "Übung",
-        "Satz 1 Gewicht (kg)",
-        "Satz 1 Wiederholungen",
-        "Satz 2 Gewicht (kg)",
-        "Satz 2 Wiederholungen",
-      ]);
-
-      // Should have data rows
-      expect(trainingsData.length).toBeGreaterThan(1);
-
-      console.log(`Trainings sheet has ${trainingsData.length - 1} rows`);
-
-      // Verify data structure
-      for (let i = 1; i < Math.min(trainingsData.length, 4); i++) {
-        const row = trainingsData[i];
-        expect(row[0]).toBeTruthy(); // Date
-        expect(row[1]).toBeTruthy(); // Exercise name
-        // Other columns may be "/" for skipped exercises
-      }
+      console.log(
+        `Export preserved ${exportedWorkbook.SheetNames.length} sheets`
+      );
     });
 
     it("should preserve original sheets during export", () => {
@@ -408,15 +389,18 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
 
       const exportedWorkbook = XLSX.read(exportedBuffer, { type: "array" });
 
-      // All original sheets should still exist (except old Trainings if it existed)
+      // All original sheets should still exist
       originalSheetNames.forEach((sheetName) => {
-        if (sheetName !== "Trainings") {
-          expect(exportedWorkbook.SheetNames).toContain(sheetName);
-        }
+        expect(exportedWorkbook.SheetNames).toContain(sheetName);
       });
 
-      // New Trainings sheet should exist
-      expect(exportedWorkbook.SheetNames).toContain("Trainings");
+      // No new Trainings sheet should be created
+      expect(exportedWorkbook.SheetNames).not.toContain("Trainings");
+
+      // Sheet count should match original (no new sheets added)
+      expect(exportedWorkbook.SheetNames.length).toBe(
+        originalSheetNames.length
+      );
     });
   });
 
