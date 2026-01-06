@@ -149,6 +149,36 @@ export function parseXLSX(arrayBuffer: ArrayBuffer): {
     console.log("Session dates:", allSessions.map((s) => s.date).sort());
   }
 
+  // Clean up suggestedWeight for exercises that have actual training data
+  // If an exercise has any session with reps, clear its suggestedWeight
+  // because the UI should use the actual training history instead
+  const exercisesWithTraining = new Set<string>();
+  allSessions.forEach((session) => {
+    session.entries.forEach((entry) => {
+      if (entry.sets && entry.sets.length > 0) {
+        exercisesWithTraining.add(entry.exerciseId);
+      }
+    });
+  });
+
+  exercises.forEach((exercise) => {
+    if (exercisesWithTraining.has(exercise.id) && exercise.suggestedWeight) {
+      console.log(
+        `Clearing suggestedWeight for "${exercise.name}" (has training history)`
+      );
+      exercise.suggestedWeight = undefined;
+    }
+  });
+
+  const exercisesWithSuggestedWeight = exercises.filter(
+    (e) => e.suggestedWeight !== undefined
+  );
+  if (exercisesWithSuggestedWeight.length > 0) {
+    console.log(
+      `Final: ${exercisesWithSuggestedWeight.length} exercises retained suggestedWeight (no training history)`
+    );
+  }
+
   // Check for history sheet (legacy support)
   const historySheetName = workbook.SheetNames.find(
     (name) =>
@@ -323,6 +353,30 @@ function parseSheetData(data: any[][]): {
     `Starting to parse exercises from row ${startIndex}, total rows: ${data.length}`
   );
 
+  // Detect Einheit 1 columns to extract suggested weights
+  // Look for "Einheit" header with "1" in the next column
+  let einheit1WhCol: number | null = null;
+  let einheit1KgCol: number | null = null;
+
+  for (const row of data) {
+    if (!row) continue;
+    for (let colIdx = 0; colIdx < row.length; colIdx++) {
+      const cell = row[colIdx];
+      if (typeof cell === "string" && cell.toLowerCase().includes("einheit")) {
+        const nextCell = row[colIdx + 1];
+        if (nextCell != null && String(nextCell).trim() === "1") {
+          einheit1WhCol = colIdx;
+          einheit1KgCol = colIdx + 1;
+          console.log(
+            `Detected Einheit 1: WH column ${einheit1WhCol}, KG column ${einheit1KgCol}`
+          );
+          break;
+        }
+      }
+    }
+    if (einheit1WhCol !== null) break;
+  }
+
   for (let i = startIndex; i < data.length; i++) {
     const row = data[i];
 
@@ -343,15 +397,36 @@ function parseSheetData(data: any[][]): {
     const exerciseName = cellBStr;
     const notes = String(row[2] || "").trim();
 
+    // Extract suggested weight from Einheit 1 KG column (first row of exercise pair)
+    let suggestedWeight: number | undefined;
+    if (einheit1KgCol !== null && row[einheit1KgCol] != null) {
+      const weightValue = row[einheit1KgCol];
+      const parsedWeight = parseFloat(String(weightValue).trim());
+      if (!isNaN(parsedWeight) && parsedWeight > 0) {
+        suggestedWeight = parsedWeight;
+        console.log(
+          `  Exercise "${exerciseName}": suggested weight = ${suggestedWeight}`
+        );
+      }
+    }
+
     exercises.push({
       id: `exercise-${i}`,
       name: exerciseName,
       notes: notes || undefined,
       order: exercises.length,
+      suggestedWeight,
     });
   }
 
   console.log(`Parsed ${exercises.length} exercises`);
+  if (exercises.some((e) => e.suggestedWeight)) {
+    console.log(
+      `  ${
+        exercises.filter((e) => e.suggestedWeight).length
+      } exercises have suggested weights`
+    );
+  }
 
   return { exercises, metadata };
 }

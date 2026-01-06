@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import * as XLSX from "xlsx";
-import { exportXLSXWithFormatting } from "./xlsxExport";
-import { Exercise, Session } from "./types";
-import { arrayBufferToBase64, base64ToArrayBuffer } from "./utils";
+import { exportXLSXWithFormatting } from "../xlsxExport";
+import { Exercise, Session } from "../types";
+import { arrayBufferToBase64, base64ToArrayBuffer } from "../utils";
 
 // Helper to create a minimal test XLSX file with Einheit structure
 function createTestXLSX(): string {
