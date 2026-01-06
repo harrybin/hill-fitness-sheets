@@ -158,19 +158,21 @@ export function exportXLSXWithFormatting(
   exercises: Exercise[]
 ): ArrayBuffer {
   try {
-    console.log("[exportXLSXWithFormatting] Starting export with:", {
-      sessionsCount: sessions.length,
-      exercisesCount: exercises.length,
-      sessionDates: sessions.map((s) => s.date),
-    });
-
     const arrayBuffer = base64ToArrayBuffer(base64Data);
     const workbook = XLSX.read(arrayBuffer, { type: "array", bookVBA: true });
 
-    console.log(
-      "[exportXLSXWithFormatting] Workbook sheets:",
-      workbook.SheetNames
-    );
+    // Helper function to check if a cell is in a merged range
+    const isCellInMergedRange = (
+      r: number,
+      c: number,
+      merges: XLSX.Range[] | undefined
+    ): XLSX.Range | undefined => {
+      if (!merges) return undefined;
+      return merges.find(
+        (merge) =>
+          r >= merge.s.r && r <= merge.e.r && c >= merge.s.c && c <= merge.e.c
+      );
+    };
 
     // Remove old "History" sheet if it exists (we now use "App-Data")
     if (workbook.SheetNames.includes("History")) {
@@ -178,25 +180,17 @@ export function exportXLSXWithFormatting(
       workbook.SheetNames = workbook.SheetNames.filter(
         (name) => name !== "History"
       );
-      console.log("[exportXLSXWithFormatting] Removed legacy 'History' sheet");
     }
 
     // Process each sheet to fill Einheit columns with session data
     workbook.SheetNames.forEach((sheetName) => {
-      console.log(`[exportXLSXWithFormatting] Processing sheet: ${sheetName}`);
       const sheet = workbook.Sheets[sheetName];
       if (!sheet) {
-        console.log(
-          `[exportXLSXWithFormatting] Sheet ${sheetName} not found, skipping`
-        );
         return;
       }
 
       // Get raw data to understand sheet structure
       const data: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-      console.log(
-        `[exportXLSXWithFormatting] Sheet ${sheetName} has ${data.length} rows`
-      );
 
       // Find exercise start row
       let startIndex = 0;
@@ -216,9 +210,6 @@ export function exportXLSXWithFormatting(
           startIndex = i + 1;
         }
       }
-      console.log(
-        `[exportXLSXWithFormatting] Sheet ${sheetName}: startIndex = ${startIndex}`
-      );
 
       // Find Einheit columns (where "Einheit:" header appears)
       const einheitCols: Record<number, { whCol: number; kgCol: number }> = {};
@@ -242,15 +233,8 @@ export function exportXLSXWithFormatting(
           }
         }
       }
-      console.log(
-        `[exportXLSXWithFormatting] Sheet ${sheetName}: Found Einheit columns:`,
-        Object.keys(einheitCols)
-      );
 
       if (Object.keys(einheitCols).length === 0) {
-        console.log(
-          `[exportXLSXWithFormatting] Sheet ${sheetName}: No Einheit columns found, skipping`
-        );
         return;
       }
 
@@ -272,10 +256,6 @@ export function exportXLSXWithFormatting(
 
         if (!hasDatumLabel) continue;
 
-        console.log(
-          `[exportXLSXWithFormatting] Sheet ${sheetName}: Found Datum row at index ${rowIdx}`
-        );
-
         // This is the Datum row - extract dates for each Einheit column
         Object.entries(einheitCols).forEach(([colIdxStr, colInfo]) => {
           const colIdx = parseInt(colIdxStr);
@@ -289,31 +269,70 @@ export function exportXLSXWithFormatting(
                 whCol: colInfo.whCol,
                 kgCol: colInfo.kgCol,
               };
-              console.log(
-                `[exportXLSXWithFormatting] Sheet ${sheetName}: Mapped Einheit col ${colIdx} to date ${dateStr}`
-              );
-            } else {
-              console.log(
-                `[exportXLSXWithFormatting] Sheet ${sheetName}: Could not parse date at col ${colIdx}: ${dateValue}`
-              );
             }
-          } else {
-            console.log(
-              `[exportXLSXWithFormatting] Sheet ${sheetName}: No date value at col ${colIdx} (undefined/null)`
-            );
           }
         });
       }
-      console.log(
-        `[exportXLSXWithFormatting] Sheet ${sheetName}: Found ${
-          Object.keys(einheitSessions).length
-        } Einheit sessions`
+
+      // Find the Datum row index for later date writing
+      let datumRowIdx = -1;
+      for (let rowIdx = 0; rowIdx < data.length; rowIdx++) {
+        const row = data[rowIdx];
+        if (!row) continue;
+        const hasDatumLabel = row.some((cell) => {
+          if (typeof cell !== "string") return false;
+          return cell.toLowerCase().includes("datum");
+        });
+        if (hasDatumLabel) {
+          datumRowIdx = rowIdx;
+          break;
+        }
+      }
+
+      // Find empty Einheit columns and assign remaining sessions
+      const usedEinheitCols = new Set(Object.keys(einheitSessions).map(Number));
+      const emptyEinheitCols = Object.entries(einheitCols)
+        .filter(([colIdx]) => !usedEinheitCols.has(parseInt(colIdx)))
+        .map(([colIdx, info]) => ({ colIdx: parseInt(colIdx), ...info }))
+        .sort((a, b) => a.colIdx - b.colIdx);
+
+      const assignedSessions = new Set(
+        Object.values(einheitSessions).map((es) => es.date)
       );
+      const unassignedSessions = sessions
+        .filter((s) => !assignedSessions.has(s.date))
+        .sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+
+      // Assign remaining sessions to empty columns
+      unassignedSessions.forEach((session, idx) => {
+        if (idx >= emptyEinheitCols.length) {
+          return;
+        }
+
+        const emptyCol = emptyEinheitCols[idx];
+        einheitSessions[emptyCol.colIdx] = {
+          date: session.date,
+          whCol: emptyCol.whCol,
+          kgCol: emptyCol.kgCol,
+        };
+
+        // Write the date to the Datum row if found
+        if (datumRowIdx >= 0) {
+          const datumCellRef = XLSX.utils.encode_cell({
+            r: datumRowIdx,
+            c: emptyCol.colIdx,
+          });
+          sheet[datumCellRef] = {
+            t: "d",
+            v: new Date(session.date),
+            z: "dd.mm.yyyy",
+          };
+        }
+      });
 
       if (Object.keys(einheitSessions).length === 0) {
-        console.log(
-          `[exportXLSXWithFormatting] Sheet ${sheetName}: No dates found, skipping`
-        );
         return;
       }
 
@@ -322,18 +341,8 @@ export function exportXLSXWithFormatting(
         const colIdx = parseInt(colIdxStr);
         const session = sessions.find((s) => s.date === einheit.date);
         if (!session) {
-          console.log(
-            `[exportXLSXWithFormatting] Sheet ${sheetName}: No session found for date ${einheit.date}`
-          );
           return;
         }
-
-        console.log(
-          `[exportXLSXWithFormatting] Sheet ${sheetName}: Filling Einheit col ${colIdx} with date ${einheit.date}:`,
-          {
-            entriesCount: session.entries.length,
-          }
-        );
 
         // For each exercise, fill in the data
         exercises.forEach((exercise, exerciseIdx) => {
@@ -360,10 +369,6 @@ export function exportXLSXWithFormatting(
               c: einheit.kgCol,
             });
 
-            console.log(
-              `[exportXLSXWithFormatting] Sheet ${sheetName}: Setting Satz1 for ${exercise.name} at ${repsCellRef}/${weightCellRef} = ${set1.reps}/${set1.weight}`
-            );
-
             // Replace with clean cell objects - clear all formatting
             sheet[repsCellRef] = { t: "n", v: set1.reps };
             sheet[weightCellRef] = { t: "n", v: set1.weight };
@@ -381,9 +386,34 @@ export function exportXLSXWithFormatting(
               c: einheit.kgCol,
             });
 
-            console.log(
-              `[exportXLSXWithFormatting] Sheet ${sheetName}: Setting Satz2 for ${exercise.name} at ${repsCellRef}/${weightCellRef} = ${set2.reps}/${set2.weight}`
-            );
+            // CRITICAL: Remove merged cells that span both Satz 1 and Satz 2
+            // The weight columns are merged across both rows in the template,
+            // so we need to unmerge them before writing to Satz 2
+            if (sheet["!merges"]) {
+              const mergedRepsRange = isCellInMergedRange(
+                exerciseRowIdx2,
+                einheit.whCol,
+                sheet["!merges"]
+              );
+              const mergedWeightRange = isCellInMergedRange(
+                exerciseRowIdx2,
+                einheit.kgCol,
+                sheet["!merges"]
+              );
+
+              if (mergedRepsRange) {
+                const idx = sheet["!merges"].indexOf(mergedRepsRange);
+                if (idx >= 0) {
+                  sheet["!merges"].splice(idx, 1);
+                }
+              }
+              if (mergedWeightRange) {
+                const idx = sheet["!merges"].indexOf(mergedWeightRange);
+                if (idx >= 0) {
+                  sheet["!merges"].splice(idx, 1);
+                }
+              }
+            }
 
             // Replace with clean cell objects - clear all formatting
             sheet[repsCellRef] = { t: "n", v: set2.reps };
@@ -398,9 +428,6 @@ export function exportXLSXWithFormatting(
       let maxCol = 0;
 
       const cellKeys = Object.keys(sheet).filter((k) => !k.startsWith("!"));
-      console.log(
-        `[exportXLSXWithFormatting] Sheet ${sheetName}: Total cells in sheet: ${cellKeys.length}`
-      );
 
       cellKeys.forEach((key) => {
         try {
@@ -424,19 +451,7 @@ export function exportXLSXWithFormatting(
         e: { r: maxRow, c: maxCol },
       });
 
-      console.log(
-        `[exportXLSXWithFormatting] Sheet ${sheetName}: Updating ref from ${sheet["!ref"]} to ${newRef}`
-      );
       sheet["!ref"] = newRef;
-
-      // Verify some of the cells were actually written
-      console.log(
-        `[exportXLSXWithFormatting] Sheet ${sheetName}: Checking written cells:`
-      );
-      console.log(`  G14:`, sheet["G14"]);
-      console.log(`  H14:`, sheet["H14"]);
-      console.log(`  I16:`, sheet["I16"]);
-      console.log(`  J16:`, sheet["J16"]);
     });
 
     const buffer = XLSX.write(workbook, {
@@ -444,34 +459,6 @@ export function exportXLSXWithFormatting(
       bookType: "xlsx",
       bookVBA: true,
     });
-
-    console.log(
-      "[exportXLSXWithFormatting] Export complete, buffer size:",
-      buffer.byteLength,
-      "bytes"
-    );
-
-    // Verify the buffer contains data by reading it back
-    const wb2 = XLSX.read(buffer, { type: "array", bookVBA: true });
-    // Find the first sheet with Einheit data (handle both "Einheit 1-8 (10-12)" and test sheet names like "Einheit 1", "Einheiten", etc.)
-    const sheetNameToVerify = wb2.SheetNames.find(
-      (name) =>
-        name.includes("Einheit") &&
-        !name.includes("9-16") &&
-        !name.includes("17-24")
-    );
-    if (sheetNameToVerify) {
-      const sheet2 = wb2.Sheets[sheetNameToVerify];
-      if (sheet2) {
-        console.log(
-          `[exportXLSXWithFormatting] Verifying written data in sheet "${sheetNameToVerify}":`
-        );
-        console.log("  G14:", sheet2["G14"]);
-        console.log("  H14:", sheet2["H14"]);
-        console.log("  I16:", sheet2["I16"]);
-        console.log("  J16:", sheet2["J16"]);
-      }
-    }
 
     return buffer;
   } catch (error) {

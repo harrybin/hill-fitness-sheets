@@ -53,56 +53,20 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
     try {
       // Export with formatting preservation
-      console.log("[SettingsDialog] Starting export...", {
-        sessionsCount: sessions.length,
-        exercisesCount: exercises.length,
-        fileSize: settings.importedFile.size,
-      });
-
-      // Log some session details
-      sessions.forEach((s, idx) => {
-        console.log(
-          `  [SettingsDialog] Session ${idx}: date=${s.date}, entries=${s.entries.length}`
-        );
-        s.entries.forEach((e, eidx) => {
-          console.log(
-            `    [SettingsDialog] Entry ${eidx}: exerciseId=${e.exerciseId}, sets=${e.sets.length}`
-          );
-        });
-      });
-
       const arrayBuffer = exportXLSXWithFormatting(
         settings.importedFile.data,
         sessions,
         exercises
       );
 
-      console.log("[SettingsDialog] Export complete, creating blob...");
       const blob = new Blob([arrayBuffer], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
-
-      console.log("[SettingsDialog] Blob created, size:", blob.size, "bytes");
-
-      // Verify the blob contains data by reading it back
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        console.log(
-          "[SettingsDialog] Blob verification: First 100 bytes:",
-          new Uint8Array(e.target?.result as ArrayBuffer).slice(0, 100)
-        );
-      };
-      reader.readAsArrayBuffer(blob);
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = settings.importedFile.name;
-
-      console.log("[SettingsDialog] Triggering download:", {
-        fileName: settings.importedFile.name,
-        blobSize: blob.size,
-      });
 
       document.body.appendChild(link);
       link.click();
@@ -114,7 +78,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         icon: <DownloadSimple size={20} weight="fill" />,
       });
     } catch (error) {
-      console.error("[SettingsDialog] Export error:", error);
       toast.error("Export fehlgeschlagen", {
         description:
           error instanceof Error ? error.message : "Fehler beim Export",
