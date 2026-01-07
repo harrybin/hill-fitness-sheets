@@ -3,7 +3,7 @@ import { useApp } from "@/contexts/AppContext";
 import { Exercise } from "@/lib/types";
 import { ExerciseList } from "@/components/ExerciseList";
 import { TrainingEntryView } from "@/components/TrainingEntryView";
-import { SessionHeader } from "@/components/SessionHeader";
+import { SessionHistory } from "@/components/SessionHistory";
 import { SettingsDialog } from "@/components/SettingsDialog";
 import { AboutDialog } from "@/components/AboutDialog";
 import { PWAInstallBanner } from "@/components/PWAInstallBanner";
@@ -55,7 +55,7 @@ function App() {
       <div className="max-w-2xl mx-auto bg-card border border-border rounded-lg shadow-lg overflow-hidden">
         <div className="sticky top-0 z-10 bg-card border-b border-border">
           <div className="flex items-center justify-between p-3">
-            <SessionHeader
+            <SessionHistory
               session={currentSession}
               allSessions={sessions}
               selectedDate={selectedDateClean}
