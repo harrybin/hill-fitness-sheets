@@ -184,6 +184,15 @@ export async function exportXLSXWithFormatting(
             const exerciseRowIdx1 = startIndex + exerciseIdx * 2;
             const exerciseRowIdx2 = startIndex + exerciseIdx * 2 + 1;
 
+            // Write exercise notes to column C (index 3) for both rows
+            // Only write if it's the first session (to update the exercise definition)
+            if (sIdx === 0 && exercise.notes) {
+              const notesCell1 = worksheet.getCell(exerciseRowIdx1, 3);
+              const notesCell2 = worksheet.getCell(exerciseRowIdx2, 3);
+              notesCell1.value = exercise.notes;
+              notesCell2.value = exercise.notes;
+            }
+
             // Satz 1 (Set 1)
             if (sortedSets.length > 0) {
               const set1 = sortedSets[0];

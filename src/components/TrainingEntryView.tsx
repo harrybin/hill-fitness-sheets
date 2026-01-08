@@ -9,7 +9,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { SetInput } from "@/components/SetInput";
 import { WeightInput } from "@/components/WeightInput";
-import { ArrowLeft, Check, Trash, XCircle } from "@phosphor-icons/react";
+import {
+  ArrowLeft,
+  Check,
+  Trash,
+  XCircle,
+  PencilSimple,
+} from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BodyPartIconComponent } from "@/lib/useBodyPartIcon";
@@ -97,6 +103,10 @@ export function TrainingEntryView({
       : weight
   );
 
+  // State for editable notes
+  const [notes, setNotes] = useState(exercise.notes || "");
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+
   const handleComplete = () => {
     const sets: TrainingSet[] = [
       { setNumber: 1, weight, reps: repsSet1 },
@@ -115,6 +125,13 @@ export function TrainingEntryView({
       onUpdateExercise({
         ...exercise,
         suggestedWeight: suggestedWeight,
+        notes: notes,
+      });
+    } else {
+      // Update notes even if no suggested weight
+      onUpdateExercise({
+        ...exercise,
+        notes: notes,
       });
     }
 
@@ -184,9 +201,37 @@ export function TrainingEntryView({
             />
             <div className="flex-1 min-w-0">
               <h1 className="text-2xl font-bold truncate">{exercise.name}</h1>
-              <p className="text-sm text-muted-foreground line-clamp-2 h-5">
-                {exercise.notes || ""}
-              </p>
+            </div>
+          </div>
+
+          <div className="mb-2 flex gap-3">
+            <div className="w-9 shrink-0"></div>
+            <div className="flex-1 min-w-0 flex items-center gap-2">
+              {isEditingNotes ? (
+                <Input
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Notiz hinzufügen..."
+                  className="text-sm"
+                  autoFocus
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground flex-1">
+                  {notes || "Keine Notiz"}
+                </p>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsEditingNotes(!isEditingNotes)}
+                className="h-8 w-8 p-0 shrink-0"
+              >
+                {isEditingNotes ? (
+                  <Check size={16} weight="bold" />
+                ) : (
+                  <PencilSimple size={16} weight="bold" />
+                )}
+              </Button>
             </div>
           </div>
 
