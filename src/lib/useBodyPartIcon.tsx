@@ -1,11 +1,21 @@
 /**
- * React hook and component utilities for rendering body part icons
- * Supports both Tabler Icons (recommended) and Phosphor Icons fallback
+ * React hook and component utilities for rendering body part silhouettes
+ * Highlights target muscles using react-body-highlighter
  */
 
-import React from "react";
-import { Muscle2, Leg2, Dumbbell } from "@phosphor-icons/react";
-import { mapExerciseToBodyPart, getBodyPartIcon } from "./bodyPartIcons";
+import type { FC } from "react";
+import BodyHighlighter from "react-body-highlighter";
+import {
+  mapExerciseToBodyPart,
+  getBodyPartIcon,
+  type BodyPart,
+} from "./bodyPartIcons";
+
+type BodyHighlighterData = {
+  name: string;
+  muscles: string[];
+  frequency?: number;
+};
 
 export interface BodyPartIconProps {
   exerciseName?: string;
@@ -16,10 +26,9 @@ export interface BodyPartIconProps {
 }
 
 /**
- * Renders a Phosphor icon for a body part
- * Falls back to Dumbbell if icon cannot be matched
+ * Renders a minimal body silhouette with the target muscle highlighted
  */
-export const BodyPartIconComponent: React.FC<BodyPartIconProps> = ({
+export const BodyPartIconComponent: FC<BodyPartIconProps> = ({
   exerciseName,
   bodyPart,
   size = 24,
@@ -31,48 +40,62 @@ export const BodyPartIconComponent: React.FC<BodyPartIconProps> = ({
     bodyPart ||
     (exerciseName ? mapExerciseToBodyPart(exerciseName) : undefined);
 
-  if (!targetBodyPart) {
-    // Fallback icon
-    return (
-      <Dumbbell
-        size={size}
-        className={className}
-        title={title || "Exercise"}
-        weight="duotone"
-      />
-    );
-  }
+  const iconDetails = targetBodyPart ? getBodyPartIcon(targetBodyPart) : null;
 
-  const iconDetails = getBodyPartIcon(targetBodyPart);
-
-  // Map body part names to Phosphor icons
-  // These are actual Phosphor icons that match the body parts well
-  const iconMap: Record<string, React.ReactNode> = {
-    legs: <Leg2 size={size} className={className} weight="duotone" />,
-    quads: <Leg2 size={size} className={className} weight="duotone" />,
-    hamstrings: <Leg2 size={size} className={className} weight="duotone" />,
-    calves: <Leg2 size={size} className={className} weight="duotone" />,
-    glutes: <Leg2 size={size} className={className} weight="duotone" />,
-    chest: <Muscle2 size={size} className={className} weight="duotone" />,
-    back: <Muscle2 size={size} className={className} weight="duotone" />,
-    lats: <Muscle2 size={size} className={className} weight="duotone" />,
-    shoulders: <Muscle2 size={size} className={className} weight="duotone" />,
-    trapezius: <Muscle2 size={size} className={className} weight="duotone" />,
-    arms: <Muscle2 size={size} className={className} weight="duotone" />,
-    biceps: <Muscle2 size={size} className={className} weight="duotone" />,
-    triceps: <Muscle2 size={size} className={className} weight="duotone" />,
-    forearms: <Muscle2 size={size} className={className} weight="duotone" />,
-    abs: <Muscle2 size={size} className={className} weight="duotone" />,
-    core: <Muscle2 size={size} className={className} weight="duotone" />,
+  const muscleMap: Partial<Record<BodyPart, BodyHighlighterData>> = {
+    legs: {
+      name: "legs",
+      muscles: ["quadriceps", "hamstring", "calves", "adductor"],
+    },
+    quads: { name: "quads", muscles: ["quadriceps"] },
+    hamstrings: { name: "hamstrings", muscles: ["hamstring"] },
+    calves: { name: "calves", muscles: ["calves"] },
+    glutes: { name: "glutes", muscles: ["gluteal"] },
+    chest: { name: "chest", muscles: ["chest"] },
+    back: {
+      name: "back",
+      muscles: ["upper-back", "lower-back", "trapezius", "back-deltoids"],
+    },
+    lats: { name: "lats", muscles: ["upper-back"] },
+    shoulders: {
+      name: "shoulders",
+      muscles: ["front-deltoids", "back-deltoids"],
+    },
+    trapezius: { name: "trapezius", muscles: ["trapezius"] },
+    arms: { name: "arms", muscles: ["biceps", "triceps", "forearm"] },
+    biceps: { name: "biceps", muscles: ["biceps"] },
+    triceps: { name: "triceps", muscles: ["triceps"] },
+    forearms: { name: "forearms", muscles: ["forearm"] },
+    abs: { name: "abs", muscles: ["abs"] },
+    core: { name: "core", muscles: ["abs", "obliques"] },
   };
 
-  const icon = iconMap[targetBodyPart];
-  const title_text = title || iconDetails?.description;
+  const highlight = targetBodyPart ? muscleMap[targetBodyPart] : undefined;
+  const title_text = title || iconDetails?.description || "Exercise";
+
+  const isPosterior = targetBodyPart
+    ? ["back", "lats", "trapezius", "hamstrings", "glutes", "calves"].includes(
+        targetBodyPart
+      )
+    : false;
+
+  const data: BodyHighlighterData[] | null = highlight ? [highlight] : null;
 
   return (
-    <span title={title_text} className={className}>
-      {icon || <Dumbbell size={size} weight="duotone" />}
-    </span>
+    <div
+      className={className}
+      title={title_text}
+      style={{ width: size, height: size }}
+    >
+      <BodyHighlighter
+        data={data}
+        type={isPosterior ? "posterior" : "anterior"}
+        bodyColor="#111827"
+        highlightedColors={["#f97316"]}
+        hoverColor="#f97316"
+        style={{ width: "100%", height: "100%" }}
+      />
+    </div>
   );
 };
 

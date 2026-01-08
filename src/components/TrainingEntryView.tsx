@@ -176,22 +176,18 @@ export function TrainingEntryView({
             )}
           </div>
 
-          <div className="mb-2">
-            <div className="flex items-center gap-2">
-              <BodyPartIconComponent
-                exerciseName={exercise.name}
-                size={22}
-                className="text-primary shrink-0"
-              />
-              <h1 className="text-2xl font-bold mb-0.5 truncate">
-                {exercise.name}
-              </h1>
-            </div>
-            {exercise.notes && (
-              <p className="text-sm text-muted-foreground line-clamp-2">
-                {exercise.notes}
+          <div className="mb-2 flex gap-3">
+            <BodyPartIconComponent
+              exerciseName={exercise.name}
+              size={36}
+              className="text-primary shrink-0"
+            />
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl font-bold truncate">{exercise.name}</h1>
+              <p className="text-sm text-muted-foreground line-clamp-2 h-5">
+                {exercise.notes || ""}
               </p>
-            )}
+            </div>
           </div>
 
           <div className="flex items-center justify-between gap-2">
