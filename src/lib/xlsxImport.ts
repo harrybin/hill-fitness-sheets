@@ -111,7 +111,8 @@ export function parseXLSX(arrayBuffer: ArrayBuffer): {
     }
 
     // Parse sessions from this sheet
-    const sessions = parseSessionsFromSheet(data, exercises);
+    const latestKnownDate = getLatestDate(allSessions);
+    const sessions = parseSessionsFromSheet(data, exercises, latestKnownDate);
 
     // Merge sessions
     sessions.forEach((session) => {
@@ -267,6 +268,15 @@ export function parseXLSX(arrayBuffer: ArrayBuffer): {
   }
 
   return { exercises, metadata, sessions: allSessions };
+}
+
+function getLatestDate(sessions: Session[]): string | null {
+  if (sessions.length === 0) return null;
+  return sessions
+    .map((s) => s.date)
+    .filter(Boolean)
+    .sort()
+    .slice(-1)[0];
 }
 
 function parseSheetData(data: any[][]): {
@@ -441,7 +451,8 @@ function parseSheetData(data: any[][]): {
  * Output: [{date: '2025-11-18', interpolated: false}, {date: '2025-11-19', interpolated: true}, {date: '2025-11-20', interpolated: true}, {date: '2025-11-21', interpolated: false}]
  */
 function interpolateSessionDates(
-  sessions: Array<{ whCol: number; kgCol: number; date: string | null }>
+  sessions: Array<{ whCol: number; kgCol: number; date: string | null }>,
+  latestKnownDate?: string | null
 ): Array<{
   whCol: number;
   kgCol: number;
@@ -487,17 +498,23 @@ function interpolateSessionDates(
       result.length > 0 ? result[result.length - 1] : null;
 
     if (!lastDatedSession && !nextDatedSession) {
-      // No dates at all - use today for all
-      const today = new Date().toISOString().split("T")[0];
-      for (const undated of unddatedSessions) {
+      // No dates at all - continue after latest known date across sheets
+      const base = latestKnownDate ? new Date(latestKnownDate) : new Date();
+      const startDate = new Date(base);
+      for (let j = 0; j < unddatedSessions.length; j++) {
+        const date = new Date(startDate);
+        date.setDate(date.getDate() + (j + 1));
+        const iso = date.toISOString().split("T")[0];
         result.push({
-          whCol: undated.whCol,
-          kgCol: undated.kgCol,
-          date: today,
+          whCol: unddatedSessions[j].whCol,
+          kgCol: unddatedSessions[j].kgCol,
+          date: iso,
           interpolated: true,
         });
       }
-      console.log(`  → All to today: ${today}`);
+      console.log(
+        `  → All undated sessions assigned after ${latestKnownDate ?? "today"}`
+      );
       continue;
     }
 
@@ -585,7 +602,8 @@ function interpolateSessionDates(
  */
 function parseSessionsFromSheet(
   data: any[][],
-  exercises: Exercise[]
+  exercises: Exercise[],
+  latestKnownDate?: string | null
 ): Session[] {
   const sessions: Session[] = [];
   let hasAnyDateInSheet = false;
@@ -607,6 +625,20 @@ function parseSessionsFromSheet(
     ) {
       // Use the last detected header so we align with the actual training table
       startIndex = i + 1;
+    }
+  }
+
+  // Fallback: some continuation sheets omit the "Übungen" header. Use the first
+  // row where a Satz label appears as the starting point (row contains training
+  // data for the first exercise).
+  if (startIndex === 0) {
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i];
+      const satzCell = String(row?.[5] ?? "").toLowerCase();
+      if (satzCell.includes("satz")) {
+        startIndex = i;
+        break;
+      }
     }
   }
 
@@ -783,15 +815,11 @@ function parseSessionsFromSheet(
     return sessions;
   }
 
-  if (!hasAnyDateInSheet) {
-    console.log(
-      "⚠️  Skipping sheet: no dates found in header; ignoring undated Einheiten"
-    );
-    return sessions;
-  }
-
   // Interpolate missing dates: fill gaps between known dates
-  const sessionsWithInterpolatedDates = interpolateSessionDates(validSessions);
+  const sessionsWithInterpolatedDates = interpolateSessionDates(
+    validSessions,
+    latestKnownDate
+  );
 
   console.log(
     `Found ${sessionsWithInterpolatedDates.length} training sessions in this sheet`
