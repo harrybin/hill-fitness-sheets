@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { Exercise } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { BodyPartIconComponent } from "@/lib/useBodyPartIcon";
 
 interface BaseExerciseCardProps {
   exercise: Exercise;
@@ -33,6 +34,11 @@ export function BaseExerciseCard({
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
+            <BodyPartIconComponent
+              exerciseName={exercise.name}
+              size={18}
+              className="text-primary shrink-0"
+            />
             <h3 className="text-lg font-bold truncate">{exercise.name}</h3>
             {statusIcon}
           </div>

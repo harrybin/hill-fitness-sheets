@@ -12,6 +12,7 @@ import { WeightInput } from "@/components/WeightInput";
 import { ArrowLeft, Check, Trash, XCircle } from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BodyPartIconComponent } from "@/lib/useBodyPartIcon";
 
 interface TrainingEntryViewProps {
   exercise: Exercise;
@@ -176,9 +177,16 @@ export function TrainingEntryView({
           </div>
 
           <div className="mb-2">
-            <h1 className="text-2xl font-bold mb-0.5 truncate">
-              {exercise.name}
-            </h1>
+            <div className="flex items-center gap-2">
+              <BodyPartIconComponent
+                exerciseName={exercise.name}
+                size={22}
+                className="text-primary shrink-0"
+              />
+              <h1 className="text-2xl font-bold mb-0.5 truncate">
+                {exercise.name}
+              </h1>
+            </div>
             {exercise.notes && (
               <p className="text-sm text-muted-foreground line-clamp-2">
                 {exercise.notes}
