@@ -5,7 +5,7 @@ import {
   arrayBufferToBase64,
   exportXLSXWithFormatting,
 } from "../utils";
-import * as XLSX from "xlsx";
+import * as XLSX from "xlsx-js-style";
 import { Exercise, Session } from "../types";
 
 describe("Base64 Conversion Utilities", () => {

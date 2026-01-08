@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx";
+import * as XLSX from "xlsx-js-style";
 import { Exercise, Session } from "./types";
 import { base64ToArrayBuffer } from "./utils";
 

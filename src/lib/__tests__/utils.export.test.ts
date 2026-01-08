@@ -8,7 +8,7 @@ import {
   updateXLSXWithSessions,
   exportXLSXWithFormatting,
 } from "../utils";
-import * as XLSX from "xlsx";
+import * as XLSX from "xlsx-js-style";
 import { Exercise, Session } from "../types";
 
 describe("XLSX Export - updateXLSXWithSessions", () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import * as XLSX from "xlsx";
+import * as XLSX from "xlsx-js-style";
 import { parseXLSX } from "../xlsxImport";
 import { exportXLSXWithFormatting } from "../xlsxExport";
 import { arrayBufferToBase64, base64ToArrayBuffer } from "../utils";
