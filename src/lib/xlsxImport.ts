@@ -317,10 +317,13 @@ function parseSheetData(data: any[][]): {
       if (typeof cell === "string" && cell.toLowerCase().includes("einheit")) {
         const nextCell = row[colIdx + 1];
         if (nextCell != null && String(nextCell).trim() === "1") {
-          einheit1WhCol = colIdx;
-          einheit1KgCol = colIdx + 1;
+          // Einheit: is at colIdx, "1" is at colIdx+1
+          // In exercise rows: WH data is at colIdx+1, KG data is at colIdx+2
+          // For Einheit 1 specifically, we look at colIdx+1 for the weight values
+          einheit1WhCol = colIdx + 1;
+          einheit1KgCol = colIdx + 1; // Both use same column in this structure
           console.log(
-            `Detected Einheit 1: WH column ${einheit1WhCol}, KG column ${einheit1KgCol}`
+            `Detected Einheit 1: Einheit at col ${colIdx}, extracting weight from col ${einheit1KgCol}`
           );
           break;
         }
@@ -331,6 +334,7 @@ function parseSheetData(data: any[][]): {
 
   // Exercises span 2 rows each (Satz 1 and Satz 2). Process only Satz 1 rows.
   // Start from first non-empty row and step by 2
+  // However, ensure we don't miss the final exercise if it's at an odd index
   let firstExerciseRow = startIndex;
   for (let i = startIndex; i < data.length; i++) {
     const row = data[i];
@@ -341,8 +345,16 @@ function parseSheetData(data: any[][]): {
     }
   }
 
-  for (let i = firstExerciseRow; i < data.length; i += 2) {
-    // Process every other row (Satz 1 only)
+  console.log(
+    `Starting exercise parse at row ${firstExerciseRow}, total data rows: ${data.length}`
+  );
+  console.log(
+    `Column info: einheit1WhCol=${einheit1WhCol}, einheit1KgCol=${einheit1KgCol}`
+  );
+
+  let lastExerciseName: string | null = null;
+
+  for (let i = firstExerciseRow; i < data.length; i++) {
     const row = data[i];
 
     if (!row || row.length === 0) {
@@ -351,16 +363,42 @@ function parseSheetData(data: any[][]): {
 
     const cellBStr = String(row[1] || "").trim();
 
+    // Skip header row and empty rows
     if (!cellBStr || cellBStr === "") {
+      lastExerciseName = null; // Reset when we see a Satz 2 row (empty column B)
       continue;
     }
 
+    // Skip metadata rows
     if (isMetadataRow(cellBStr)) {
       continue;
     }
 
+    // Check if this looks like a header row (contains "Übung", "Exercise", etc.)
+    if (
+      cellBStr.toLowerCase().includes("ubung") ||
+      cellBStr.toLowerCase().includes("exercise")
+    ) {
+      continue;
+    }
+
+    // Skip if this is a Satz 2 row (same exercise as the previous row)
+    if (lastExerciseName !== null && cellBStr === lastExerciseName) {
+      continue;
+    }
+
+    // At this point, we have a new Satz 1 row - process it
+    lastExerciseName = cellBStr;
     const exerciseName = cellBStr;
     const notes = String(row[2] || "").trim();
+
+    // Skip if exercise name is not a valid string (corrupted data)
+    if (
+      typeof exerciseName !== "string" ||
+      exerciseName === "[object Object]"
+    ) {
+      continue;
+    }
 
     // Extract suggested weight from Einheit 1 KG column (first row of exercise pair)
     let suggestedWeight: number | undefined;
@@ -369,9 +407,6 @@ function parseSheetData(data: any[][]): {
       const parsedWeight = parseFloat(String(weightValue).trim());
       if (!isNaN(parsedWeight) && parsedWeight > 0) {
         suggestedWeight = parsedWeight;
-        console.log(
-          `  Exercise "${exerciseName}": suggested weight = ${suggestedWeight}`
-        );
       }
     }
 
@@ -602,13 +637,20 @@ function parseSessionsFromSheet(
   // But WH is in the "Einheit:" column and KG is in the number column
   // So we store the EINHEIT COLUMN (where WH is), not the number column
   const einheitByCol: Record<number, string> = {};
-  for (const row of data) {
+  let headerRowIdx = -1;
+  for (let rowIdx = 0; rowIdx < data.length; rowIdx++) {
+    const row = data[rowIdx];
     if (!row) continue;
+    let foundAnyEinheit = false;
     for (let colIdx = 0; colIdx < row.length; colIdx++) {
       const cell = row[colIdx];
       if (typeof cell === "string" && cell.toLowerCase().includes("einheit")) {
+        foundAnyEinheit = true;
         const value = row[colIdx + 1];
         if (value != null && String(value).trim() !== "") {
+          if (headerRowIdx === -1) {
+            headerRowIdx = rowIdx;
+          }
           einheitByCol[colIdx] = String(value).trim(); // FIX: store the Einheit HEADER column, not the number column
         }
       }
@@ -630,9 +672,15 @@ function parseSessionsFromSheet(
   // Initialize sessions for all Einheit columns
   for (const [colIdxStr, einheitNum] of Object.entries(einheitByCol)) {
     const colIdx = parseInt(colIdxStr);
+    // Einheit: is at colIdx (in header), but data is in col-based on how Excel stores the data
+    // The training columns start right after the exercise info columns
+    // Looking at the first working example: if "Einheit:" found at col 6, the actual WH column is at colIdx+1
+    const whCol = colIdx + 1;
+    const kgCol = colIdx + 2;
+
     sessionsByCol.set(colIdx, {
-      whCol: colIdx,
-      kgCol: colIdx + 1,
+      whCol: whCol,
+      kgCol: kgCol,
       date: null,
       einheitNumber: einheitNum,
     });
@@ -837,24 +885,29 @@ function parseSessionsFromSheet(
       // Satz 1
       if (reps1 != null) {
         const repsStr1 = String(reps1).trim();
-        const weightStr1 = weight1 != null ? String(weight1).trim() : "";
-        const weightMissing =
-          weightStr1 === "" || weightStr1 === "/" || weight1 == null;
-        if (repsStr1 !== "/" && repsStr1 !== "") {
-          const repsNum1 = parseInt(repsStr1);
-          const weightNum1Raw = parseFloat(weightStr1.replace(",", "."));
-          const weightNum1 = !isNaN(weightNum1Raw) ? weightNum1Raw : 0;
-          const hasValidWeight = weightNum1 > 0;
-          if (
-            !isNaN(repsNum1) &&
-            repsNum1 > 0 &&
-            (hasValidWeight || weightMissing)
-          ) {
-            sets.push({
-              setNumber: 1,
-              weight: hasValidWeight ? weightNum1 : 0,
-              reps: repsNum1,
-            });
+        // Reject ranges like "10-12" which are suggested reps, not actual training data
+        if (repsStr1.includes("-")) {
+          // This is a suggested range, skip it
+        } else {
+          const weightStr1 = weight1 != null ? String(weight1).trim() : "";
+          const weightMissing =
+            weightStr1 === "" || weightStr1 === "/" || weight1 == null;
+          if (repsStr1 !== "/" && repsStr1 !== "") {
+            const repsNum1 = parseInt(repsStr1);
+            const weightNum1Raw = parseFloat(weightStr1.replace(",", "."));
+            const weightNum1 = !isNaN(weightNum1Raw) ? weightNum1Raw : 0;
+            const hasValidWeight = weightNum1 > 0;
+            if (
+              !isNaN(repsNum1) &&
+              repsNum1 > 0 &&
+              (hasValidWeight || weightMissing)
+            ) {
+              sets.push({
+                setNumber: 1,
+                weight: hasValidWeight ? weightNum1 : 0,
+                reps: repsNum1,
+              });
+            }
           }
         }
       }
@@ -862,24 +915,29 @@ function parseSessionsFromSheet(
       // Satz 2
       if (reps2 != null) {
         const repsStr2 = String(reps2).trim();
-        const weightStr2 = weight2 != null ? String(weight2).trim() : "";
-        const weightMissing =
-          weightStr2 === "" || weightStr2 === "/" || weight2 == null;
-        if (repsStr2 !== "/" && repsStr2 !== "") {
-          const repsNum2 = parseInt(repsStr2);
-          const weightNum2Raw = parseFloat(weightStr2.replace(",", "."));
-          const weightNum2 = !isNaN(weightNum2Raw) ? weightNum2Raw : 0;
-          const hasValidWeight = weightNum2 > 0;
-          if (
-            !isNaN(repsNum2) &&
-            repsNum2 > 0 &&
-            (hasValidWeight || weightMissing)
-          ) {
-            sets.push({
-              setNumber: 2,
-              weight: hasValidWeight ? weightNum2 : 0,
-              reps: repsNum2,
-            });
+        // Reject ranges like "10-12" which are suggested reps, not actual training data
+        if (repsStr2.includes("-")) {
+          // This is a suggested range, skip it
+        } else {
+          const weightStr2 = weight2 != null ? String(weight2).trim() : "";
+          const weightMissing =
+            weightStr2 === "" || weightStr2 === "/" || weight2 == null;
+          if (repsStr2 !== "/" && repsStr2 !== "") {
+            const repsNum2 = parseInt(repsStr2);
+            const weightNum2Raw = parseFloat(weightStr2.replace(",", "."));
+            const weightNum2 = !isNaN(weightNum2Raw) ? weightNum2Raw : 0;
+            const hasValidWeight = weightNum2 > 0;
+            if (
+              !isNaN(repsNum2) &&
+              repsNum2 > 0 &&
+              (hasValidWeight || weightMissing)
+            ) {
+              sets.push({
+                setNumber: 2,
+                weight: hasValidWeight ? weightNum2 : 0,
+                reps: repsNum2,
+              });
+            }
           }
         }
       }

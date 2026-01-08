@@ -23,7 +23,7 @@ interface XLSXImportSectionProps {
   onImport: (
     arrayBuffer: ArrayBuffer,
     fileName: string
-  ) => void | Promise<void>;
+  ) => void | Promise<void | { exerciseCount: number; sessionCount: number }>;
   showLocalUpload?: boolean;
   className?: string;
 }
@@ -87,11 +87,20 @@ export function XLSXImportSection({
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      await onImport(arrayBuffer, file.name);
+      const result = await onImport(arrayBuffer, file.name);
 
-      toast.success("Importiert", {
-        description: file.name,
-      });
+      if (result && "exerciseCount" in result && "sessionCount" in result) {
+        toast.success(
+          `Importiert: ${result.sessionCount} Trainings / ${result.exerciseCount} Übungen`,
+          {
+            description: file.name,
+          }
+        );
+      } else {
+        toast.success("Importiert", {
+          description: file.name,
+        });
+      }
     } catch (error) {
       toast.error("Import fehlgeschlagen", {
         description:
@@ -134,11 +143,20 @@ export function XLSXImportSection({
           );
           const fileName = `sheet_${new Date().getTime()}.xlsx`;
 
-          await onImport(arrayBuffer, fileName);
+          const result = await onImport(arrayBuffer, fileName);
 
-          toast.success("Erfolgreich importiert (Drive API)", {
-            description: fileName,
-          });
+          if (result && "exerciseCount" in result && "sessionCount" in result) {
+            toast.success(
+              `Importiert: ${result.sessionCount} Trainings / ${result.exerciseCount} Übungen (Drive API)`,
+              {
+                description: fileName,
+              }
+            );
+          } else {
+            toast.success("Erfolgreich importiert (Drive API)", {
+              description: fileName,
+            });
+          }
 
           setDriveUrl("");
           return;
@@ -171,11 +189,20 @@ export function XLSXImportSection({
       const arrayBuffer = await response.arrayBuffer();
       const fileName = `sheet_${new Date().getTime()}.xlsx`;
 
-      await onImport(arrayBuffer, fileName);
+      const result = await onImport(arrayBuffer, fileName);
 
-      toast.success("Erfolgreich importiert", {
-        description: fileName,
-      });
+      if (result && "exerciseCount" in result && "sessionCount" in result) {
+        toast.success(
+          `Importiert: ${result.sessionCount} Trainings / ${result.exerciseCount} Übungen`,
+          {
+            description: fileName,
+          }
+        );
+      } else {
+        toast.success("Erfolgreich importiert", {
+          description: fileName,
+        });
+      }
 
       setDriveUrl("");
     } catch (error) {

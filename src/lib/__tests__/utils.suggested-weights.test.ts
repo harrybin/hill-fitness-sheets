@@ -19,7 +19,7 @@ describe("Suggested Weights Import - Empty XLSX", () => {
     );
 
     // Parse the XLSX file
-    const parsed = parseXLSX(arrayBuffer);
+    const parsed = await parseXLSX(arrayBuffer);
 
     // Verify exercises were imported
     expect(parsed.exercises.length).toBeGreaterThan(0);
@@ -53,9 +53,7 @@ describe("Suggested Weights Import - Empty XLSX", () => {
       fileBuffer.byteOffset + fileBuffer.byteLength
     );
 
-    const parsed = parseXLSX(arrayBuffer);
-
-    // Expected exercises with their suggested weights from Einheit 1
+    const parsed = await parseXLSX(arrayBuffer);
     const expectedWeights: Record<string, number> = {
       "Beinstrecken / Maschine": 190,
       "Latzug / Kabelturm": 62.5,
@@ -111,7 +109,7 @@ describe("Suggested Weights Import - Empty XLSX", () => {
       fileBuffer.byteOffset + fileBuffer.byteLength
     );
 
-    const parsed = parseXLSX(arrayBuffer);
+    const parsed = await parseXLSX(arrayBuffer);
 
     // Verify all exercises have the suggestedWeight property
     parsed.exercises.forEach((exercise) => {
@@ -139,7 +137,7 @@ describe("Suggested Weights Import - Empty XLSX", () => {
       fileBuffer.byteOffset + fileBuffer.byteLength
     );
 
-    const parsed = parseXLSX(arrayBuffer);
+    const parsed = await parseXLSX(arrayBuffer);
 
     const withWeights = parsed.exercises.filter(
       (e) => e.suggestedWeight !== undefined
@@ -176,7 +174,7 @@ describe("Suggested Weights Import - Empty XLSX", () => {
       fileBuffer.byteOffset + fileBuffer.byteLength
     );
 
-    const parsed = parseXLSX(arrayBuffer);
+    const parsed = await parseXLSX(arrayBuffer);
 
     // Verify all exercises have required properties
     parsed.exercises.forEach((exercise) => {
@@ -230,7 +228,7 @@ describe("Suggested Weights Import - Empty XLSX", () => {
 
     // Parse and check if suggested weights were detected
     // This indirectly tests that Einheit 1 columns were found
-    const parsed = parseXLSX(arrayBuffer);
+    const parsed = await parseXLSX(arrayBuffer);
 
     const exercisesWithSuggestedWeights = parsed.exercises.filter(
       (e) => e.suggestedWeight !== undefined
@@ -257,7 +255,7 @@ describe("Suggested Weights Import - Empty XLSX", () => {
       fileBuffer.byteOffset + fileBuffer.byteLength
     );
 
-    const parsed = parseXLSX(arrayBuffer);
+    const parsed = await parseXLSX(arrayBuffer);
 
     // Verify Exercise interface compliance
     parsed.exercises.forEach((exercise) => {
@@ -292,7 +290,7 @@ describe("Suggested Weights Import - Empty XLSX", () => {
       fileBuffer.byteOffset + fileBuffer.byteLength
     );
 
-    const parsed = parseXLSX(arrayBuffer);
+    const parsed = await parseXLSX(arrayBuffer);
 
     // Simulate UI usage: exercises with suggestedWeight should display it
     parsed.exercises.forEach((exercise) => {
@@ -323,7 +321,7 @@ describe("Suggested Weights Import - Empty XLSX", () => {
       fileBuffer.byteOffset + fileBuffer.byteLength
     );
 
-    const parsed = parseXLSX(arrayBuffer);
+    const parsed = await parseXLSX(arrayBuffer);
 
     // When there's actual training data, suggestedWeights should be cleared
     // because the UI should prioritize actual training history

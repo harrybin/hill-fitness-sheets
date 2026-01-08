@@ -17,7 +17,9 @@ interface AppContextValue {
   completeEntry: (entry: TrainingEntry, date: string) => void;
   updateEntry: (entry: TrainingEntry, date: string) => void;
   updateExercise: (exercise: Exercise) => void;
-  loadFromXLSX: (arrayBuffer: ArrayBuffer) => Promise<void>;
+  loadFromXLSX: (
+    arrayBuffer: ArrayBuffer
+  ) => Promise<{ exerciseCount: number; sessionCount: number }>;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -91,6 +93,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ...(prev || {}),
       ...metadata,
     }));
+
+    return {
+      exerciseCount: newExercises.length,
+      sessionCount: loadedSessions?.length || 0,
+    };
   };
 
   const completeEntry = (entry: TrainingEntry, date: string) => {

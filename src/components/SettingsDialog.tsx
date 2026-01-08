@@ -21,12 +21,17 @@ interface SettingsDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+interface ImportResult {
+  exerciseCount: number;
+  sessionCount: number;
+}
+
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { settings, setSettings, loadFromXLSX, sessions, exercises } = useApp();
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const handleImport = async (arrayBuffer: ArrayBuffer, fileName: string) => {
-    await loadFromXLSX(arrayBuffer);
+    const result = await loadFromXLSX(arrayBuffer);
 
     const fileData = arrayBufferToBase64(arrayBuffer);
 
@@ -41,6 +46,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     }));
 
     onOpenChange(false);
+
+    return result;
   };
 
   const exportStoredFile = async () => {
