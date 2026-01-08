@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { parseXLSX } from "../utils";
-import * as XLSX from "xlsx-js-style";
+import ExcelJS from "exceljs";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 

@@ -5,7 +5,7 @@ import {
   arrayBufferToBase64,
   exportXLSXWithFormatting,
 } from "../utils";
-import * as XLSX from "xlsx-js-style";
+import ExcelJS from "exceljs";
 import { Exercise, Session } from "../types";
 
 describe("Base64 Conversion Utilities", () => {
@@ -63,19 +63,13 @@ describe("Base64 Conversion Utilities", () => {
 
 describe("XLSX Exercise Import", () => {
   describe("Header Detection", () => {
-    it("should detect German 'Übungen' header", () => {
-      const data = [
-        ["", "Übungen", "Notiz"],
-        ["", "Bankdrücken", "Achse 1"],
-      ];
+    it("should detect German 'Übungen' header", async () => {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Sheet1");
+      worksheet.addRow(["", "Übungen", "Notiz"]);
+      worksheet.addRow(["", "Bankdrücken", "Achse 1"]);
 
-      const workbook = XLSX.utils.book_new();
-      const worksheet = XLSX.utils.aoa_to_sheet(data);
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-      const arrayBuffer = XLSX.write(workbook, {
-        type: "array",
-        bookType: "xlsx",
-      });
+      const arrayBuffer = await workbook.xlsx.writeBuffer();
 
       const result = parseXLSX(arrayBuffer);
 
@@ -83,19 +77,13 @@ describe("XLSX Exercise Import", () => {
       expect(result.exercises[0].name).toBe("Bankdrücken");
     });
 
-    it("should detect English 'Exercises' header", () => {
-      const data = [
-        ["", "Exercises", "Notes"],
-        ["", "Bench Press", "Axis 1"],
-      ];
+    it("should detect English 'Exercises' header", async () => {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Sheet1");
+      worksheet.addRow(["", "Exercises", "Notes"]);
+      worksheet.addRow(["", "Bench Press", "Axis 1"]);
 
-      const workbook = XLSX.utils.book_new();
-      const worksheet = XLSX.utils.aoa_to_sheet(data);
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-      const arrayBuffer = XLSX.write(workbook, {
-        type: "array",
-        bookType: "xlsx",
-      });
+      const arrayBuffer = await workbook.xlsx.writeBuffer();
 
       const result = parseXLSX(arrayBuffer);
 
@@ -103,20 +91,14 @@ describe("XLSX Exercise Import", () => {
       expect(result.exercises[0].name).toBe("Bench Press");
     });
 
-    it("should normalize accented characters in header", () => {
+    it("should normalize accented characters in header", async () => {
       // Test that "übungen" with combining marks is normalized
-      const data = [
-        ["", "ubungen", "Notiz"], // Normalized form
-        ["", "Kniebeugen", ""],
-      ];
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Sheet1");
+      worksheet.addRow(["", "ubungen", "Notiz"]); // Normalized form
+      worksheet.addRow(["", "Kniebeugen", ""]);
 
-      const workbook = XLSX.utils.book_new();
-      const worksheet = XLSX.utils.aoa_to_sheet(data);
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-      const arrayBuffer = XLSX.write(workbook, {
-        type: "array",
-        bookType: "xlsx",
-      });
+      const arrayBuffer = await workbook.xlsx.writeBuffer();
 
       const result = parseXLSX(arrayBuffer);
 
@@ -126,20 +108,14 @@ describe("XLSX Exercise Import", () => {
   });
 
   describe("Exercise Parsing", () => {
-    it("should parse exercise name from Column B", () => {
-      const data = [
-        ["", "Übungen", "Notiz", "WH-Zahl"],
-        ["", "Bankdrücken", "Achse 1 Fußteller", "10-12"],
-        ["", "Kniebeugen", "", "12-15"],
-      ];
+    it("should parse exercise name from Column B", async () => {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Sheet1");
+      worksheet.addRow(["", "Übungen", "Notiz", "WH-Zahl"]);
+      worksheet.addRow(["", "Bankdrücken", "Achse 1 Fußteller", "10-12"]);
+      worksheet.addRow(["", "Kniebeugen", "", "12-15"]);
 
-      const workbook = XLSX.utils.book_new();
-      const worksheet = XLSX.utils.aoa_to_sheet(data);
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-      const arrayBuffer = XLSX.write(workbook, {
-        type: "array",
-        bookType: "xlsx",
-      });
+      const arrayBuffer = await workbook.xlsx.writeBuffer();
 
       const result = parseXLSX(arrayBuffer);
 
@@ -148,20 +124,14 @@ describe("XLSX Exercise Import", () => {
       expect(result.exercises[1].name).toBe("Kniebeugen");
     });
 
-    it("should parse notes from Column C", () => {
-      const data = [
-        ["", "Übungen", "Notiz"],
-        ["", "Bankdrücken", "Achse 1 Fußteller"],
-        ["", "Kniebeugen", "enger Griff"],
-      ];
+    it("should parse notes from Column C", async () => {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Sheet1");
+      worksheet.addRow(["", "Übungen", "Notiz"]);
+      worksheet.addRow(["", "Bankdrücken", "Achse 1 Fußteller"]);
+      worksheet.addRow(["", "Kniebeugen", "enger Griff"]);
 
-      const workbook = XLSX.utils.book_new();
-      const worksheet = XLSX.utils.aoa_to_sheet(data);
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-      const arrayBuffer = XLSX.write(workbook, {
-        type: "array",
-        bookType: "xlsx",
-      });
+      const arrayBuffer = await workbook.xlsx.writeBuffer();
 
       const result = parseXLSX(arrayBuffer);
 
@@ -169,21 +139,15 @@ describe("XLSX Exercise Import", () => {
       expect(result.exercises[1].notes).toBe("enger Griff");
     });
 
-    it("should generate unique IDs for exercises", () => {
-      const data = [
-        ["", "Übungen", "Notiz"],
-        ["", "Exercise 1", ""],
-        ["", "Exercise 2", ""],
-        ["", "Exercise 3", ""],
-      ];
+    it("should generate unique IDs for exercises", async () => {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Sheet1");
+      worksheet.addRow(["", "Übungen", "Notiz"]);
+      worksheet.addRow(["", "Exercise 1", ""]);
+      worksheet.addRow(["", "Exercise 2", ""]);
+      worksheet.addRow(["", "Exercise 3", ""]);
 
-      const workbook = XLSX.utils.book_new();
-      const worksheet = XLSX.utils.aoa_to_sheet(data);
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-      const arrayBuffer = XLSX.write(workbook, {
-        type: "array",
-        bookType: "xlsx",
-      });
+      const arrayBuffer = await workbook.xlsx.writeBuffer();
 
       const result = parseXLSX(arrayBuffer);
 
@@ -197,21 +161,15 @@ describe("XLSX Exercise Import", () => {
       expect(new Set(ids).size).toBe(3);
     });
 
-    it("should preserve exercise order", () => {
-      const data = [
-        ["", "Übungen", "Notiz"],
-        ["", "First", ""],
-        ["", "Second", ""],
-        ["", "Third", ""],
-      ];
+    it("should preserve exercise order", async () => {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Sheet1");
+      worksheet.addRow(["", "Übungen", "Notiz"]);
+      worksheet.addRow(["", "First", ""]);
+      worksheet.addRow(["", "Second", ""]);
+      worksheet.addRow(["", "Third", ""]);
 
-      const workbook = XLSX.utils.book_new();
-      const worksheet = XLSX.utils.aoa_to_sheet(data);
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-      const arrayBuffer = XLSX.write(workbook, {
-        type: "array",
-        bookType: "xlsx",
-      });
+      const arrayBuffer = await workbook.xlsx.writeBuffer();
 
       const result = parseXLSX(arrayBuffer);
 
@@ -220,21 +178,15 @@ describe("XLSX Exercise Import", () => {
       expect(result.exercises[2].order).toBe(2);
     });
 
-    it("should skip empty rows", () => {
-      const data = [
-        ["", "Übungen", "Notiz"],
-        ["", "Exercise 1", ""],
-        ["", "", ""], // Empty row
-        ["", "Exercise 2", ""],
-      ];
+    it("should skip empty rows", async () => {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Sheet1");
+      worksheet.addRow(["", "Übungen", "Notiz"]);
+      worksheet.addRow(["", "Exercise 1", ""]);
+      worksheet.addRow(["", "", ""]); // Empty row
+      worksheet.addRow(["", "Exercise 2", ""]);
 
-      const workbook = XLSX.utils.book_new();
-      const worksheet = XLSX.utils.aoa_to_sheet(data);
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-      const arrayBuffer = XLSX.write(workbook, {
-        type: "array",
-        bookType: "xlsx",
-      });
+      const arrayBuffer = await workbook.xlsx.writeBuffer();
 
       const result = parseXLSX(arrayBuffer);
 
@@ -243,21 +195,15 @@ describe("XLSX Exercise Import", () => {
       expect(result.exercises[1].name).toBe("Exercise 2");
     });
 
-    it("should skip rows with metadata keywords", () => {
-      const data = [
-        ["", "Übungen", "Notiz"],
-        ["", "Bankdrücken", ""],
-        ["", "Trainingsziel", "Muskelaufbau"], // Should be skipped
-        ["", "Kniebeugen", ""],
-      ];
+    it("should skip rows with metadata keywords", async () => {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Sheet1");
+      worksheet.addRow(["", "Übungen", "Notiz"]);
+      worksheet.addRow(["", "Bankdrücken", ""]);
+      worksheet.addRow(["", "Trainingsziel", "Muskelaufbau"]); // Should be skipped
+      worksheet.addRow(["", "Kniebeugen", ""]);
 
-      const workbook = XLSX.utils.book_new();
-      const worksheet = XLSX.utils.aoa_to_sheet(data);
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-      const arrayBuffer = XLSX.write(workbook, {
-        type: "array",
-        bookType: "xlsx",
-      });
+      const arrayBuffer = await workbook.xlsx.writeBuffer();
 
       const result = parseXLSX(arrayBuffer);
 
@@ -269,20 +215,14 @@ describe("XLSX Exercise Import", () => {
   });
 
   describe("Metadata Extraction", () => {
-    it("should extract trainingGoal from metadata rows", () => {
-      const data = [
-        ["", "Trainingsziel", "Muskelaufbau"],
-        ["", "Übungen", "Notiz"],
-        ["", "Bankdrücken", ""],
-      ];
+    it("should extract trainingGoal from metadata rows", async () => {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Sheet1");
+      worksheet.addRow(["", "Trainingsziel", "Muskelaufbau"]);
+      worksheet.addRow(["", "Übungen", "Notiz"]);
+      worksheet.addRow(["", "Bankdrücken", ""]);
 
-      const workbook = XLSX.utils.book_new();
-      const worksheet = XLSX.utils.aoa_to_sheet(data);
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-      const arrayBuffer = XLSX.write(workbook, {
-        type: "array",
-        bookType: "xlsx",
-      });
+      const arrayBuffer = await workbook.xlsx.writeBuffer();
 
       const result = parseXLSX(arrayBuffer);
 

@@ -25,8 +25,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { settings, setSettings, loadFromXLSX, sessions, exercises } = useApp();
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
-  const handleImport = (arrayBuffer: ArrayBuffer, fileName: string) => {
-    loadFromXLSX(arrayBuffer);
+  const handleImport = async (arrayBuffer: ArrayBuffer, fileName: string) => {
+    await loadFromXLSX(arrayBuffer);
 
     const fileData = arrayBufferToBase64(arrayBuffer);
 
@@ -43,7 +43,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     onOpenChange(false);
   };
 
-  const exportStoredFile = () => {
+  const exportStoredFile = async () => {
     if (!settings.importedFile) {
       toast.error("Keine Datei", {
         description: "Bitte zuerst eine XLSX-Datei importieren",
@@ -53,7 +53,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
     try {
       // Export with formatting preservation
-      const arrayBuffer = exportXLSXWithFormatting(
+      const arrayBuffer = await exportXLSXWithFormatting(
         settings.importedFile.data,
         sessions,
         exercises

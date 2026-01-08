@@ -6,7 +6,7 @@ import {
   arrayBufferToBase64,
   base64ToArrayBuffer,
 } from "../utils";
-import * as XLSX from "xlsx-js-style";
+import ExcelJS from "exceljs";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 
@@ -15,7 +15,7 @@ import { resolve } from "path";
 // - Hat eine zu importierende Einheit für eine Übung in beiden Sätzen keinen Zahlenwert (Reps), wird diese Übung in dieser Einheit mit skipped: true markiert.
 
 describe("Integration Tests with Example-Sheet.xlsx", () => {
-  it("should import only sessions with reps and mark skipped exercises", () => {
+  it("should import only sessions with reps and mark skipped exercises", async () => {
     // Sheet with two sessions: one with reps, one without
     // Need at least 4 sets per session to pass parser validation
     const data: any[][] = [];
@@ -91,14 +91,16 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
     row16[9] = ""; // Einheit 2, Satz 2 weight
     data.push(row16);
 
-    const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.aoa_to_sheet(data);
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-    const arrayBuffer = XLSX.write(workbook, {
-      type: "array",
-      bookType: "xlsx",
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Sheet1");
+
+    // Add rows from data array
+    data.forEach((row) => {
+      worksheet.addRow(row);
     });
-    const result = parseXLSX(arrayBuffer);
+
+    const arrayBuffer = await workbook.xlsx.writeBuffer();
+    const result = await parseXLSX(arrayBuffer);
 
     // Only the first session (2024-01-10) should be imported (needs 4+ total sets)
     expect(result.sessions.length).toBe(1);
@@ -141,7 +143,7 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
   };
 
   describe("Full Import from Example-Sheet.xlsx", () => {
-    it("should successfully parse the real Example-Sheet.xlsx file", () => {
+    it("should successfully parse the real Example-Sheet.xlsx file", async () => {
       const arrayBuffer = loadExampleSheet();
       const result = parseXLSX(arrayBuffer);
 
@@ -345,7 +347,7 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
       expect(totalSets2).toBeGreaterThanOrEqual(totalSets1);
     });
 
-    it("should handle Trainings sheet export", () => {
+    it("should handle Trainings sheet export", async () => {
       const arrayBuffer = loadExampleSheet();
       const result = parseXLSX(arrayBuffer);
 
@@ -357,28 +359,35 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
       );
 
       // Should be a valid XLSX file
-      const exportedWorkbook = XLSX.read(exportedBuffer, { type: "array" });
+      const exportedWorkbook = new ExcelJS.Workbook();
+      await exportedWorkbook.xlsx.load(exportedBuffer);
 
       // Should NOT create a new Trainings sheet (data goes into existing Einheit columns)
-      expect(exportedWorkbook.SheetNames).not.toContain("Trainings");
+      const sheetNames = exportedWorkbook.worksheets.map((ws) => ws.name);
+      expect(sheetNames).not.toContain("Trainings");
 
       // Original sheets should be preserved
-      const originalWorkbook = XLSX.read(arrayBuffer, { type: "array" });
-      originalWorkbook.SheetNames.forEach((name) => {
-        expect(exportedWorkbook.SheetNames).toContain(name);
+      const originalWorkbook = new ExcelJS.Workbook();
+      await originalWorkbook.xlsx.load(arrayBuffer);
+      const originalSheetNames = originalWorkbook.worksheets.map(
+        (ws) => ws.name
+      );
+      originalSheetNames.forEach((name) => {
+        expect(sheetNames).toContain(name);
       });
 
-      console.log(
-        `Export preserved ${exportedWorkbook.SheetNames.length} sheets`
-      );
+      console.log(`Export preserved ${sheetNames.length} sheets`);
     });
 
-    it("should preserve original sheets during export", () => {
+    it("should preserve original sheets during export", async () => {
       const arrayBuffer = loadExampleSheet();
       const result = parseXLSX(arrayBuffer);
 
-      const originalWorkbook = XLSX.read(arrayBuffer, { type: "array" });
-      const originalSheetNames = [...originalWorkbook.SheetNames];
+      const originalWorkbook = new ExcelJS.Workbook();
+      await originalWorkbook.xlsx.load(arrayBuffer);
+      const originalSheetNames = originalWorkbook.worksheets.map(
+        (ws) => ws.name
+      );
 
       const base64 = arrayBufferToBase64(arrayBuffer);
       const exportedBuffer = exportXLSXWithFormatting(
@@ -387,20 +396,22 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
         result.exercises
       );
 
-      const exportedWorkbook = XLSX.read(exportedBuffer, { type: "array" });
+      const exportedWorkbook = new ExcelJS.Workbook();
+      await exportedWorkbook.xlsx.load(exportedBuffer);
+      const exportedSheetNames = exportedWorkbook.worksheets.map(
+        (ws) => ws.name
+      );
 
       // All original sheets should still exist
       originalSheetNames.forEach((sheetName) => {
-        expect(exportedWorkbook.SheetNames).toContain(sheetName);
+        expect(exportedSheetNames).toContain(sheetName);
       });
 
       // No new Trainings sheet should be created
-      expect(exportedWorkbook.SheetNames).not.toContain("Trainings");
+      expect(exportedSheetNames).not.toContain("Trainings");
 
       // Sheet count should match original (no new sheets added)
-      expect(exportedWorkbook.SheetNames.length).toBe(
-        originalSheetNames.length
-      );
+      expect(exportedSheetNames.length).toBe(originalSheetNames.length);
     });
   });
 

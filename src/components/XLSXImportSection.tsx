@@ -20,7 +20,10 @@ import {
 } from "@/lib/googleAuth";
 
 interface XLSXImportSectionProps {
-  onImport: (arrayBuffer: ArrayBuffer, fileName: string) => void;
+  onImport: (
+    arrayBuffer: ArrayBuffer,
+    fileName: string
+  ) => void | Promise<void>;
   showLocalUpload?: boolean;
   className?: string;
 }
@@ -84,7 +87,7 @@ export function XLSXImportSection({
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      onImport(arrayBuffer, file.name);
+      await onImport(arrayBuffer, file.name);
 
       toast.success("Importiert", {
         description: file.name,
@@ -131,7 +134,7 @@ export function XLSXImportSection({
           );
           const fileName = `sheet_${new Date().getTime()}.xlsx`;
 
-          onImport(arrayBuffer, fileName);
+          await onImport(arrayBuffer, fileName);
 
           toast.success("Erfolgreich importiert (Drive API)", {
             description: fileName,
@@ -168,7 +171,7 @@ export function XLSXImportSection({
       const arrayBuffer = await response.arrayBuffer();
       const fileName = `sheet_${new Date().getTime()}.xlsx`;
 
-      onImport(arrayBuffer, fileName);
+      await onImport(arrayBuffer, fileName);
 
       toast.success("Erfolgreich importiert", {
         description: fileName,

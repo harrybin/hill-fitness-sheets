@@ -4,7 +4,7 @@ import {
   updateXLSXWithSessions,
   exportXLSXWithFormatting,
 } from "../utils";
-import * as XLSX from "xlsx-js-style";
+import ExcelJS from "exceljs";
 import { Exercise, Session } from "../types";
 import {
   createTestData,
@@ -12,7 +12,7 @@ import {
 } from "./test-data-builder";
 
 describe("CRITICAL: Merged Cell Handling", () => {
-  it("should inherit weight from Satz 1 to Satz 2 when weight cell is merged", () => {
+  it("should inherit weight from Satz 1 to Satz 2 when weight cell is merged", async () => {
     // Create proper test data structure with 2 exercises for 4+ sets (parser requirement)
     const data = createMultiExerciseTestData({
       exercises: [
@@ -44,13 +44,12 @@ describe("CRITICAL: Merged Cell Handling", () => {
       dates: ["2024-01-15"],
     });
 
-    const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.aoa_to_sheet(data);
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-    const arrayBuffer = XLSX.write(workbook, {
-      type: "array",
-      bookType: "xlsx",
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Sheet1");
+    data.forEach((row) => {
+      worksheet.addRow(row);
     });
+    const arrayBuffer = await workbook.xlsx.writeBuffer();
 
     const result = parseXLSX(arrayBuffer);
 
@@ -72,7 +71,7 @@ describe("CRITICAL: Merged Cell Handling", () => {
     expect(sets0[1].reps).toBe(10);
   });
 
-  it("should use explicit weight for Satz 2 if provided (non-merged cell)", () => {
+  it("should use explicit weight for Satz 2 if provided (non-merged cell)", async () => {
     // Create proper test data structure with 2 exercises for 4+ sets (parser requirement)
     const data = createMultiExerciseTestData({
       exercises: [
@@ -104,13 +103,12 @@ describe("CRITICAL: Merged Cell Handling", () => {
       dates: ["2024-01-15"],
     });
 
-    const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.aoa_to_sheet(data);
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-    const arrayBuffer = XLSX.write(workbook, {
-      type: "array",
-      bookType: "xlsx",
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Sheet1");
+    data.forEach((row) => {
+      worksheet.addRow(row);
     });
+    const arrayBuffer = await workbook.xlsx.writeBuffer();
 
     const result = parseXLSX(arrayBuffer);
 
@@ -120,7 +118,7 @@ describe("CRITICAL: Merged Cell Handling", () => {
     expect(sets[1].weight).toBe(45); // Uses explicit weight
   });
 
-  it("should skip Satz 2 if only reps are missing (weight is undefined)", () => {
+  it("should skip Satz 2 if only reps are missing (weight is undefined)", async () => {
     // Create proper test data structure with 3 exercises for 4+ sets (parser requirement)
     // Bankdrücken: Satz 1 valid (1 set), Satz 2 skipped
     // Beinpresse: Satz 1 and 2 valid (2 sets)
@@ -168,13 +166,12 @@ describe("CRITICAL: Merged Cell Handling", () => {
       dates: ["2024-01-15"],
     });
 
-    const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.aoa_to_sheet(data);
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-    const arrayBuffer = XLSX.write(workbook, {
-      type: "array",
-      bookType: "xlsx",
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Sheet1");
+    data.forEach((row) => {
+      worksheet.addRow(row);
     });
+    const arrayBuffer = await workbook.xlsx.writeBuffer();
 
     const result = parseXLSX(arrayBuffer);
 
@@ -190,7 +187,7 @@ describe("CRITICAL: Merged Cell Handling", () => {
     expect(bankEntry?.sets[0].setNumber).toBe(1);
   });
 
-  it("should handle multiple exercises with merged cells", () => {
+  it("should handle multiple exercises with merged cells", async () => {
     const data = createMultiExerciseTestData({
       exercises: [
         {
@@ -221,13 +218,12 @@ describe("CRITICAL: Merged Cell Handling", () => {
       dates: ["2024-01-15"],
     });
 
-    const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.aoa_to_sheet(data);
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-    const arrayBuffer = XLSX.write(workbook, {
-      type: "array",
-      bookType: "xlsx",
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Sheet1");
+    data.forEach((row) => {
+      worksheet.addRow(row);
     });
+    const arrayBuffer = await workbook.xlsx.writeBuffer();
 
     const result = parseXLSX(arrayBuffer);
 
@@ -247,8 +243,8 @@ describe("CRITICAL: Merged Cell Handling", () => {
 });
 
 describe("Multi-Sheet Session Import", () => {
-  it("should parse sessions from multiple continuation sheets", () => {
-    const workbook = XLSX.utils.book_new();
+  it("should parse sessions from multiple continuation sheets", async () => {
+    const workbook = new ExcelJS.Workbook();
 
     // Sheet 1: 2 sessions (Einheit 1 and 2) with 2 exercises for 4+ sets per session
     const data1 = createMultiExerciseTestData({
@@ -294,8 +290,10 @@ describe("Multi-Sheet Session Import", () => {
       ],
       dates: ["2024-01-01", "2024-01-05"],
     });
-    const sheet1 = XLSX.utils.aoa_to_sheet(data1);
-    XLSX.utils.book_append_sheet(workbook, sheet1, "Einheit 1-8");
+    const sheet1 = workbook.addWorksheet("Einheit 1-8");
+    data1.forEach((row) => {
+      sheet1.addRow(row);
+    });
 
     // Sheet 2: 1 session (Einheit 3) with 2 exercises for 4+ sets per session
     const data2 = createMultiExerciseTestData({
@@ -327,13 +325,12 @@ describe("Multi-Sheet Session Import", () => {
       ],
       dates: ["2024-01-10"],
     });
-    const sheet2 = XLSX.utils.aoa_to_sheet(data2);
-    XLSX.utils.book_append_sheet(workbook, sheet2, "Einheit 9-16");
-
-    const arrayBuffer = XLSX.write(workbook, {
-      type: "array",
-      bookType: "xlsx",
+    const sheet2 = workbook.addWorksheet("Einheit 9-16");
+    data2.forEach((row) => {
+      sheet2.addRow(row);
     });
+
+    const arrayBuffer = await workbook.xlsx.writeBuffer();
     const result = parseXLSX(arrayBuffer);
 
     // Should have 3 sessions total (2 from sheet 1, 1 from sheet 2)
@@ -353,39 +350,30 @@ describe("Multi-Sheet Session Import", () => {
     });
   });
 
-  it("should only parse exercises once from first sheet", () => {
-    const workbook = XLSX.utils.book_new();
+  it("should only parse exercises once from first sheet", async () => {
+    const workbook = new ExcelJS.Workbook();
 
     // Sheet 1
-    const data1 = [
-      ["", "Übungen", "Notiz"],
-      ["", "Exercise 1", "Note 1"],
-      ["", "Exercise 2", "Note 2"],
-    ];
-    const sheet1 = XLSX.utils.aoa_to_sheet(data1);
-    XLSX.utils.book_append_sheet(workbook, sheet1, "Sheet1");
+    const sheet1 = workbook.addWorksheet("Sheet1");
+    sheet1.addRow(["", "Übungen", "Notiz"]);
+    sheet1.addRow(["", "Exercise 1", "Note 1"]);
+    sheet1.addRow(["", "Exercise 2", "Note 2"]);
 
     // Sheet 2
-    const data2 = [
-      ["", "Übungen", "Notiz"],
-      ["", "Exercise 1", "Note 1"], // Duplicate
-      ["", "Exercise 2", "Note 2"], // Duplicate
-    ];
-    const sheet2 = XLSX.utils.aoa_to_sheet(data2);
-    XLSX.utils.book_append_sheet(workbook, sheet2, "Sheet2");
+    const sheet2 = workbook.addWorksheet("Sheet2");
+    sheet2.addRow(["", "Übungen", "Notiz"]);
+    sheet2.addRow(["", "Exercise 1", "Note 1"]); // Duplicate
+    sheet2.addRow(["", "Exercise 2", "Note 2"]); // Duplicate
 
-    const arrayBuffer = XLSX.write(workbook, {
-      type: "array",
-      bookType: "xlsx",
-    });
+    const arrayBuffer = await workbook.xlsx.writeBuffer();
     const result = parseXLSX(arrayBuffer);
 
     // Should only have 2 exercises (not duplicated)
     expect(result.exercises).toHaveLength(2);
   });
 
-  it("should merge entries from different sheets by date", () => {
-    const workbook = XLSX.utils.book_new();
+  it("should merge entries from different sheets by date", async () => {
+    const workbook = new ExcelJS.Workbook();
 
     // Sheet 1: Bankdrücken and Beinpresse with reps, Kniebeugen skipped (4 sets = passes threshold)
     const data1 = createMultiExerciseTestData({
@@ -429,8 +417,10 @@ describe("Multi-Sheet Session Import", () => {
       ],
       dates: ["2024-01-15"],
     });
-    const sheet1 = XLSX.utils.aoa_to_sheet(data1);
-    XLSX.utils.book_append_sheet(workbook, sheet1, "Sheet1");
+    const sheet1 = workbook.addWorksheet("Sheet1");
+    data1.forEach((row) => {
+      sheet1.addRow(row);
+    });
 
     // Sheet 2: Bankdrücken skipped, Beinpresse and Kniebeugen with reps (4 sets = passes threshold)
     const data2 = createMultiExerciseTestData({
@@ -474,13 +464,12 @@ describe("Multi-Sheet Session Import", () => {
       ],
       dates: ["2024-01-15"],
     });
-    const sheet2 = XLSX.utils.aoa_to_sheet(data2);
-    XLSX.utils.book_append_sheet(workbook, sheet2, "Sheet2");
-
-    const arrayBuffer = XLSX.write(workbook, {
-      type: "array",
-      bookType: "xlsx",
+    const sheet2 = workbook.addWorksheet("Sheet2");
+    data2.forEach((row) => {
+      sheet2.addRow(row);
     });
+
+    const arrayBuffer = await workbook.xlsx.writeBuffer();
     const result = parseXLSX(arrayBuffer);
 
     // Should have 1 session with 3 exercises merged

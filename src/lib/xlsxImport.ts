@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx-js-style";
+import ExcelJS from "exceljs";
 import { Exercise, Session } from "./types";
 import { base64ToArrayBuffer } from "./utils";
 
@@ -72,7 +72,7 @@ function parseExcelDate(value: any): string | null {
  * @param arrayBuffer XLSX file as ArrayBuffer
  * @returns { exercises, metadata, sessions }
  */
-export function parseXLSX(arrayBuffer: ArrayBuffer): {
+export async function parseXLSX(arrayBuffer: ArrayBuffer): Promise<{
   exercises: Exercise[];
   metadata: {
     trainingGoal?: string;
@@ -80,10 +80,14 @@ export function parseXLSX(arrayBuffer: ArrayBuffer): {
     notes?: string;
   };
   sessions: Session[];
-} {
-  const workbook = XLSX.read(arrayBuffer, { type: "array" });
+}> {
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(new Uint8Array(arrayBuffer));
 
-  console.log("Available sheets:", workbook.SheetNames);
+  console.log(
+    "Available sheets:",
+    workbook.worksheets.map((ws) => ws.name)
+  );
 
   // Process all sheets to gather sessions
   const allSessions: Session[] = [];
@@ -95,11 +99,19 @@ export function parseXLSX(arrayBuffer: ArrayBuffer): {
   } = {};
 
   // Process each sheet
-  for (const sheetName of workbook.SheetNames) {
+  for (const worksheet of workbook.worksheets) {
+    const sheetName = worksheet.name;
     console.log(`\n=== Processing sheet: ${sheetName} ===`);
 
-    const worksheet = workbook.Sheets[sheetName];
-    const data: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    // Convert exceljs worksheet to 2D array for compatibility with existing parsing logic
+    const data: any[][] = [];
+    worksheet.eachRow((row: ExcelJS.Row) => {
+      const rowData: any[] = [];
+      row.eachCell((cell: ExcelJS.Cell) => {
+        rowData.push(cell.value);
+      });
+      data.push(rowData);
+    });
 
     console.log(`Sheet has ${data.length} rows`);
 
@@ -114,33 +126,52 @@ export function parseXLSX(arrayBuffer: ArrayBuffer): {
     const latestKnownDate = getLatestDate(allSessions);
     const sessions = parseSessionsFromSheet(data, exercises, latestKnownDate);
 
-    // Merge sessions
-    sessions.forEach((session) => {
-      const existingSession = allSessions.find((s) => s.date === session.date);
-      if (existingSession) {
-        console.log(
-          `Merging session with date ${session.date}: existing has dateInterpolated=${existingSession.dateInterpolated}, new session has dateInterpolated=${session.dateInterpolated}`
+    // Decide whether to merge or append based on overlap with existing sessions
+    // If ALL sessions from this sheet have dates matching existing sessions → split sheet scenario (merge all)
+    // Otherwise → continuation sheet with new time periods (append all without merging)
+    const matchingDates = sessions.filter((s) =>
+      allSessions.some((existing) => existing.date === s.date)
+    ).length;
+    const shouldMerge =
+      sessions.length > 0 && matchingDates === sessions.length;
+
+    if (shouldMerge) {
+      // Split sheet: merge sessions with matching dates
+      sessions.forEach((session) => {
+        const existingSession = allSessions.find(
+          (s) => s.date === session.date
         );
-        // Preserve the dateInterpolated flag if either session has it
-        if (session.dateInterpolated && !existingSession.dateInterpolated) {
-          existingSession.dateInterpolated = session.dateInterpolated;
-        }
-        // Merge entries
-        session.entries.forEach((entry) => {
-          const existingEntry = existingSession.entries.find(
-            (e) => e.exerciseId === entry.exerciseId
+        if (existingSession) {
+          console.log(
+            `Merging session with date ${session.date}: existing has dateInterpolated=${existingSession.dateInterpolated}, new session has dateInterpolated=${session.dateInterpolated}`
           );
-          if (existingEntry) {
-            // Merge sets
-            existingEntry.sets.push(...entry.sets);
-          } else {
-            existingSession.entries.push(entry);
+          // Preserve the dateInterpolated flag if either session has it
+          if (session.dateInterpolated && !existingSession.dateInterpolated) {
+            existingSession.dateInterpolated = session.dateInterpolated;
           }
-        });
-      } else {
+          // Merge entries
+          session.entries.forEach((entry) => {
+            const existingEntry = existingSession.entries.find(
+              (e) => e.exerciseId === entry.exerciseId
+            );
+            if (existingEntry) {
+              // Merge sets
+              existingEntry.sets.push(...entry.sets);
+            } else {
+              existingSession.entries.push(entry);
+            }
+          });
+        } else {
+          // Shouldn't happen if our logic is correct, but add as fallback
+          allSessions.push(session);
+        }
+      });
+    } else {
+      // Continuation sheet: append all sessions without merging
+      sessions.forEach((session) => {
         allSessions.push(session);
-      }
-    });
+      });
+    }
   }
 
   console.log(`\n=== Final Results ===`);
@@ -151,8 +182,6 @@ export function parseXLSX(arrayBuffer: ArrayBuffer): {
   }
 
   // Clean up suggestedWeight for exercises that have actual training data
-  // If an exercise has any session with reps, clear its suggestedWeight
-  // because the UI should use the actual training history instead
   const exercisesWithTraining = new Set<string>();
   allSessions.forEach((session) => {
     session.entries.forEach((entry) => {
@@ -178,93 +207,6 @@ export function parseXLSX(arrayBuffer: ArrayBuffer): {
     console.log(
       `Final: ${exercisesWithSuggestedWeight.length} exercises retained suggestedWeight (no training history)`
     );
-  }
-
-  // Check for history sheet (legacy support)
-  const historySheetName = workbook.SheetNames.find(
-    (name) =>
-      name.toLowerCase().includes("history") ||
-      name.toLowerCase().includes("historie")
-  );
-
-  if (historySheetName) {
-    try {
-      const historyData: any[][] = XLSX.utils.sheet_to_json(
-        workbook.Sheets[historySheetName],
-        { header: 1 }
-      );
-
-      console.log(
-        `Parsing ${
-          historyData.length - 1
-        } history rows from sheet "${historySheetName}"`
-      );
-
-      for (let i = 1; i < historyData.length; i++) {
-        const row = historyData[i];
-        if (!row || row.length < 4) continue;
-
-        const dateStr = parseExcelDate(row[0]);
-        if (!dateStr) {
-          console.warn(`Row ${i}: Invalid date format:`, row[0]);
-          continue;
-        }
-
-        const exerciseName = String(row[1] || "").trim();
-        const weight = parseFloat(String(row[2] || "0"));
-        const reps = parseInt(String(row[3] || "0"));
-        const setNumber = parseInt(String(row[4] || "1"));
-
-        if (!exerciseName || isNaN(weight) || isNaN(reps)) {
-          console.warn(`Row ${i}: Invalid data:`, {
-            exerciseName,
-            weight,
-            reps,
-          });
-          continue;
-        }
-
-        const exercise = exercises.find(
-          (ex) => ex.name.toLowerCase() === exerciseName.toLowerCase()
-        );
-
-        if (!exercise) {
-          console.warn(
-            `Row ${i}: Exercise "${exerciseName}" not found in exercise list`
-          );
-          continue;
-        }
-
-        let session = allSessions.find((s) => s.date === dateStr);
-        if (!session) {
-          session = { date: dateStr, entries: [] };
-          allSessions.push(session);
-        }
-
-        let entry = session.entries.find((e) => e.exerciseId === exercise.id);
-        if (!entry) {
-          entry = {
-            id: `entry-${dateStr}-${exercise.id}`,
-            exerciseId: exercise.id,
-            date: dateStr,
-            sets: [],
-          };
-          session.entries.push(entry);
-        }
-
-        entry.sets.push({
-          setNumber: setNumber || entry.sets.length + 1,
-          weight,
-          reps,
-        });
-      }
-
-      console.log(
-        `Additionally imported ${allSessions.length} total sessions including history sheet`
-      );
-    } catch (error) {
-      console.error("Error parsing history:", error);
-    }
   }
 
   return { exercises, metadata, sessions: allSessions };
@@ -387,7 +329,20 @@ function parseSheetData(data: any[][]): {
     if (einheit1WhCol !== null) break;
   }
 
+  // Exercises span 2 rows each (Satz 1 and Satz 2). Process only Satz 1 rows.
+  // Start from first non-empty row and step by 2
+  let firstExerciseRow = startIndex;
   for (let i = startIndex; i < data.length; i++) {
+    const row = data[i];
+    const cellBStr = String(row?.[1] || "").trim();
+    if (cellBStr && !isMetadataRow(cellBStr)) {
+      firstExerciseRow = i;
+      break;
+    }
+  }
+
+  for (let i = firstExerciseRow; i < data.length; i += 2) {
+    // Process every other row (Satz 1 only)
     const row = data[i];
 
     if (!row || row.length === 0) {
@@ -954,18 +909,8 @@ function parseSessionsFromSheet(
       continue;
     }
 
-    const totalSets = entries.reduce(
-      (sum, entry) => sum + (entry.sets ? entry.sets.length : 0),
-      0
-    );
-
-    if (totalSets < 4) {
-      console.log(
-        `⚠️  Filtering out session at col ${whCol}, date ${date}: only ${totalSets} sets found (looks empty)`
-      );
-      continue;
-    }
-
+    // Per import rules: session is valid if at least one exercise has reps
+    // (hasAnyReps is already checked above, so we can add the session)
     const sessionToAdd = { date, entries, dateInterpolated: interpolatedFlag };
     sessions.push(sessionToAdd);
   }

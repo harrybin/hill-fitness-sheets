@@ -23,8 +23,8 @@ export function ExerciseList({
 }: ExerciseListProps) {
   const { loadFromXLSX, setSettings } = useApp();
 
-  const handleImport = (arrayBuffer: ArrayBuffer, fileName: string) => {
-    loadFromXLSX(arrayBuffer);
+  const handleImport = async (arrayBuffer: ArrayBuffer, fileName: string) => {
+    await loadFromXLSX(arrayBuffer);
 
     const fileData = arrayBufferToBase64(arrayBuffer);
 

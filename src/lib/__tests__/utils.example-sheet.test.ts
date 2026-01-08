@@ -19,7 +19,7 @@ describe("Example-Sheet.xlsx - Complete Data Integrity", () => {
     );
 
     // Parse the XLSX file
-    const parsed = parseXLSX(arrayBuffer);
+    const parsed = await parseXLSX(arrayBuffer);
 
     // Expected exercises based on the image
     const expectedExercises = [
@@ -68,7 +68,7 @@ describe("Example-Sheet.xlsx - Complete Data Integrity", () => {
     );
 
     // Parse the XLSX file
-    const parsed = parseXLSX(arrayBuffer);
+    const parsed = await parseXLSX(arrayBuffer);
 
     // Define expected sessions array based on ACTUAL DATA READ FROM EXCEL
     // Einheit 1 (2025-11-18) - read directly from cells
@@ -245,7 +245,7 @@ describe("Example-Sheet.xlsx - Complete Data Integrity", () => {
       fileBuffer.byteOffset + fileBuffer.byteLength
     );
 
-    const parsed = parseXLSX(arrayBuffer);
+    const parsed = await parseXLSX(arrayBuffer);
 
     // Verify basic structure
     expect(parsed.exercises).toBeDefined();

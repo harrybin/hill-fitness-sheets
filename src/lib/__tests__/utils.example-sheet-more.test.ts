@@ -7,7 +7,7 @@ import * as path from "path";
 // "Übungen" header and contain undated sessions. We still expect all sessions
 // across sheets to be imported.
 describe("Example-Sheet-more.xlsx", () => {
-  it("should import all sessions across continuation sheets", () => {
+  it("should import all sessions across continuation sheets", async () => {
     const filePath = path.resolve(
       __dirname,
       "fixtures",
@@ -19,7 +19,7 @@ describe("Example-Sheet-more.xlsx", () => {
       fileBuffer.byteOffset + fileBuffer.byteLength
     );
 
-    const parsed = parseXLSX(arrayBuffer);
+    const parsed = await parseXLSX(arrayBuffer);
 
     // 8 sessions on the first sheet + 1 on the second = 9 total
     expect(parsed.sessions.length).toBe(9);

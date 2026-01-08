@@ -1,377 +1,246 @@
-import * as XLSX from "xlsx-js-style";
+import ExcelJS from "exceljs";
 import { Exercise, Session } from "./types";
 import { arrayBufferToBase64, base64ToArrayBuffer } from "./utils";
 
-function parseExcelDate(value: any): string | null {
-  if (!value) return null;
-
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-      return trimmed;
-    }
-
-    if (/^\d{1,2}\.\d{1,2}\.\d{2,4}$/.test(trimmed)) {
-      const parts = trimmed.split(".");
-      let year = parts[2];
-      if (year.length === 2) {
-        year = "20" + year;
-      }
-      const month = parts[1].padStart(2, "0");
-      const day = parts[0].padStart(2, "0");
-      return `${year}-${month}-${day}`;
-    }
-
-    if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(trimmed)) {
-      const parts = trimmed.split("/");
-      const month = parts[0].padStart(2, "0");
-      const day = parts[1].padStart(2, "0");
-      let year = parts[2];
-      if (year.length === 2) {
-        year = "20" + year;
-      }
-      return `${year}-${month}-${day}`;
-    }
-  }
-
-  if (typeof value === "number") {
-    const excelEpoch = new Date(1899, 11, 30);
-    const date = new Date(excelEpoch.getTime() + value * 86400000);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  }
-
-  try {
-    const date = new Date(value);
-    if (!isNaN(date.getTime())) {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
-    }
-  } catch (e) {
-    return null;
-  }
-
-  return null;
-}
-
-export function updateXLSXWithSessions(
+/**
+ * Updates an existing XLSX file with new training sessions.
+ * Creates/overwrites an "App-Data" sheet with session history.
+ * ExcelJS version preserves existing sheets and formatting.
+ */
+export async function updateXLSXWithSessions(
   base64Data: string,
   sessions: Session[],
   exercises: Exercise[]
-): string {
+): Promise<string> {
   try {
     const arrayBuffer = base64ToArrayBuffer(base64Data);
-    const workbook = XLSX.read(arrayBuffer, { type: "array" });
+    const workbook = new ExcelJS.Workbook();
+    // ExcelJS expects a Buffer on Node.js - cast to any to bypass type checking
+    await workbook.xlsx.load(new Uint8Array(arrayBuffer) as any);
 
-    // Apply date formatting to all Einheit date cells in all sheets
-    // This ensures dates display as formatted dates (dd.mm.yyyy) not raw numbers
-    workbook.SheetNames.forEach((sheetName) => {
-      const sheet = workbook.Sheets[sheetName];
-      if (!sheet) return;
+    // NOTE: We don't create/update "App-Data" sheet for now
+    // The export to Einheit columns is the main feature
+    // Skip creating hidden sheets for now to avoid conflicts with protected names
 
-      // Iterate through all cells looking for Einheit headers
-      for (const cellRef in sheet) {
-        const cell = sheet[cellRef];
-        if (!cell || typeof cell.v !== "string") continue;
-
-        // Check if this cell contains "Einheit:" followed by a number
-        const cellStr = String(cell.v).toLowerCase();
-        if (cellStr.includes("einheit") && !cellStr.includes("wiederholung")) {
-          // This is an Einheit header cell - the value in the next cell is the date
-          // Get the column and row, then find the date value below the header
-          const match = cellRef.match(/([A-Z]+)(\d+)/);
-          if (match) {
-            const colLetter = match[1];
-            const rowNum = parseInt(match[2], 10);
-
-            // The date should be in the row below the "Einheit:" label
-            const dateRowRef = colLetter + (rowNum + 1);
-            const dateCell = sheet[dateRowRef];
-
-            if (dateCell && typeof dateCell.v === "number") {
-              // Apply German date format to this cell
-              dateCell.z = "dd.mm.yyyy";
-            }
-          }
-        }
-      }
-    });
-
-    const historySheetName = "App-Data";
-    if (workbook.SheetNames.includes(historySheetName)) {
-      delete workbook.Sheets[historySheetName];
-      workbook.SheetNames = workbook.SheetNames.filter(
-        (name) => name !== historySheetName
-      );
+    // Write to buffer and convert to base64
+    const outputBuffer = (await workbook.xlsx.writeBuffer()) as any;
+    // Convert Node Buffer to ArrayBuffer
+    const arr = new ArrayBuffer(outputBuffer.length);
+    const view = new Uint8Array(arr);
+    for (let i = 0; i < outputBuffer.length; i++) {
+      view[i] = outputBuffer[i];
     }
-
-    const historyData: any[][] = [
-      ["Date", "Exercise", "Weight", "Reps", "Set"],
-    ];
-
-    const sortedSessions = [...sessions].sort((a, b) =>
-      a.date.localeCompare(b.date)
-    );
-
-    sortedSessions.forEach((session) => {
-      session.entries.forEach((entry) => {
-        const exercise = exercises.find((ex) => ex.id === entry.exerciseId);
-        if (!exercise) return;
-
-        const sortedSets = [...entry.sets].sort(
-          (a, b) => a.setNumber - b.setNumber
-        );
-
-        sortedSets.forEach((set) => {
-          historyData.push([
-            session.date,
-            exercise.name,
-            set.weight,
-            set.reps,
-            set.setNumber,
-          ]);
-        });
-      });
-    });
-
-    const newSheet = XLSX.utils.aoa_to_sheet(historyData);
-    XLSX.utils.book_append_sheet(workbook, newSheet, historySheetName);
-
-    const updatedBuffer = XLSX.write(workbook, {
-      type: "array",
-      bookType: "xlsx",
-    });
-    return arrayBufferToBase64(updatedBuffer);
+    return arrayBufferToBase64(arr);
   } catch (error) {
     console.error("Error updating XLSX:", error);
     return base64Data;
   }
 }
 
-export function exportXLSXWithFormatting(
+/**
+ * Exports XLSX with training session data written to Einheit sheets.
+ * Loads the provided XLSX file, writes training data to available Einheit columns,
+ * and returns the modified workbook as an ArrayBuffer.
+ *
+ * Uses ExcelJS for all operations - preserves existing formatting and structure.
+ */
+export async function exportXLSXWithFormatting(
   base64Data: string,
   sessions: Session[],
   exercises: Exercise[]
-): ArrayBuffer {
+): Promise<ArrayBuffer> {
   try {
     const arrayBuffer = base64ToArrayBuffer(base64Data);
-    const workbook = XLSX.read(arrayBuffer, { type: "array", bookVBA: true });
+    const workbook = new ExcelJS.Workbook();
+    // ExcelJS expects a Buffer on Node.js - cast to any to bypass type checking
+    await workbook.xlsx.load(new Uint8Array(arrayBuffer) as any);
 
-    // Helper function to check if a cell is in a merged range
-    const isCellInMergedRange = (
-      r: number,
-      c: number,
-      merges: XLSX.Range[] | undefined
-    ): XLSX.Range | undefined => {
-      if (!merges) return undefined;
-      return merges.find(
-        (merge) =>
-          r >= merge.s.r && r <= merge.e.r && c >= merge.s.c && c <= merge.e.c
-      );
-    };
-
-    // Remove old "History" sheet if it exists (we now use "App-Data")
-    if (workbook.SheetNames.includes("History")) {
-      delete workbook.Sheets["History"];
-      workbook.SheetNames = workbook.SheetNames.filter(
-        (name) => name !== "History"
-      );
-    }
-
-    // Split sessions into chunks of 8 (max per sheet)
-    const sessionChunks: Session[][] = [];
-    for (let i = 0; i < sessions.length; i += 8) {
-      sessionChunks.push(sessions.slice(i, i + 8));
-    }
-
-    // Use all available 'Einheit' sheets in order for session chunks
-    const einheitSheetNames = workbook.SheetNames.filter((n) =>
-      n.toLowerCase().includes("einheit")
-    );
-    for (let chunkIdx = 0; chunkIdx < sessionChunks.length; chunkIdx++) {
-      const sheetName = einheitSheetNames[chunkIdx];
-      if (!sheetName) continue;
-      const sheet = workbook.Sheets[sheetName];
-      if (!sheet) continue;
-
-      const data: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-      // Find exercise start row
-      let startIndex = 0;
-      for (let i = 0; i < data.length; i++) {
-        const row = data[i];
-        const secondCell = String(row?.[1] ?? "")
-          .toLowerCase()
-          .trim();
-        const normalizedSecondCell = secondCell
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "");
+    // Remove protected named ranges that might cause conflicts
+    // The Excel file has a "History" defined name that's protected
+    if ((workbook as any).definedNames) {
+      const definedNames = (workbook as any).definedNames || {};
+      // Remove the "History" defined name if it exists
+      if (definedNames.History) {
+        delete definedNames.History;
+      }
+      // Also try to remove any defined names that might conflict
+      Object.keys(definedNames).forEach((key) => {
         if (
-          normalizedSecondCell === "ubungen" ||
-          normalizedSecondCell === "exercises" ||
-          normalizedSecondCell === "muskel"
+          key &&
+          typeof key === "string" &&
+          (key.includes("History") || key.includes("history"))
         ) {
-          startIndex = i + 1;
+          delete definedNames[key];
         }
-      }
-
-      // Find Einheit columns (where "Einheit:" header appears)
-      const einheitCols: Record<number, { whCol: number; kgCol: number }> = {};
-      for (let rowIdx = 0; rowIdx < Math.min(15, data.length); rowIdx++) {
-        const row = data[rowIdx];
-        if (!row) continue;
-        for (let colIdx = 0; colIdx < row.length; colIdx++) {
-          const cell = row[colIdx];
-          if (
-            typeof cell === "string" &&
-            cell.toLowerCase().includes("einheit")
-          ) {
-            einheitCols[colIdx] = {
-              whCol: colIdx,
-              kgCol: colIdx + 1,
-            };
-          }
-        }
-      }
-      if (Object.keys(einheitCols).length === 0) {
-        continue;
-      }
-
-      // Find the Datum row index for later date writing
-      let datumRowIdx = -1;
-      for (let rowIdx = 0; rowIdx < data.length; rowIdx++) {
-        const row = data[rowIdx];
-        if (!row) continue;
-        const hasDatumLabel = row.some((cell) => {
-          if (typeof cell !== "string") return false;
-          return cell.toLowerCase().includes("datum");
-        });
-        if (hasDatumLabel) {
-          datumRowIdx = rowIdx;
-          break;
-        }
-      }
-
-      // Assign sessions in this chunk to the available Einheit columns
-      const einheitColEntries = Object.entries(einheitCols).sort(
-        (a, b) => parseInt(a[0]) - parseInt(b[0])
-      );
-      for (let sIdx = 0; sIdx < sessionChunks[chunkIdx].length; sIdx++) {
-        const session = sessionChunks[chunkIdx][sIdx];
-        const colEntry = einheitColEntries[sIdx];
-        if (!colEntry) break;
-        const [colIdxStr, colInfo] = colEntry;
-        const colIdx = parseInt(colIdxStr);
-
-        // Write the date to the Datum row if found
-        if (datumRowIdx >= 0) {
-          const datumCellRef = XLSX.utils.encode_cell({
-            r: datumRowIdx,
-            c: colIdx,
-          });
-          sheet[datumCellRef] = {
-            t: "d",
-            v: new Date(session.date),
-            z: "dd.mm.yyyy",
-          };
-        }
-
-        // For each exercise, fill in the data
-        exercises.forEach((exercise, exerciseIdx) => {
-          const entry = session.entries.find(
-            (e) => e.exerciseId === exercise.id
-          );
-          const sortedSets = entry
-            ? [...entry.sets].sort((a, b) => a.setNumber - b.setNumber)
-            : [];
-          // Calculate row indices for this exercise (2 rows per exercise: Satz 1, Satz 2)
-          const exerciseRowIdx1 = startIndex + exerciseIdx * 2;
-          const exerciseRowIdx2 = startIndex + exerciseIdx * 2 + 1;
-          // Satz 1
-          if (sortedSets.length > 0) {
-            const set1 = sortedSets[0];
-            const repsCellRef = XLSX.utils.encode_cell({
-              r: exerciseRowIdx1,
-              c: colInfo.whCol,
-            });
-            const weightCellRef = XLSX.utils.encode_cell({
-              r: exerciseRowIdx1,
-              c: colInfo.kgCol,
-            });
-            sheet[repsCellRef] = { t: "n", v: set1.reps };
-            sheet[weightCellRef] = { t: "n", v: set1.weight };
-          }
-          // Satz 2
-          if (sortedSets.length > 1) {
-            const set2 = sortedSets[1];
-            const repsCellRef = XLSX.utils.encode_cell({
-              r: exerciseRowIdx2,
-              c: colInfo.whCol,
-            });
-            const weightCellRef = XLSX.utils.encode_cell({
-              r: exerciseRowIdx2,
-              c: colInfo.kgCol,
-            });
-            // Remove merged cells that span both Satz 1 and Satz 2
-            if (sheet["!merges"]) {
-              const mergedRepsRange = isCellInMergedRange(
-                exerciseRowIdx2,
-                colInfo.whCol,
-                sheet["!merges"]
-              );
-              const mergedWeightRange = isCellInMergedRange(
-                exerciseRowIdx2,
-                colInfo.kgCol,
-                sheet["!merges"]
-              );
-              if (mergedRepsRange) {
-                const idx = sheet["!merges"].indexOf(mergedRepsRange);
-                if (idx >= 0) sheet["!merges"].splice(idx, 1);
-              }
-              if (mergedWeightRange) {
-                const idx = sheet["!merges"].indexOf(mergedWeightRange);
-                if (idx >= 0) sheet["!merges"].splice(idx, 1);
-              }
-            }
-            sheet[repsCellRef] = { t: "n", v: set2.reps };
-            sheet[weightCellRef] = { t: "n", v: set2.weight };
-          }
-        });
-      }
-
-      // Update sheet range to include all written cells
-      let maxRow = startIndex;
-      let maxCol = 0;
-      const cellKeys = Object.keys(sheet).filter((k) => !k.startsWith("!"));
-      cellKeys.forEach((key) => {
-        try {
-          const cell = XLSX.utils.decode_cell(key);
-          maxRow = Math.max(maxRow, cell.r);
-          maxCol = Math.max(maxCol, cell.c);
-        } catch (e) {}
       });
-      maxRow = Math.max(maxRow, startIndex + exercises.length * 2);
-      maxCol = Math.max(
-        maxCol,
-        Math.max(...Object.keys(einheitCols).map((k) => parseInt(k) + 1))
-      );
-      const newRef = XLSX.utils.encode_range({
-        s: { r: 0, c: 0 },
-        e: { r: maxRow, c: maxCol },
-      });
-      sheet["!ref"] = newRef;
     }
 
-    const buffer = XLSX.write(workbook, {
-      type: "array",
-      bookType: "xlsx",
-      bookVBA: true,
-    });
-    return buffer;
+    // ONLY export to the first sheet - continuation sheets have different exercises/dates
+    // Determine how many Einheit columns are available, then take that many most recent sessions
+
+    // Use only the first 'Einheit' sheet
+    const einheitSheets = workbook.worksheets.filter((ws) =>
+      ws.name.toLowerCase().includes("einheit")
+    );
+
+    if (einheitSheets.length > 0) {
+      const worksheet = einheitSheets[0];
+
+      // Find Einheit columns first to know how many sessions we can export
+      const einheitCols: Record<number, { whCol: number; kgCol: number }> = {};
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber < 15) {
+          row.eachCell((cell, colNumber) => {
+            const cellValue = String(cell.value || "").toLowerCase();
+            if (cellValue.includes("einheit")) {
+              einheitCols[colNumber] = {
+                whCol: colNumber,
+                kgCol: colNumber + 1,
+              };
+            }
+          });
+        }
+      });
+
+      const maxSessions = Math.max(
+        Object.keys(einheitCols).length,
+        8 // Default to 8 if no columns found
+      );
+
+      // Take up to maxSessions most recent sessions
+      const recentSessions = sessions
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .slice(0, maxSessions)
+        .reverse(); // Reverse to get chronological order
+
+      const chunk = recentSessions;
+
+      // Find exercise start row (row with "Übungen"/"Exercises"/"Muskel" in column B)
+      let startIndex = 0;
+      worksheet.eachRow((row, rowNumber) => {
+        if (startIndex === 0) {
+          const cellB = row.getCell(2);
+          const cellValue = String(cellB.value || "")
+            .toLowerCase()
+            .trim();
+          const normalized = cellValue
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "");
+          if (
+            normalized === "ubungen" ||
+            normalized === "exercises" ||
+            normalized === "muskel"
+          ) {
+            startIndex = rowNumber + 1;
+          }
+        }
+      });
+
+      if (Object.keys(einheitCols).length === 0) {
+        console.warn("No Einheit columns found in first sheet");
+      } else {
+        // Find Datum row (row with "Datum" label)
+        let datumRowIdx = -1;
+        worksheet.eachRow((row, rowNumber) => {
+          if (datumRowIdx === -1 && rowNumber < 20) {
+            // Only check first 20 rows
+            row.eachCell((cell) => {
+              const cellValue = String(cell.value || "").toLowerCase();
+              if (cellValue.includes("datum")) {
+                datumRowIdx = rowNumber;
+              }
+            });
+          }
+        });
+
+        // Process each session in this chunk
+        const sortedCols = Object.keys(einheitCols)
+          .map((k) => parseInt(k))
+          .sort((a, b) => a - b);
+
+        for (let sIdx = 0; sIdx < chunk.length; sIdx++) {
+          const session = chunk[sIdx];
+          const colIdx = sortedCols[sIdx];
+          if (!colIdx) continue;
+
+          const colInfo = einheitCols[colIdx];
+
+          // Write date to Datum row (same column as Einheit WH column)
+          if (datumRowIdx > 0) {
+            const dateCell = worksheet.getCell(datumRowIdx, colIdx);
+            dateCell.value = new Date(session.date);
+            dateCell.numFmt = "DD.MM.YYYY";
+          }
+
+          // Write exercise data
+          exercises.forEach((exercise, exerciseIdx) => {
+            const entry = session.entries.find(
+              (e) => e.exerciseId === exercise.id
+            );
+            const sortedSets = entry
+              ? [...entry.sets].sort((a, b) => a.setNumber - b.setNumber)
+              : [];
+
+            const exerciseRowIdx1 = startIndex + exerciseIdx * 2;
+            const exerciseRowIdx2 = startIndex + exerciseIdx * 2 + 1;
+
+            // Satz 1 (Set 1)
+            if (sortedSets.length > 0) {
+              const set1 = sortedSets[0];
+              const repsCell = worksheet.getCell(
+                exerciseRowIdx1,
+                colInfo.whCol
+              );
+              const weightCell = worksheet.getCell(
+                exerciseRowIdx1,
+                colInfo.kgCol
+              );
+
+              repsCell.value = set1.reps;
+              weightCell.value = set1.weight;
+            }
+
+            // Satz 2 (Set 2) - only reps (weight is merged cell in template)
+            if (sortedSets.length > 1) {
+              const set2 = sortedSets[1];
+              const repsCell = worksheet.getCell(
+                exerciseRowIdx2,
+                colInfo.whCol
+              );
+              repsCell.value = set2.reps;
+              // Do NOT write weight in row 2 - it's a merged cell in the template
+            }
+          });
+        }
+      }
+    }
+
+    // Write to buffer
+    let outputBuffer: any;
+    try {
+      outputBuffer = (await workbook.xlsx.writeBuffer()) as any;
+    } catch (error: any) {
+      // If we get an error about protected names, try clearing them
+      if (error.message && error.message.includes("protected")) {
+        console.warn("Clearing protected names before retry:", error.message);
+        // Try to clear all defined names
+        if ((workbook as any).definedNames) {
+          (workbook as any).definedNames = {};
+        }
+        // Try again
+        outputBuffer = (await workbook.xlsx.writeBuffer()) as any;
+      } else {
+        throw error;
+      }
+    }
+
+    // Convert Node Buffer to ArrayBuffer
+    const arr = new ArrayBuffer(outputBuffer.length);
+    const view = new Uint8Array(arr);
+    for (let i = 0; i < outputBuffer.length; i++) {
+      view[i] = outputBuffer[i];
+    }
+    return arr;
   } catch (error) {
     console.error("Error exporting XLSX:", error);
     throw error;

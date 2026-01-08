@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import * as XLSX from "xlsx-js-style";
+import ExcelJS from "exceljs";
 import { parseXLSX } from "../xlsxImport";
 import { exportXLSXWithFormatting } from "../xlsxExport";
 import { arrayBufferToBase64, base64ToArrayBuffer } from "../utils";
@@ -18,7 +18,7 @@ describe("XLSX export with >8 sessions (multi-sheet)", () => {
   let exercises: Exercise[];
   let sessions: Session[];
 
-  it("should export 16 sessions across multiple sheets and re-import all data correctly", () => {
+  it("should export 16 sessions across multiple sheets and re-import all data correctly", async () => {
     // 1. Load and parse the example XLSX
     const fileBuffer = fs.readFileSync(EXAMPLE_XLSX_PATH);
     base64Data = arrayBufferToBase64(
@@ -27,7 +27,7 @@ describe("XLSX export with >8 sessions (multi-sheet)", () => {
         fileBuffer.byteOffset + fileBuffer.byteLength
       )
     );
-    const parsed = parseXLSX(
+    const parsed = await parseXLSX(
       fileBuffer.buffer.slice(
         fileBuffer.byteOffset,
         fileBuffer.byteOffset + fileBuffer.byteLength
@@ -50,7 +50,7 @@ describe("XLSX export with >8 sessions (multi-sheet)", () => {
     }));
 
     // 3. Export the sessions to XLSX
-    const exportedBuffer = exportXLSXWithFormatting(
+    const exportedBuffer = await exportXLSXWithFormatting(
       base64Data,
       sessions,
       exercises
@@ -59,17 +59,27 @@ describe("XLSX export with >8 sessions (multi-sheet)", () => {
     expect(exportedBuffer.byteLength).toBeGreaterThan(0);
 
     // 4. Re-import and check sessions are distributed across sheets (8 per sheet)
-    const wb = XLSX.read(exportedBuffer, { type: "array" });
-    const sheetNames = wb.SheetNames.filter((n) =>
-      n.toLowerCase().includes("einheit")
-    );
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(new Uint8Array(exportedBuffer));
+    const sheetNames = workbook.worksheets
+      .filter((ws) => ws.name.toLowerCase().includes("einheit"))
+      .map((ws) => ws.name);
     expect(sheetNames.length).toBeGreaterThanOrEqual(2); // Should have at least 2 sheets for 16 sessions
 
     // Validate first sheet contains exported data for sessions 1..8
-    const firstSheet = wb.Sheets[sheetNames[0]];
-    const firstData: any[][] = XLSX.utils.sheet_to_json(firstSheet, {
-      header: 1,
+    const firstSheet = workbook.getWorksheet(sheetNames[0]);
+    if (!firstSheet) throw new Error("First sheet not found");
+
+    // Collect all rows as 2D array for easier processing
+    const firstData: any[][] = [];
+    firstSheet.eachRow((row) => {
+      const rowData: any[] = [];
+      row.eachCell((cell) => {
+        rowData.push(cell.value);
+      });
+      firstData.push(rowData);
     });
+
     // Find exercise start row
     let startIndex = 0;
     for (let i = 0; i < firstData.length; i++) {
@@ -88,6 +98,7 @@ describe("XLSX export with >8 sessions (multi-sheet)", () => {
         startIndex = i + 1;
       }
     }
+
     // Detect Einheit columns (first 8)
     const einheitColsFirst: Array<{
       whCol: number;
@@ -109,34 +120,27 @@ describe("XLSX export with >8 sessions (multi-sheet)", () => {
     }
     expect(einheitColsFirst.length).toBeGreaterThanOrEqual(8);
     einheitColsFirst.sort((a, b) => a.colIdx - b.colIdx);
+
     const firstExerciseRow1 = startIndex;
     const firstExerciseRow2 = startIndex + 1;
     for (let sIdx = 0; sIdx < 8; sIdx++) {
       const { whCol, kgCol } = einheitColsFirst[sIdx];
-      const reps1CellRef = XLSX.utils.encode_cell({
-        r: firstExerciseRow1,
-        c: whCol,
-      });
-      const reps2CellRef = XLSX.utils.encode_cell({
-        r: firstExerciseRow2,
-        c: whCol,
-      });
-      const weight1CellRef = XLSX.utils.encode_cell({
-        r: firstExerciseRow1,
-        c: kgCol,
-      });
-      const weight2CellRef = XLSX.utils.encode_cell({
-        r: firstExerciseRow2,
-        c: kgCol,
-      });
-      const reps1 = (firstSheet as any)[reps1CellRef]?.v;
-      const reps2 = (firstSheet as any)[reps2CellRef]?.v;
-      const weight1 = (firstSheet as any)[weight1CellRef]?.v;
-      const weight2 = (firstSheet as any)[weight2CellRef]?.v;
+      // ExcelJS uses 1-based row/col indexing
+      const reps1Cell = firstSheet.getCell(firstExerciseRow1 + 1, whCol + 1);
+      const reps2Cell = firstSheet.getCell(firstExerciseRow2 + 1, whCol + 1);
+      const weight1Cell = firstSheet.getCell(firstExerciseRow1 + 1, kgCol + 1);
+      const weight2Cell = firstSheet.getCell(firstExerciseRow2 + 1, kgCol + 1);
+
+      const reps1 = reps1Cell.value;
+      const reps2 = reps2Cell.value;
+      const weight1 = weight1Cell.value;
+      const weight2 = weight2Cell.value;
+
       expect(typeof reps1).toBe("number");
       expect(typeof reps2).toBe("number");
       expect(typeof weight1).toBe("number");
       expect(typeof weight2).toBe("number");
+
       // sessions 1..8 → i = 0..7
       expect(reps1).toBe(10 + sIdx);
       expect(reps2).toBe(9 + sIdx);
@@ -145,7 +149,7 @@ describe("XLSX export with >8 sessions (multi-sheet)", () => {
     }
 
     // Parse back using parseXLSX
-    const reparsed = parseXLSX(exportedBuffer);
+    const reparsed = await parseXLSX(exportedBuffer);
     // Current importer may auto-assign dates; assert at least 8 sessions were imported
     expect(reparsed.sessions.length).toBeGreaterThanOrEqual(8);
     // Check each session has all exercises and at least one populated entry

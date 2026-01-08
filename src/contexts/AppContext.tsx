@@ -17,7 +17,7 @@ interface AppContextValue {
   completeEntry: (entry: TrainingEntry, date: string) => void;
   updateEntry: (entry: TrainingEntry, date: string) => void;
   updateExercise: (exercise: Exercise) => void;
-  loadFromXLSX: (arrayBuffer: ArrayBuffer) => void;
+  loadFromXLSX: (arrayBuffer: ArrayBuffer) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -33,23 +33,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Auto-load from stored file on mount
   useEffect(() => {
     if (settings?.importedFile && exercises && exercises.length === 0) {
-      try {
-        console.log("Auto-loading exercises and sessions from stored file...");
-        const arrayBuffer = base64ToArrayBuffer(settings.importedFile.data);
-        const { exercises: newExercises, sessions: loadedSessions } =
-          parseXLSX(arrayBuffer);
-        console.log(
-          `Auto-loaded ${newExercises.length} exercises and ${
-            loadedSessions?.length || 0
-          } sessions`
-        );
-        setExercises(newExercises);
-        if (loadedSessions && loadedSessions.length > 0) {
-          setSessions(loadedSessions);
+      (async () => {
+        try {
+          console.log(
+            "Auto-loading exercises and sessions from stored file..."
+          );
+          const arrayBuffer = base64ToArrayBuffer(settings.importedFile.data);
+          const { exercises: newExercises, sessions: loadedSessions } =
+            await parseXLSX(arrayBuffer);
+          console.log(
+            `Auto-loaded ${newExercises.length} exercises and ${
+              loadedSessions?.length || 0
+            } sessions`
+          );
+          setExercises(newExercises);
+          if (loadedSessions && loadedSessions.length > 0) {
+            setSessions(loadedSessions);
+          }
+        } catch (error) {
+          console.error("Auto-load failed:", error);
         }
-      } catch (error) {
-        console.error("Auto-load failed:", error);
-      }
+      })();
     }
   }, [settings?.importedFile, exercises, setExercises, setSessions]);
 
@@ -58,13 +62,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Sessions are only written to the XLSX during the explicit export operation
   // via exportXLSXWithFormatting() which applies data to a fresh copy of the template.
 
-  const loadFromXLSX = (arrayBuffer: ArrayBuffer) => {
+  const loadFromXLSX = async (arrayBuffer: ArrayBuffer) => {
     console.log("loadFromXLSX called");
     const {
       exercises: newExercises,
       sessions: loadedSessions,
       metadata,
-    } = parseXLSX(arrayBuffer);
+    } = await parseXLSX(arrayBuffer);
     console.log("Parsed from XLSX:", {
       exercisesCount: newExercises.length,
       sessionsCount: loadedSessions?.length || 0,
