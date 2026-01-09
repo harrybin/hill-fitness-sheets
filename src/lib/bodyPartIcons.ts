@@ -58,8 +58,6 @@ const BODY_PART_MAPPINGS: BodyPartIcon[] = [
     germanTerms: [
       "bizeps",
       "biceps",
-      "unterarm-curl",
-      "unterarmcurl",
       "biceps brachii",
       "armmuskel",
       "oberarmmuskel",
@@ -71,7 +69,7 @@ const BODY_PART_MAPPINGS: BodyPartIcon[] = [
       "scott-bank",
     ],
     icon: "muscle-2",
-    description: "Biceps",
+    description: "Bizeps",
   },
   {
     name: "triceps",
@@ -92,8 +90,8 @@ const BODY_PART_MAPPINGS: BodyPartIcon[] = [
       "bänder triceps",
       "kopfzug",
     ],
-    icon: "muscle-2",
-    description: "Triceps",
+    icon: "muscle",
+    description: "Trizeps",
   },
   {
     name: "lats",

@@ -74,9 +74,15 @@ export const BodyPartIconComponent: FC<BodyPartIconProps> = ({
   const title_text = title || iconDetails?.description || "Exercise";
 
   const isPosterior = targetBodyPart
-    ? ["back", "lats", "trapezius", "hamstrings", "glutes", "calves"].includes(
-        targetBodyPart
-      )
+    ? [
+        "back",
+        "lats",
+        "trapezius",
+        "hamstrings",
+        "glutes",
+        "calves",
+        "triceps",
+      ].includes(targetBodyPart)
     : false;
 
   const data: BodyHighlighterData[] | null = highlight ? [highlight] : null;
