@@ -40,7 +40,6 @@ Eine Progressive Web App zum Tracken von Trainingseinheiten im Fitnessstudio mit
 
 - **🚀 Schnelle Eingabe**: Große Touch-Targets und +/- Buttons für blitzschnelles Erfassen während des Trainings
 - **📴 Offline-fähig**: Funktioniert komplett ohne Internetverbindung – perfekt fürs Gym
-- **🔄 Auto-Updates**: Die App prüft automatisch auf neue Versionen und installiert sie im Hintergrund
 - **📊 Fortschritts-Tracking**: Sieh auf einen Blick, ob du dich gesteigert hast (grüne/rote Pfeile)
 - **💾 Excel-Sync**: Importiere Übungen aus Excel und exportiere deine Trainings-Daten
 - **🌙 Dark Mode**: Augenschonendes dunkles Design mit orangen Akzenten
