@@ -82,7 +82,7 @@ export function AboutDialog({ open, onOpenChange }: AboutDialogProps) {
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
               >
-                hill-fitness.harrybin.de
+                https://hill-fitness.harrybin.de/
               </a>
             </div>
           </div>
