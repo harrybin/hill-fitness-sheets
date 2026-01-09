@@ -90,7 +90,7 @@ export const BodyPartIconComponent: FC<BodyPartIconProps> = ({
       <BodyHighlighter
         data={data}
         type={isPosterior ? "posterior" : "anterior"}
-        bodyColor="#111827"
+        bodyColor="oklch(0.50 0 0)"
         highlightedColors={["#f97316"]}
         hoverColor="#f97316"
         style={{ width: "100%", height: "100%" }}
