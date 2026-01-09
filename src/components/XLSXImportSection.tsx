@@ -223,7 +223,7 @@ export function XLSXImportSection({
 
       const message = googleToken
         ? "Automatischer Import fehlgeschlagen. Browser-Download gestartet."
-        : "Datei nicht öffentlich? Melden Sie sich mit Google an oder laden Sie manuell hoch.";
+        : "Importieren Sie die XLSX Datei nach dem Download manuell.";
 
       toast.info("Download gestartet", {
         description: message,
