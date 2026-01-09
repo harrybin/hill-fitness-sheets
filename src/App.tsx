@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { Exercise } from "@/lib/types";
 import { ExerciseList } from "@/components/ExerciseList";
@@ -38,6 +38,7 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [scrollPosition, setScrollPosition] = useState(0);
 
   const today = new Date().toISOString().split("T")[0];
   const selectedDateClean = selectedDate || today;
@@ -47,6 +48,17 @@ function App() {
     completeEntry(entry, date);
     setSelectedExercise(null);
   };
+
+  const handleSelectExercise = (exercise: Exercise) => {
+    setScrollPosition(typeof window !== "undefined" ? window.scrollY : 0);
+    setSelectedExercise(exercise);
+  };
+
+  useEffect(() => {
+    if (!selectedExercise && typeof window !== "undefined") {
+      window.scrollTo({ top: scrollPosition, behavior: "auto" });
+    }
+  }, [selectedExercise, scrollPosition]);
 
   return (
     <div className="min-h-screen bg-background text-foreground p-2 sm:p-4 md:p-6">
@@ -125,7 +137,7 @@ function App() {
               exercises={exercises}
               currentSession={currentSession}
               allSessions={sessions}
-              onSelectExercise={setSelectedExercise}
+              onSelectExercise={handleSelectExercise}
               selectedDate={selectedDateClean}
             />
           )}
