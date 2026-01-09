@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Exercise,
   TrainingEntry,
@@ -106,6 +106,11 @@ export function TrainingEntryView({
   // State for editable notes
   const [notes, setNotes] = useState(exercise.notes || "");
   const [isEditingNotes, setIsEditingNotes] = useState(false);
+
+  // Sync suggested weight with current weight
+  useEffect(() => {
+    setSuggestedWeight(weight);
+  }, [weight]);
 
   const handleComplete = () => {
     const sets: TrainingSet[] = [
