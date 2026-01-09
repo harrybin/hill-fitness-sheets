@@ -388,4 +388,37 @@ test.describe("Screenshots Generation", () => {
       fullPage: false,
     });
   });
+
+  test("6. statistiken.png - Statistics page", async ({ page }) => {
+    // Import Example-Sheet-more.xlsx for more comprehensive statistics
+    const exampleSheetMorePath = path.resolve(
+      __dirname,
+      "../src/lib/__tests__/fixtures/Example-Sheet-more.xlsx"
+    );
+
+    // Set up file chooser handler before clicking the button
+    const fileChooserPromise = page.waitForEvent("filechooser");
+    await page.getByTestId("import-xlsx-button").click();
+    const fileChooser = await fileChooserPromise;
+    await fileChooser.setFiles(exampleSheetMorePath);
+
+    // Wait for import toast
+    await expect(page.getByText(/Importiert/i)).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(1000);
+
+    // Navigate directly to statistics page via hash
+    await page.goto("http://localhost:5000/#/statistiken");
+    await page.waitForTimeout(1000);
+
+    // Wait for statistics page content to load
+    await expect(
+      page.getByText(/Trainingshäufigkeit|Fortschritt/i).first()
+    ).toBeVisible({ timeout: 3000 });
+
+    // Take screenshot of statistics page
+    await page.screenshot({
+      path: path.join(screenshotsDir, "statistiken.png"),
+      fullPage: false,
+    });
+  });
 });

@@ -34,6 +34,11 @@ Eine Progressive Web App zum Tracken von Trainingseinheiten im Fitnessstudio mit
 
 *In den Einstellungen findest du die App-Version (1.0.X mit Git-Hash), Import/Export-Funktionen für Excel-Dateien und die Möglichkeit, den App-Cache zu leeren. Die App prüft automatisch auf neue Versionen und bietet dir an, diese zu installieren.*
 
+#### Statistiken
+![Statistiken](screenshots/statistiken.png)
+
+*Verfolge deinen Trainingsfortschritt mit detaillierten Statistiken und Diagrammen. Sieh auf einen Blick, wie sich deine Leistung über die Zeit entwickelt.*
+
 </div>
 
 ### Was macht die App besonders?
