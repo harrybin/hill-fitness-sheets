@@ -246,9 +246,7 @@ export function XLSXImportSection({
           className="gap-2 w-full"
         >
           <GoogleLogo size={20} />
-          {isAuthenticating
-            ? "Anmeldung..."
-            : "Mit Google anmelden (für private Dateien)"}
+          {isAuthenticating ? "Anmeldung..." : "Mit Google anmelden (optional)"}
         </Button>
       ) : (
         <div className="flex gap-2 justify-center">
@@ -266,24 +264,28 @@ export function XLSXImportSection({
           </span>
         </div>
       )}
-
+      <p className="text-xs text-muted-foreground text-center">
+        Wenn Sie sich nicht anmelden, kann der Link dennoch eingefügt werden,
+        dann wird der Download über den Browser statt in der App erfolgen und
+        die Datei kann danach manuell als lokale XLSX Datei importiert werden.
+      </p>
       <div className="flex gap-2">
         <Input
           type="text"
           placeholder="Google Drive Link einfügen..."
           value={driveUrl}
           onChange={(e) => setDriveUrl(e.target.value)}
-          className="flex-1"
+          className="flex-1 border-2 border-orange-500 focus:border-orange-600 focus:ring-orange-500/40"
         />
         <Popover>
           <PopoverTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
-              className="shrink-0 [&_svg]:!size-6"
+              className="shrink-0 [&_svg]:size-6!"
               type="button"
             >
-              <Question />
+              <Question color="#ff8800" />
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-80">
@@ -311,27 +313,21 @@ export function XLSXImportSection({
             </div>
           </PopoverContent>
         </Popover>
+      </div>
+      <div className="flex mt-2">
         <Button
           onClick={handleDriveDownload}
           disabled={isDownloading}
           variant="default"
-          className="gap-2"
+          className="gap-2 w-full"
         >
           <Download size={20} />
-          {isDownloading ? "Importiere..." : "Import"}
+          {isDownloading ? "Importiere..." : "Import/Download"}
         </Button>
       </div>
-
-      <p className="text-xs text-muted-foreground text-center">
-        {googleToken
-          ? "Mit Google angemeldet - private Dateien werden unterstützt"
-          : "Öffentliche Dateien oder mit Google anmelden für private Dateien"}
-      </p>
-
+      <div className="border-t mt-5 mb-5" /> {/* Separator/Divider */}
       {showLocalUpload && (
         <>
-          <div className="text-sm text-muted-foreground text-center">oder</div>
-
           <Button
             onClick={() => fileInputRef.current?.click()}
             variant="outline"

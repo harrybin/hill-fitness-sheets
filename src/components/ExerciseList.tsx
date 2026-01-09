@@ -111,7 +111,7 @@ export function ExerciseList({
           Importieren Sie Ihre Übungen aus dem Google Sheet von Hill-Fitness.
           (Dies kann jeder Zeit über die Einstellungen wiederholt werden.)
         </p>
-
+        <div className="border-t mt-5 mb-5" /> {/* Separator/Divider */}
         <XLSXImportSection
           onImport={handleImport}
           className="w-full max-w-md"
