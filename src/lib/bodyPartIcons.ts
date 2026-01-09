@@ -35,6 +35,24 @@ export interface BodyPartIcon {
 // Icons are Tabler icon names: https://tabler-icons.io
 const BODY_PART_MAPPINGS: BodyPartIcon[] = [
   // Most specific terms first
+  // Special-case: Leg raises (Beinheben) often written with "Dip-Station" and
+  // would otherwise match the generic "dip" term in triceps. Place this early.
+  {
+    name: "abs",
+    germanTerms: [
+      "beinheben",
+      "beinhebung",
+      "bein anheben",
+      "beinanheben",
+      "hängendes beinheben",
+      "hanging leg raise",
+      "leg raise",
+      "leg raises",
+      "leg-raise",
+    ],
+    icon: "muscle-2",
+    description: "Abs (Leg Raises)",
+  },
   {
     name: "biceps",
     germanTerms: [
