@@ -38,7 +38,10 @@ test.describe("Screenshots Generation", () => {
    */
   async function prepareAppState(page: Page) {
     // Import the Example-Sheet.xlsx
-    const exampleSheetPath = path.resolve(__dirname, "../src/lib/__tests__/fixtures/Example-Sheet.xlsx");
+    const exampleSheetPath = path.resolve(
+      __dirname,
+      "../src/lib/__tests__/fixtures/Example-Sheet.xlsx"
+    );
 
     // Set up file chooser handler before clicking the button
     const fileChooserPromise = page.waitForEvent("filechooser");
@@ -91,16 +94,23 @@ test.describe("Screenshots Generation", () => {
       for (let i = 0; i < 5; i++) {
         const overlayLocal = page.locator('[data-slot="dialog-overlay"]');
         const dialogLocal = page.locator('[role="dialog"]');
-        if (await dialogLocal.isVisible({ timeout: 300 }).catch(() => false) ||
-            await overlayLocal.isVisible({ timeout: 300 }).catch(() => false)) {
+        if (
+          (await dialogLocal.isVisible({ timeout: 300 }).catch(() => false)) ||
+          (await overlayLocal.isVisible({ timeout: 300 }).catch(() => false))
+        ) {
           // Try close button
-          const closeBtn = page.locator('[role="dialog"] button').filter({ hasText: /×|close|schließen/i }).first();
+          const closeBtn = page
+            .locator('[role="dialog"] button')
+            .filter({ hasText: /×|close|schließen/i })
+            .first();
           if (await closeBtn.isVisible({ timeout: 300 }).catch(() => false)) {
             await closeBtn.click();
             await page.waitForTimeout(300);
           }
           // Try clicking overlay
-          if (await overlayLocal.isVisible({ timeout: 300 }).catch(() => false)) {
+          if (
+            await overlayLocal.isVisible({ timeout: 300 }).catch(() => false)
+          ) {
             await overlayLocal.click({ force: true });
             await page.waitForTimeout(300);
           }
@@ -110,7 +120,9 @@ test.describe("Screenshots Generation", () => {
         }
         await calendarButton.click();
         dialogHeading = page.getByText(/bisherige trainingseinheiten/i);
-        if (await dialogHeading.isVisible({ timeout: 1500 }).catch(() => false)) {
+        if (
+          await dialogHeading.isVisible({ timeout: 1500 }).catch(() => false)
+        ) {
           break;
         }
         await page.waitForTimeout(500);
@@ -118,7 +130,11 @@ test.describe("Screenshots Generation", () => {
       if (await dialogHeading.isVisible({ timeout: 2000 }).catch(() => false)) {
         const session2912 = page
           .getByText(/montag.*29\.12\.2025/i)
-          .or(page.getByText(/29\.12\.2025/).filter({ has: page.getByText(/montag/i) }))
+          .or(
+            page
+              .getByText(/29\.12\.2025/)
+              .filter({ has: page.getByText(/montag/i) })
+          )
           .or(page.locator("button").filter({ hasText: /29\.12\.2025/ }))
           .first();
         if (await session2912.isVisible({ timeout: 3000 }).catch(() => false)) {
@@ -128,8 +144,13 @@ test.describe("Screenshots Generation", () => {
           await page.waitForTimeout(500);
         } else {
           // Close dialog and continue
-          const closeButton = page.locator('[role="dialog"] button').filter({ hasText: /×|close/i }).first();
-          if (await closeButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+          const closeButton = page
+            .locator('[role="dialog"] button')
+            .filter({ hasText: /×|close/i })
+            .first();
+          if (
+            await closeButton.isVisible({ timeout: 1000 }).catch(() => false)
+          ) {
             await closeButton.click();
           }
         }
@@ -194,8 +215,10 @@ test.describe("Screenshots Generation", () => {
     // Ensure we're on exercise list: close any dialog and verify cards visible
     const overlay = page.locator('[data-slot="dialog-overlay"]');
     const anyDialog = page.locator('[role="dialog"]');
-    if (await overlay.isVisible({ timeout: 500 }).catch(() => false) ||
-        await anyDialog.isVisible({ timeout: 500 }).catch(() => false)) {
+    if (
+      (await overlay.isVisible({ timeout: 500 }).catch(() => false)) ||
+      (await anyDialog.isVisible({ timeout: 500 }).catch(() => false))
+    ) {
       await page.keyboard.press("Escape");
       await page.waitForTimeout(500);
     }
@@ -225,7 +248,11 @@ test.describe("Screenshots Generation", () => {
     const firstIncompleteExercise = page
       .locator('[class*="cursor-pointer"]')
       .first();
-    if (await firstIncompleteExercise.isVisible({ timeout: 2000 }).catch(() => false)) {
+    if (
+      await firstIncompleteExercise
+        .isVisible({ timeout: 2000 })
+        .catch(() => false)
+    ) {
       await firstIncompleteExercise.click();
       await page.waitForTimeout(500);
     }
@@ -239,7 +266,10 @@ test.describe("Screenshots Generation", () => {
 
   test("3. historie-uebersicht.png - History overview", async ({ page }) => {
     // Import data first
-    const exampleSheetPath = path.resolve(__dirname, "../src/lib/__tests__/fixtures/Example-Sheet.xlsx");
+    const exampleSheetPath = path.resolve(
+      __dirname,
+      "../src/lib/__tests__/fixtures/Example-Sheet.xlsx"
+    );
 
     // Set up file chooser handler
     const fileChooserPromise = page.waitForEvent("filechooser");
@@ -248,7 +278,9 @@ test.describe("Screenshots Generation", () => {
     await fileChooser.setFiles(exampleSheetPath);
 
     await expect(page.getByText(/Importiert/i)).toBeVisible({ timeout: 5000 });
-    await expect(page.getByText(/Importiert/i)).not.toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(/Importiert/i)).not.toBeVisible({
+      timeout: 5000,
+    });
     await page.waitForTimeout(500);
 
     // Defensive: close overlays before opening calendar
@@ -273,7 +305,9 @@ test.describe("Screenshots Generation", () => {
       }
       await page.waitForTimeout(500);
     }
-    await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('[role="dialog"]')).toBeVisible({
+      timeout: 5000,
+    });
     await page.waitForTimeout(1000);
 
     // Take screenshot of calendar view
@@ -292,7 +326,7 @@ test.describe("Screenshots Generation", () => {
     const dialog = page.locator('[role="dialog"]');
     await expect(dialog).toBeVisible({ timeout: 3000 });
     // Try clicking a non-today session: iterate tiles until 'Heute' appears
-    const tiles = dialog.locator('.space-y-2 > div');
+    const tiles = dialog.locator(".space-y-2 > div");
     let loadedOldSession = false;
     for (let i = 0; i < 5; i++) {
       const tile = tiles.nth(i);
