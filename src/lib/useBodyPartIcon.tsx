@@ -4,6 +4,7 @@
  */
 
 import type { FC } from "react";
+import { StyleSheetManager } from "styled-components";
 import BodyHighlighter from "react-body-highlighter";
 import {
   mapExerciseToBodyPart,
@@ -93,14 +94,20 @@ export const BodyPartIconComponent: FC<BodyPartIconProps> = ({
       title={title_text}
       style={{ width: size, height: size }}
     >
-      <BodyHighlighter
-        data={data}
-        type={isPosterior ? "posterior" : "anterior"}
-        bodyColor="oklch(0.50 0 0)"
-        highlightedColors={["#f97316"]}
-        hoverColor="#f97316"
-        style={{ width: "100%", height: "100%" }}
-      />
+      <StyleSheetManager
+        shouldForwardProp={(prop) =>
+          prop !== "responsive" && prop !== "hoverColor" && prop !== "bodyColor"
+        }
+      >
+        <BodyHighlighter
+          data={data}
+          type={isPosterior ? "posterior" : "anterior"}
+          bodyColor="oklch(0.50 0 0)"
+          hoverColor="#f97316"
+          highlightedColors={["#f97316"]}
+          style={{ width: "100%", height: "100%" }}
+        />
+      </StyleSheetManager>
     </div>
   );
 };
