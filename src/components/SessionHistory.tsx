@@ -4,6 +4,7 @@ import { Calendar, CalendarCheck } from "@phosphor-icons/react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -144,6 +145,9 @@ export function SessionHistory({
               <DialogTitle>
                 {`Bisherige Trainings (${sessionsWithEntries.length})`}
               </DialogTitle>
+              <DialogDescription>
+                Wählen Sie ein Training aus der Liste, um es anzuzeigen
+              </DialogDescription>
             </DialogHeader>
             <ScrollArea className="max-h-[60vh] pr-4">
               {sessionsWithEntries.length === 0 ? (

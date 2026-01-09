@@ -1,6 +1,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -18,6 +19,9 @@ export function AboutDialog({ open, onOpenChange }: AboutDialogProps) {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Über</DialogTitle>
+          <DialogDescription>
+            Informationen zu Hill Fitness Sheets, Version und Autor
+          </DialogDescription>
         </DialogHeader>
         <div className="bg-muted/50 p-2.5 rounded-md space-y-3">
           <div className="text-xs bg-background/80 border border-border rounded p-2 mb-2">

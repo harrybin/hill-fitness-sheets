@@ -20,7 +20,6 @@ export function UpdatePrompt() {
     updateServiceWorker,
   } = useRegisterSW({
     onRegistered(r) {
-      console.log("Service Worker registriert");
       // Check for updates every hour
       r &&
         setInterval(() => {

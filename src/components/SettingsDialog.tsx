@@ -114,6 +114,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Einstellungen</DialogTitle>
+          <DialogDescription>
+            Verwalten Sie Ihre Trainings-Dateien und App-Daten
+          </DialogDescription>
         </DialogHeader>
         <div className="bg-muted/50 p-2.5 rounded-md space-y-3">
           <div className="space-y-2">

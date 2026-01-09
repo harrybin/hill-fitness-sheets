@@ -40,17 +40,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       autoLoadRef.current = true;
       (async () => {
         try {
-          console.log(
-            "Auto-loading exercises and sessions from stored file..."
-          );
           const arrayBuffer = base64ToArrayBuffer(settings.importedFile.data);
           const { exercises: newExercises, sessions: loadedSessions } =
             await parseXLSX(arrayBuffer);
-          console.log(
-            `Auto-loaded ${newExercises.length} exercises and ${
-              loadedSessions?.length || 0
-            } sessions`
-          );
           setExercises(newExercises);
           if (loadedSessions && loadedSessions.length > 0) {
             setSessions(loadedSessions);
@@ -68,28 +60,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // via exportXLSXWithFormatting() which applies data to a fresh copy of the template.
 
   const loadFromXLSX = async (arrayBuffer: ArrayBuffer) => {
-    console.log("loadFromXLSX called");
     const {
       exercises: newExercises,
       sessions: loadedSessions,
       metadata,
     } = await parseXLSX(arrayBuffer);
-    console.log("Parsed from XLSX:", {
-      exercisesCount: newExercises.length,
-      sessionsCount: loadedSessions?.length || 0,
-      sessions: loadedSessions,
-    });
     setExercises(newExercises);
     if (loadedSessions && loadedSessions.length > 0) {
       // Sessions already have dateInterpolated flag from parsing, no need to add "?" marker
-      console.log(
-        "Loaded sessions:",
-        loadedSessions.map((s) => ({
-          date: s.date,
-          interpolated: s.dateInterpolated,
-          entries: s.entries.length,
-        }))
-      );
       setSessions(loadedSessions);
     }
     setSettings((prev) => ({
