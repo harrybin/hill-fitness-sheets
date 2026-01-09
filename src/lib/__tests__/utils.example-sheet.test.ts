@@ -23,18 +23,18 @@ describe("Example-Sheet.xlsx - Complete Data Integrity", () => {
 
     // Expected exercises based on the image
     const expectedExercises = [
-      { name: "Beinstrecken / Maschine", id: "exercise-13" },
-      { name: "Latzug / Kabelturm", id: "exercise-15" },
-      { name: "Bankdrücken / Langhantel", id: "exercise-17" },
-      { name: "T - Bar Rudern / Maschine", id: "exercise-19" },
-      { name: "Seitheben / Seilzug", id: "exercise-21" },
-      { name: "Beinanheben / Dip -Station", id: "exercise-23" },
-      { name: "Bicepscurls / Kabelturm", id: "exercise-25" },
-      { name: "Trizepsmaschine", id: "exercise-27" },
-      { name: "Bauchpressenbank / Maschine", id: "exercise-29" },
-      { name: "Rückenstrecken / Hz.", id: "exercise-31" },
-      { name: "Waden/ Beinpresse", id: "exercise-33" },
-      { name: "Unterarm-Curls / Kabelturm", id: "exercise-35" },
+      { name: "Beinstrecken / Maschine", id: "exercise-12" },
+      { name: "Latzug / Kabelturm", id: "exercise-14" },
+      { name: "Bankdrücken / Langhantel", id: "exercise-16" },
+      { name: "T - Bar Rudern / Maschine", id: "exercise-18" },
+      { name: "Seitheben / Seilzug", id: "exercise-20" },
+      { name: "Beinanheben / Dip -Station", id: "exercise-22" },
+      { name: "Bicepscurls / Kabelturm", id: "exercise-24" },
+      { name: "Trizepsmaschine", id: "exercise-26" },
+      { name: "Bauchpressenbank / Maschine", id: "exercise-28" },
+      { name: "Rückenstrecken / Hz.", id: "exercise-30" },
+      { name: "Waden/ Beinpresse", id: "exercise-32" },
+      { name: "Unterarm-Curls / Kabelturm", id: "exercise-34" },
     ];
 
     // Verify exercises are loaded
@@ -70,6 +70,8 @@ describe("Example-Sheet.xlsx - Complete Data Integrity", () => {
     // Parse the XLSX file
     const parsed = await parseXLSX(arrayBuffer);
 
+    // Debug file write removed
+
     // Define expected sessions array based on ACTUAL DATA READ FROM EXCEL
     // Einheit 1 (2025-11-18) - read directly from cells
     // Col 6=WH (Wiederholungen), Col 7=KG (Gewicht)
@@ -78,16 +80,16 @@ describe("Example-Sheet.xlsx - Complete Data Integrity", () => {
         date: "2025-11-18",
         entries: [
           {
-            id: "entry-2025-11-18-exercise-13",
-            exerciseId: "exercise-13",
+            id: "entry-2025-11-18-exercise-12",
+            exerciseId: "exercise-12",
             date: "2025-11-18",
             sets: [
               { setNumber: 1, weight: 190, reps: 10 }, // Beinstrecken - only Satz 1
             ],
           },
           {
-            id: "entry-2025-11-18-exercise-15",
-            exerciseId: "exercise-15",
+            id: "entry-2025-11-18-exercise-14",
+            exerciseId: "exercise-14",
             date: "2025-11-18",
             sets: [
               { setNumber: 1, weight: 62.5, reps: 10 }, // Latzug
@@ -95,8 +97,8 @@ describe("Example-Sheet.xlsx - Complete Data Integrity", () => {
             ],
           },
           {
-            id: "entry-2025-11-18-exercise-17",
-            exerciseId: "exercise-17",
+            id: "entry-2025-11-18-exercise-16",
+            exerciseId: "exercise-16",
             date: "2025-11-18",
             sets: [
               { setNumber: 1, weight: 10, reps: 12 }, // Bankdrücken
@@ -104,8 +106,8 @@ describe("Example-Sheet.xlsx - Complete Data Integrity", () => {
             ],
           },
           {
-            id: "entry-2025-11-18-exercise-19",
-            exerciseId: "exercise-19",
+            id: "entry-2025-11-18-exercise-18",
+            exerciseId: "exercise-18",
             date: "2025-11-18",
             sets: [
               { setNumber: 1, weight: 42.5, reps: 12 }, // T-Bar
@@ -113,8 +115,8 @@ describe("Example-Sheet.xlsx - Complete Data Integrity", () => {
             ],
           },
           {
-            id: "entry-2025-11-18-exercise-21",
-            exerciseId: "exercise-21",
+            id: "entry-2025-11-18-exercise-20",
+            exerciseId: "exercise-20",
             date: "2025-11-18",
             sets: [
               { setNumber: 1, weight: 12.5, reps: 12 }, // Seitheben
@@ -122,8 +124,8 @@ describe("Example-Sheet.xlsx - Complete Data Integrity", () => {
             ],
           },
           {
-            id: "entry-2025-11-18-exercise-23",
-            exerciseId: "exercise-23",
+            id: "entry-2025-11-18-exercise-22",
+            exerciseId: "exercise-22",
             date: "2025-11-18",
             sets: [
               { setNumber: 1, weight: 0, reps: 15 }, // Beinanheben - "/" becomes 0
@@ -131,8 +133,8 @@ describe("Example-Sheet.xlsx - Complete Data Integrity", () => {
             ],
           },
           {
-            id: "entry-2025-11-18-exercise-25",
-            exerciseId: "exercise-25",
+            id: "entry-2025-11-18-exercise-24",
+            exerciseId: "exercise-24",
             date: "2025-11-18",
             sets: [
               { setNumber: 1, weight: 45, reps: 12 }, // Biceps
@@ -140,8 +142,8 @@ describe("Example-Sheet.xlsx - Complete Data Integrity", () => {
             ],
           },
           {
-            id: "entry-2025-11-18-exercise-27",
-            exerciseId: "exercise-27",
+            id: "entry-2025-11-18-exercise-26",
+            exerciseId: "exercise-26",
             date: "2025-11-18",
             sets: [
               { setNumber: 1, weight: 46, reps: 12 }, // Trizeps
@@ -149,18 +151,18 @@ describe("Example-Sheet.xlsx - Complete Data Integrity", () => {
             ],
           },
           {
-            id: "entry-2025-11-18-exercise-29",
-            exerciseId: "exercise-29",
+            id: "entry-2025-11-18-exercise-28",
+            exerciseId: "exercise-28",
             date: "2025-11-18",
             sets: [
               { setNumber: 1, weight: 7.5, reps: 15 }, // Bauch
               { setNumber: 2, weight: 7.5, reps: 17 },
             ],
           },
-          // exercise-31 (Rückenstrecken) is skipped - WH="/"
+          // exercise-30 (Rückenstrecken) is skipped - WH="/"
           {
-            id: "entry-2025-11-18-exercise-33",
-            exerciseId: "exercise-33",
+            id: "entry-2025-11-18-exercise-32",
+            exerciseId: "exercise-32",
             date: "2025-11-18",
             sets: [
               { setNumber: 1, weight: 90, reps: 15 }, // Waden
@@ -168,8 +170,8 @@ describe("Example-Sheet.xlsx - Complete Data Integrity", () => {
             ],
           },
           {
-            id: "entry-2025-11-18-exercise-35",
-            exerciseId: "exercise-35",
+            id: "entry-2025-11-18-exercise-34",
+            exerciseId: "exercise-34",
             date: "2025-11-18",
             sets: [
               { setNumber: 1, weight: 15, reps: 12 }, // Unterarm
@@ -186,6 +188,22 @@ describe("Example-Sheet.xlsx - Complete Data Integrity", () => {
 
     const expectedSession = expectedSessions[0];
     const parsedSession = session!;
+
+    // Debug: log parsed session
+    console.log(
+      "Parsed session entries:",
+      parsedSession.entries.map((e) => ({
+        exerciseId: e.exerciseId,
+        sets: e.sets.length,
+      }))
+    );
+    console.log(
+      "Expected entries:",
+      expectedSession.entries.map((e) => ({
+        exerciseId: e.exerciseId,
+        sets: e.sets.length,
+      }))
+    );
 
     // Verify session date
     expect(parsedSession.date).toBe(expectedSession.date);

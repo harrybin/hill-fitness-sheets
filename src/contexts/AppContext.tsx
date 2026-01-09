@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useEffect } from "react";
+import { createContext, useContext, ReactNode, useEffect, useRef } from "react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Exercise, Session, AppSettings, TrainingEntry } from "@/lib/types";
 import { parseXLSX, base64ToArrayBuffer } from "@/lib/utils";
@@ -32,9 +32,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [sessions, setSessions] = useLocalStorage<Session[]>("sessions", []);
   const [settings, setSettings] = useLocalStorage<AppSettings>("settings", {});
 
-  // Auto-load from stored file on mount
+  // Prevent auto-load from running if an explicit import is in progress
+  const autoLoadRef = useRef(false);
   useEffect(() => {
+    if (autoLoadRef.current) return;
     if (settings?.importedFile && exercises && exercises.length === 0) {
+      autoLoadRef.current = true;
       (async () => {
         try {
           console.log(

@@ -44,7 +44,11 @@ describe("Real-world workflow: import, complete exercises, export", () => {
     const base64Original = arrayBufferToBase64(originalArrayBuffer);
 
     // 2) Import exercises and sessions
-    const { exercises, sessions } = parseXLSX(originalArrayBuffer);
+    const parsed = await parseXLSX(originalArrayBuffer);
+    if (!parsed || !parsed.exercises || !parsed.sessions) {
+      throw new Error("parseXLSX did not return expected exercises/sessions");
+    }
+    const { exercises, sessions } = parsed;
     console.log(
       `Imported ${exercises.length} exercises, ${sessions.length} sessions`
     );
@@ -69,7 +73,7 @@ describe("Real-world workflow: import, complete exercises, export", () => {
     console.log(`Total sessions after adding today: ${allSessions.length}`);
 
     // 5) Export with the new data
-    const exportedArrayBuffer = exportXLSXWithFormatting(
+    const exportedArrayBuffer = await exportXLSXWithFormatting(
       base64Original,
       allSessions,
       exercises

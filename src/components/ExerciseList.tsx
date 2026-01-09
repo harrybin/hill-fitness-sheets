@@ -24,10 +24,9 @@ export function ExerciseList({
   const { loadFromXLSX, setSettings } = useApp();
 
   const handleImport = async (arrayBuffer: ArrayBuffer, fileName: string) => {
-    await loadFromXLSX(arrayBuffer);
-
+    // Use same pattern as SettingsDialog: return result for toast
+    const result = await loadFromXLSX(arrayBuffer);
     const fileData = arrayBufferToBase64(arrayBuffer);
-
     setSettings((prev) => ({
       ...prev,
       importedFile: {
@@ -37,6 +36,7 @@ export function ExerciseList({
         size: arrayBuffer.byteLength,
       },
     }));
+    return result;
   };
 
   const todayDateString = new Date().toISOString().split("T")[0];

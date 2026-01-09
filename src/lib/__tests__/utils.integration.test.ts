@@ -145,7 +145,7 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
   describe("Full Import from Example-Sheet.xlsx", () => {
     it("should successfully parse the real Example-Sheet.xlsx file", async () => {
       const arrayBuffer = loadExampleSheet();
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       // Should have exercises
       expect(result.exercises.length).toBeGreaterThan(0);
@@ -159,9 +159,9 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
       console.log(`Parsed ${result.sessions.length} sessions`);
     });
 
-    it("should parse all exercises with correct structure", () => {
+    it("should parse all exercises with correct structure", async () => {
       const arrayBuffer = loadExampleSheet();
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       // Check exercise structure
       result.exercises.forEach((exercise) => {
@@ -178,10 +178,10 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
       });
     });
 
-    it.skip("should parse all historical sessions correctly", () => {
+    it.skip("should parse all historical sessions correctly", async () => {
       // TODO: Debug why example sheet parsing creates 0 sessions
       const arrayBuffer = loadExampleSheet();
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       // Check session structure
       result.sessions.forEach((session) => {
@@ -208,9 +208,9 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
       console.log(`Total sessions: ${result.sessions.length}`);
     });
 
-    it("should correctly handle merged weight cells across Satz 1 and Satz 2", () => {
+    it("should correctly handle merged weight cells across Satz 1 and Satz 2", async () => {
       const arrayBuffer = loadExampleSheet();
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       // Find a session with 2 sets
       const sessionWith2Sets = result.sessions.find((session) =>
@@ -238,14 +238,15 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
       );
     });
 
-    it("should parse multi-sheet continuation (Einheit 1-8, 9-16, 17-24)", () => {
+    it("should parse multi-sheet continuation (Einheit 1-8, 9-16, 17-24)", async () => {
       const arrayBuffer = loadExampleSheet();
-      const workbook = XLSX.read(arrayBuffer, { type: "array" });
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(new Uint8Array(arrayBuffer));
 
       // Check that multiple sheets exist
-      const einheitSheets = workbook.SheetNames.filter((name) =>
-        name.toLowerCase().includes("einheit")
-      );
+      const einheitSheets = wb.worksheets
+        .map((ws) => ws.name)
+        .filter((name) => name.toLowerCase().includes("einheit"));
 
       console.log(
         `Found ${einheitSheets.length} Einheit sheets: ${einheitSheets.join(
@@ -254,15 +255,15 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
       );
 
       // Parse and verify sessions from all sheets are merged
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       // Should have sessions from all sheets
       expect(result.sessions.length).toBeGreaterThan(einheitSheets.length);
     });
 
-    it("should extract metadata from the sheet", () => {
+    it("should extract metadata from the sheet", async () => {
       const arrayBuffer = loadExampleSheet();
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       console.log("Metadata:", result.metadata);
 
@@ -274,13 +275,13 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
   });
 
   describe("Export → Re-Import Fidelity", () => {
-    it("should maintain data integrity through export and re-import cycle", () => {
+    it("should maintain data integrity through export and re-import cycle", async () => {
       const arrayBuffer = loadExampleSheet();
-      const result1 = parseXLSX(arrayBuffer);
+      const result1 = await parseXLSX(arrayBuffer);
 
       // Export using updateXLSXWithSessions
       const base64 = arrayBufferToBase64(arrayBuffer);
-      const updatedBase64 = updateXLSXWithSessions(
+      const updatedBase64 = await updateXLSXWithSessions(
         base64,
         result1.sessions,
         result1.exercises
@@ -288,22 +289,25 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
 
       // Re-import
       const updatedBuffer = base64ToArrayBuffer(updatedBase64);
-      const result2 = parseXLSX(updatedBuffer);
+      const result2 = await parseXLSX(updatedBuffer);
 
       // Exercises should be the same
       expect(result2.exercises.length).toBe(result1.exercises.length);
 
       // Should not create History sheet
-      const updatedWorkbook = XLSX.read(updatedBuffer, { type: "array" });
-      expect(updatedWorkbook.SheetNames).not.toContain("History");
+      const updatedWb = new ExcelJS.Workbook();
+      await updatedWb.xlsx.load(new Uint8Array(updatedBuffer));
+      expect(updatedWb.worksheets.map((ws) => ws.name)).not.toContain(
+        "History"
+      );
 
       // Sessions should still be parseable
       expect(result2.sessions.length).toBeGreaterThan(0);
     });
 
-    it("should maintain all sets through History sheet roundtrip", () => {
+    it("should maintain all sets through History sheet roundtrip", async () => {
       const arrayBuffer = loadExampleSheet();
-      const result1 = parseXLSX(arrayBuffer);
+      const result1 = await parseXLSX(arrayBuffer);
 
       // Count total sets
       const totalSets1 = result1.sessions.reduce(
@@ -320,13 +324,13 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
 
       // Export and re-import
       const base64 = arrayBufferToBase64(arrayBuffer);
-      const updatedBase64 = updateXLSXWithSessions(
+      const updatedBase64 = await updateXLSXWithSessions(
         base64,
         result1.sessions,
         result1.exercises
       );
       const updatedBuffer = base64ToArrayBuffer(updatedBase64);
-      const result2 = parseXLSX(updatedBuffer);
+      const result2 = await parseXLSX(updatedBuffer);
 
       const totalSets2 = result2.sessions.reduce(
         (sum, session) =>
@@ -349,10 +353,10 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
 
     it("should handle Trainings sheet export", async () => {
       const arrayBuffer = loadExampleSheet();
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       const base64 = arrayBufferToBase64(arrayBuffer);
-      const exportedBuffer = exportXLSXWithFormatting(
+      const exportedBuffer = await exportXLSXWithFormatting(
         base64,
         result.sessions,
         result.exercises
@@ -381,7 +385,7 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
 
     it("should preserve original sheets during export", async () => {
       const arrayBuffer = loadExampleSheet();
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       const originalWorkbook = new ExcelJS.Workbook();
       await originalWorkbook.xlsx.load(arrayBuffer);
@@ -390,7 +394,7 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
       );
 
       const base64 = arrayBufferToBase64(arrayBuffer);
-      const exportedBuffer = exportXLSXWithFormatting(
+      const exportedBuffer = await exportXLSXWithFormatting(
         base64,
         result.sessions,
         result.exercises
@@ -416,10 +420,10 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
   });
 
   describe("Edge Cases with Real Data", () => {
-    it.skip("should handle empty/skipped sets in real data", () => {
+    it.skip("should handle empty/skipped sets in real data", async () => {
       // TODO: Debug why example sheet parsing creates 0 sessions
       const arrayBuffer = loadExampleSheet();
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       // Some sessions may have entries with 0 or 1 sets (rest days, injuries, etc.)
       const hasVariedSetCounts = result.sessions.some((session) =>
@@ -440,10 +444,10 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
       });
     });
 
-    it.skip("should handle all date formats in the sheet", () => {
+    it.skip("should handle all date formats in the sheet", async () => {
       // TODO: Debug why example sheet parsing creates 0 sessions
       const arrayBuffer = loadExampleSheet();
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       // All session dates should be valid ISO format
       result.sessions.forEach((session) => {
@@ -456,10 +460,10 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
       console.log(`Date range: ${dates[0]} to ${dates[dates.length - 1]}`);
     });
 
-    it.skip("should correctly match all exercises in sessions", () => {
+    it.skip("should correctly match all exercises in sessions", async () => {
       // TODO: Debug why example sheet parsing creates 0 sessions
       const arrayBuffer = loadExampleSheet();
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       // All exerciseIds in sessions should match existing exercises
       result.sessions.forEach((session) => {
@@ -472,9 +476,9 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
       });
     });
 
-    it("should handle exercises with notes and without notes", () => {
+    it("should handle exercises with notes and without notes", async () => {
       const arrayBuffer = loadExampleSheet();
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       const withNotes = result.exercises.filter((ex) => ex.notes);
       const withoutNotes = result.exercises.filter((ex) => !ex.notes);
@@ -489,11 +493,11 @@ describe("Integration Tests with Example-Sheet.xlsx", () => {
   });
 
   describe("Performance with Real File", () => {
-    it("should parse large file in reasonable time", () => {
+    it("should parse large file in reasonable time", async () => {
       const arrayBuffer = loadExampleSheet();
 
       const startTime = performance.now();
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
       const endTime = performance.now();
 
       const parseTime = endTime - startTime;

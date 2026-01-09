@@ -98,18 +98,52 @@ export async function parseXLSX(arrayBuffer: ArrayBuffer): Promise<{
     notes?: string;
   } = {};
 
+  // Track the latest header date seen across all sheets (not filtered by reps)
+  let globalLatestHeaderDate: string | null = null;
+
+  // Helper to get the max header date in a sheet (first ~100 rows to ensure we find all header rows)
+  // Helper to get the max header date in a sheet
+  const getMaxHeaderDateInData = (data: any[][]): string | null => {
+    let maxDate: string | null = null;
+    const limit = Math.min(100, data.length);
+    const currentYear = new Date().getFullYear();
+    for (let r = 0; r < limit; r++) {
+      const row = data[r];
+      if (!row) continue;
+      for (let c = 0; c < row.length; c++) {
+        const dateStr = parseExcelDate(row[c]);
+        if (!dateStr) continue;
+
+        // Sanity check: only accept dates that are reasonable.
+        // Reject dates before 1990 or more than 1 year in the future (filters out bogus Excel serials).
+        const year = parseInt(dateStr.split("-")[0]);
+        if (year < 1990 || year > currentYear + 1) {
+          continue;
+        }
+
+        if (!maxDate || dateStr > maxDate) {
+          maxDate = dateStr;
+        }
+      }
+    }
+    return maxDate;
+  };
+
   // Process each sheet
   for (const worksheet of workbook.worksheets) {
     const sheetName = worksheet.name;
     console.log(`\n=== Processing sheet: ${sheetName} ===`);
 
-    // Convert exceljs worksheet to 2D array for compatibility with existing parsing logic
+    // Convert exceljs worksheet to 2D array with correct column indices
     const data: any[][] = [];
     worksheet.eachRow((row: ExcelJS.Row) => {
       const rowData: any[] = [];
-      row.eachCell((cell: ExcelJS.Cell) => {
-        rowData.push(cell.value);
-      });
+      row.eachCell(
+        { includeEmpty: true },
+        (cell: ExcelJS.Cell, colNumber: number) => {
+          rowData[colNumber - 1] = cell.value;
+        }
+      );
       data.push(rowData);
     });
 
@@ -122,56 +156,39 @@ export async function parseXLSX(arrayBuffer: ArrayBuffer): Promise<{
       Object.assign(metadata, parsedData.metadata);
     }
 
-    // Parse sessions from this sheet
-    const latestKnownDate = getLatestDate(allSessions);
-    const sessions = parseSessionsFromSheet(data, exercises, latestKnownDate);
-
-    // Decide whether to merge or append based on overlap with existing sessions
-    // If ALL sessions from this sheet have dates matching existing sessions → split sheet scenario (merge all)
-    // Otherwise → continuation sheet with new time periods (append all without merging)
-    const matchingDates = sessions.filter((s) =>
-      allSessions.some((existing) => existing.date === s.date)
-    ).length;
-    const shouldMerge =
-      sessions.length > 0 && matchingDates === sessions.length;
-
-    if (shouldMerge) {
-      // Split sheet: merge sessions with matching dates
-      sessions.forEach((session) => {
-        const existingSession = allSessions.find(
-          (s) => s.date === session.date
-        );
-        if (existingSession) {
-          console.log(
-            `Merging session with date ${session.date}: existing has dateInterpolated=${existingSession.dateInterpolated}, new session has dateInterpolated=${session.dateInterpolated}`
-          );
-          // Preserve the dateInterpolated flag if either session has it
-          if (session.dateInterpolated && !existingSession.dateInterpolated) {
-            existingSession.dateInterpolated = session.dateInterpolated;
-          }
-          // Merge entries
-          session.entries.forEach((entry) => {
-            const existingEntry = existingSession.entries.find(
-              (e) => e.exerciseId === entry.exerciseId
-            );
-            if (existingEntry) {
-              // Merge sets
-              existingEntry.sets.push(...entry.sets);
-            } else {
-              existingSession.entries.push(entry);
-            }
-          });
-        } else {
-          // Shouldn't happen if our logic is correct, but add as fallback
-          allSessions.push(session);
-        }
-      });
-    } else {
-      // Continuation sheet: append all sessions without merging
-      sessions.forEach((session) => {
-        allSessions.push(session);
-      });
+    // Update global header latest date for cross-sheet interpolation
+    const headerMax = getMaxHeaderDateInData(data);
+    if (
+      headerMax &&
+      (!globalLatestHeaderDate || headerMax > globalLatestHeaderDate)
+    ) {
+      globalLatestHeaderDate = headerMax;
     }
+
+    // Parse sessions from this sheet using the latest header date across sheets
+    const sessions = parseSessionsFromSheet(
+      data,
+      exercises,
+      globalLatestHeaderDate
+    );
+
+    // Append all sessions, but ensure no duplicate dates
+    sessions.forEach((session) => {
+      let baseDate = session.date;
+      let uniqueDate = baseDate;
+      let counter = 2;
+      while (allSessions.some((s) => s.date === uniqueDate)) {
+        uniqueDate = `${baseDate}-${counter}`;
+        counter++;
+      }
+      if (uniqueDate !== session.date) {
+        session.entries.forEach((entry) => {
+          entry.date = uniqueDate;
+        });
+        session.date = uniqueDate;
+      }
+      allSessions.push(session);
+    });
   }
 
   console.log(`\n=== Final Results ===`);
@@ -318,12 +335,12 @@ function parseSheetData(data: any[][]): {
         const nextCell = row[colIdx + 1];
         if (nextCell != null && String(nextCell).trim() === "1") {
           // Einheit: is at colIdx, "1" is at colIdx+1
-          // In exercise rows: WH data is at colIdx+1, KG data is at colIdx+2
-          // For Einheit 1 specifically, we look at colIdx+1 for the weight values
-          einheit1WhCol = colIdx + 1;
-          einheit1KgCol = colIdx + 1; // Both use same column in this structure
+          // In many templates, the WH column aligns with the "Einheit:" column itself
+          // and KG is the next column to the right
+          einheit1WhCol = colIdx; // WH in the same column as "Einheit:"
+          einheit1KgCol = colIdx + 1; // KG directly to the right
           console.log(
-            `Detected Einheit 1: Einheit at col ${colIdx}, extracting weight from col ${einheit1KgCol}`
+            `Detected Einheit 1: Einheit at col ${colIdx}, WH col ${einheit1WhCol}, KG col ${einheit1KgCol}`
           );
           break;
         }
@@ -375,9 +392,14 @@ function parseSheetData(data: any[][]): {
     }
 
     // Check if this looks like a header row (contains "Übung", "Exercise", etc.)
+    const lowerB = cellBStr.toLowerCase();
+    const normalizedB = lowerB.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     if (
-      cellBStr.toLowerCase().includes("ubung") ||
-      cellBStr.toLowerCase().includes("exercise")
+      normalizedB === "ubungen" ||
+      lowerB === "übungen" ||
+      lowerB === "exercise" ||
+      lowerB === "exercises" ||
+      lowerB === "muskel"
     ) {
       continue;
     }
@@ -534,21 +556,15 @@ function interpolateSessionDates(
     }
 
     if (lastDatedSession && !nextDatedSession) {
-      // Last sessions are undated - interpolate between last known date and today
-      const startDate = new Date(lastDatedSession.date);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const daysBetween = Math.floor(
-        (today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      const intervalDays = Math.max(
-        1,
-        Math.floor(daysBetween / (unddatedSessions.length + 1))
-      );
-
+      // Continuation sheet end: place undated sessions sequentially after the latest known date across sheets
+      const baseDateStr =
+        latestKnownDate && latestKnownDate > lastDatedSession.date
+          ? latestKnownDate
+          : lastDatedSession.date;
+      const base = new Date(baseDateStr);
       for (let j = 0; j < unddatedSessions.length; j++) {
-        const date = new Date(startDate);
-        date.setDate(date.getDate() + (j + 1) * intervalDays);
+        const date = new Date(base);
+        date.setDate(date.getDate() + (j + 1));
         result.push({
           whCol: unddatedSessions[j].whCol,
           kgCol: unddatedSessions[j].kgCol,
@@ -672,11 +688,10 @@ function parseSessionsFromSheet(
   // Initialize sessions for all Einheit columns
   for (const [colIdxStr, einheitNum] of Object.entries(einheitByCol)) {
     const colIdx = parseInt(colIdxStr);
-    // Einheit: is at colIdx (in header), but data is in col-based on how Excel stores the data
-    // The training columns start right after the exercise info columns
-    // Looking at the first working example: if "Einheit:" found at col 6, the actual WH column is at colIdx+1
-    const whCol = colIdx + 1;
-    const kgCol = colIdx + 2;
+    // Einheit: is at colIdx (header). In our sheets, WH aligns with the "Einheit:" column
+    // and KG is the immediate next column to the right.
+    const whCol = colIdx;
+    const kgCol = colIdx + 1;
 
     sessionsByCol.set(colIdx, {
       whCol: whCol,
@@ -836,6 +851,10 @@ function parseSessionsFromSheet(
   } of sessionsWithInterpolatedDates) {
     let hasAnyReps = false; // true if any exercise yields at least one set
     const entries: any[] = [];
+
+    console.log(
+      `  → Checking session at whCol=${whCol}, kgCol=${kgCol}, date=${date}, exerciseCount=${exercises.length}`
+    );
 
     for (let exerciseIdx = 0; exerciseIdx < exercises.length; exerciseIdx++) {
       const exercise = exercises[exerciseIdx];

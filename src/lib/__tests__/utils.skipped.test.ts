@@ -19,9 +19,9 @@ describe("parseXLSX skipped logic", () => {
     return exampleSheetBuffer;
   };
 
-  it("should set skipped=true for exercises with no values if session has any reps", () => {
+  it("should set skipped=true for exercises with no values if session has any reps", async () => {
     const arrayBuffer = loadExampleSheet();
-    const result = parseXLSX(arrayBuffer);
+    const result = await parseXLSX(arrayBuffer);
 
     // Find a session with at least one entry with reps
     const sessionWithReps = result.sessions.find((session) =>

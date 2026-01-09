@@ -71,7 +71,7 @@ describe("XLSX Exercise Import", () => {
 
       const arrayBuffer = await workbook.xlsx.writeBuffer();
 
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       expect(result.exercises).toHaveLength(1);
       expect(result.exercises[0].name).toBe("Bankdrücken");
@@ -85,7 +85,7 @@ describe("XLSX Exercise Import", () => {
 
       const arrayBuffer = await workbook.xlsx.writeBuffer();
 
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       expect(result.exercises).toHaveLength(1);
       expect(result.exercises[0].name).toBe("Bench Press");
@@ -100,7 +100,7 @@ describe("XLSX Exercise Import", () => {
 
       const arrayBuffer = await workbook.xlsx.writeBuffer();
 
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       expect(result.exercises).toHaveLength(1);
       expect(result.exercises[0].name).toBe("Kniebeugen");
@@ -117,7 +117,7 @@ describe("XLSX Exercise Import", () => {
 
       const arrayBuffer = await workbook.xlsx.writeBuffer();
 
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       expect(result.exercises).toHaveLength(2);
       expect(result.exercises[0].name).toBe("Bankdrücken");
@@ -133,7 +133,7 @@ describe("XLSX Exercise Import", () => {
 
       const arrayBuffer = await workbook.xlsx.writeBuffer();
 
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       expect(result.exercises[0].notes).toBe("Achse 1 Fußteller");
       expect(result.exercises[1].notes).toBe("enger Griff");
@@ -149,7 +149,7 @@ describe("XLSX Exercise Import", () => {
 
       const arrayBuffer = await workbook.xlsx.writeBuffer();
 
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       expect(result.exercises).toHaveLength(3);
       expect(result.exercises[0].id).toBeTruthy();
@@ -171,7 +171,7 @@ describe("XLSX Exercise Import", () => {
 
       const arrayBuffer = await workbook.xlsx.writeBuffer();
 
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       expect(result.exercises[0].order).toBe(0);
       expect(result.exercises[1].order).toBe(1);
@@ -188,7 +188,7 @@ describe("XLSX Exercise Import", () => {
 
       const arrayBuffer = await workbook.xlsx.writeBuffer();
 
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       expect(result.exercises).toHaveLength(2);
       expect(result.exercises[0].name).toBe("Exercise 1");
@@ -205,7 +205,7 @@ describe("XLSX Exercise Import", () => {
 
       const arrayBuffer = await workbook.xlsx.writeBuffer();
 
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       expect(result.exercises).toHaveLength(2);
       expect(result.exercises.some((e) => e.name === "Trainingsziel")).toBe(
@@ -224,67 +224,49 @@ describe("XLSX Exercise Import", () => {
 
       const arrayBuffer = await workbook.xlsx.writeBuffer();
 
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       expect(result.metadata.trainingGoal).toBe("Muskelaufbau");
     });
 
-    it("should extract legalNotice from metadata rows", () => {
-      const data = [
-        ["", "Rechtliche Hinweise", "Consult a physician"],
-        ["", "Übungen", "Notiz"],
-        ["", "Bankdrücken", ""],
-      ];
+    it("should extract legalNotice from metadata rows", async () => {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Sheet1");
+      worksheet.addRow(["", "Rechtliche Hinweise", "Consult a physician"]);
+      worksheet.addRow(["", "Übungen", "Notiz"]);
+      worksheet.addRow(["", "Bankdrücken", ""]);
 
-      const workbook = XLSX.utils.book_new();
-      const worksheet = XLSX.utils.aoa_to_sheet(data);
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-      const arrayBuffer = XLSX.write(workbook, {
-        type: "array",
-        bookType: "xlsx",
-      });
+      const arrayBuffer = await workbook.xlsx.writeBuffer();
 
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       expect(result.metadata.legalNotice).toBe("Consult a physician");
     });
 
-    it("should extract notes from metadata rows", () => {
-      const data = [
-        ["", "Notizen", "Important notes here"],
-        ["", "Übungen", "Notiz"],
-        ["", "Bankdrücken", ""],
-      ];
+    it("should extract notes from metadata rows", async () => {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Sheet1");
+      worksheet.addRow(["", "Notizen", "Important notes here"]);
+      worksheet.addRow(["", "Übungen", "Notiz"]);
+      worksheet.addRow(["", "Bankdrücken", ""]);
 
-      const workbook = XLSX.utils.book_new();
-      const worksheet = XLSX.utils.aoa_to_sheet(data);
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-      const arrayBuffer = XLSX.write(workbook, {
-        type: "array",
-        bookType: "xlsx",
-      });
+      const arrayBuffer = await workbook.xlsx.writeBuffer();
 
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       expect(result.metadata.notes).toBe("Important notes here");
     });
 
-    it("should handle case-insensitive metadata keywords", () => {
-      const data = [
-        ["", "TRAININGSZIEL", "Strength"],
-        ["", "Übungen", "Notiz"],
-        ["", "Bankdrücken", ""],
-      ];
+    it("should handle case-insensitive metadata keywords", async () => {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Sheet1");
+      worksheet.addRow(["", "TRAININGSZIEL", "Strength"]);
+      worksheet.addRow(["", "Übungen", "Notiz"]);
+      worksheet.addRow(["", "Bankdrücken", ""]);
 
-      const workbook = XLSX.utils.book_new();
-      const worksheet = XLSX.utils.aoa_to_sheet(data);
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-      const arrayBuffer = XLSX.write(workbook, {
-        type: "array",
-        bookType: "xlsx",
-      });
+      const arrayBuffer = await workbook.xlsx.writeBuffer();
 
-      const result = parseXLSX(arrayBuffer);
+      const result = await parseXLSX(arrayBuffer);
 
       expect(result.metadata.trainingGoal).toBe("Strength");
     });
@@ -292,7 +274,7 @@ describe("XLSX Exercise Import", () => {
 });
 
 describe("Date Parsing", () => {
-  it.skip("should parse ISO format dates (YYYY-MM-DD)", () => {
+  it.skip("should parse ISO format dates (YYYY-MM-DD)", async () => {
     // TODO: Debug why parseExcelDate test data creates 0 sessions
     const data = [
       ["", "", "", "", "", "", ""],
@@ -319,13 +301,13 @@ describe("Date Parsing", () => {
       bookType: "xlsx",
     });
 
-    const result = parseXLSX(arrayBuffer);
+    const result = await parseXLSX(arrayBuffer);
 
     expect(result.sessions).toHaveLength(1);
     expect(result.sessions[0].date).toBe("2024-01-15");
   });
 
-  it.skip("should parse German format dates (DD.MM.YYYY)", () => {
+  it.skip("should parse German format dates (DD.MM.YYYY)", async () => {
     // TODO: Debug why parseExcelDate test data creates 0 sessions
     const data = [
       ["", "", "", "", "", "", ""],
@@ -352,13 +334,13 @@ describe("Date Parsing", () => {
       bookType: "xlsx",
     });
 
-    const result = parseXLSX(arrayBuffer);
+    const result = await parseXLSX(arrayBuffer);
 
     expect(result.sessions).toHaveLength(1);
     expect(result.sessions[0].date).toBe("2024-01-15");
   });
 
-  it.skip("should parse German format with 2-digit year", () => {
+  it.skip("should parse German format with 2-digit year", async () => {
     // TODO: Debug why parseExcelDate test data creates 0 sessions
     const data = [
       ["", "", "", "", "", "", ""],
@@ -385,13 +367,13 @@ describe("Date Parsing", () => {
       bookType: "xlsx",
     });
 
-    const result = parseXLSX(arrayBuffer);
+    const result = await parseXLSX(arrayBuffer);
 
     expect(result.sessions).toHaveLength(1);
     expect(result.sessions[0].date).toBe("2024-01-15");
   });
 
-  it.skip("should parse US format dates (MM/DD/YYYY)", () => {
+  it.skip("should parse US format dates (MM/DD/YYYY)", async () => {
     // TODO: Debug why parseExcelDate test data creates 0 sessions
     const data = [
       ["", "", "", "", "", "", ""],
@@ -418,13 +400,13 @@ describe("Date Parsing", () => {
       bookType: "xlsx",
     });
 
-    const result = parseXLSX(arrayBuffer);
+    const result = await parseXLSX(arrayBuffer);
 
     expect(result.sessions).toHaveLength(1);
     expect(result.sessions[0].date).toBe("2024-01-15");
   });
 
-  it.skip("should parse Excel serial number dates", () => {
+  it.skip("should parse Excel serial number dates", async () => {
     // TODO: Debug why parseExcelDate test data creates 0 sessions
     // Excel serial 45305 = 2024-01-15 (but XLSX library may have off-by-one issue)
     const data = [
@@ -452,7 +434,7 @@ describe("Date Parsing", () => {
       bookType: "xlsx",
     });
 
-    const result = parseXLSX(arrayBuffer);
+    const result = await parseXLSX(arrayBuffer);
 
     expect(result.sessions).toHaveLength(1);
     // Excel serial number conversion can vary, accept 2024-01-14 or 2024-01-15

@@ -13,22 +13,41 @@ export function cn(...inputs: ClassValue[]) {
 
 // Convert base64 string to ArrayBuffer
 export function base64ToArrayBuffer(base64: string): ArrayBuffer {
-  const binaryString = atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
+  // Prefer Node.js Buffer when available (more tolerant), fallback to atob
+  if (typeof Buffer !== "undefined") {
+    const buf: any = Buffer.from(base64, "base64");
+    const ab = new ArrayBuffer(buf.length);
+    const view = new Uint8Array(ab);
+    for (let i = 0; i < buf.length; i++) view[i] = buf[i];
+    return ab;
   }
-  return bytes.buffer;
+  if (typeof atob === "function") {
+    const binaryString = atob(base64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes.buffer;
+  }
+  // Last resort: empty buffer
+  return new ArrayBuffer(0);
 }
 
 // Convert ArrayBuffer to base64 string
 export function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  // Prefer Node.js Buffer when available
+  if (typeof Buffer !== "undefined") {
+    return Buffer.from(new Uint8Array(buffer)).toString("base64");
   }
-  return btoa(binary);
+  if (typeof btoa === "function") {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+  }
+  return "";
 }
 
 // === Statistics Functions ===

@@ -89,7 +89,12 @@ export function XLSXImportSection({
       const arrayBuffer = await file.arrayBuffer();
       const result = await onImport(arrayBuffer, file.name);
 
-      if (result && "exerciseCount" in result && "sessionCount" in result) {
+      if (
+        result &&
+        typeof result === "object" &&
+        "exerciseCount" in result &&
+        "sessionCount" in result
+      ) {
         toast.success(
           `Importiert: ${result.sessionCount} Trainings / ${result.exerciseCount} Übungen`,
           {

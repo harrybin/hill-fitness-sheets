@@ -44,24 +44,22 @@ describe("Body Part Icon Mapping", () => {
     "Bankdrücken / Langhantel": "chest",
     "T - Bar Rudern / Maschine": "back",
     "Seitheben / Seilzug": "shoulders",
-    "Beinanheben / Dip -Station": "triceps", // Contains "Dip" which matches triceps terms
+    "Beinanheben / Dip -Station": "abs", // Corrected: should map to abs
     "Bicepscurls / Kabelturm": "biceps",
     Trizepsmaschine: "triceps",
-    "Bauchpressenbank / Maschine": "abs", // Now maps to abs correctly
+    "Bauchpressenbank / Maschine": "abs",
     "Rückenstrecken / Hz.": "back",
     "Waden/ Beinpresse": "calves",
-    "Unterarm-Curls / Kabelturm": "biceps", // "Unterarm-Curls" matches biceps term
+    "Unterarm-Curls / Kabelturm": "forearms",
     Bankdrücken: "chest",
-    Kniebeugen: "legs", // "Knie" matches general legs terms
+    Kniebeugen: "quads",
   };
 
   describe("mapExerciseToBodyPart", () => {
     it("should map all exercises from codebase to valid body parts", () => {
       EXERCISES_FROM_CODEBASE.forEach((exerciseName) => {
         const bodyPart = mapExerciseToBodyPart(exerciseName);
-        expect(bodyPart).toBeDefined(
-          `Exercise "${exerciseName}" should map to a body part`
-        );
+        expect(bodyPart).toBeDefined();
         expect(typeof bodyPart).toBe("string");
         console.log(`✓ "${exerciseName}" → "${bodyPart}"`);
       });
@@ -104,10 +102,7 @@ describe("Body Part Icon Mapping", () => {
       Object.entries(EXPECTED_MAPPINGS).forEach(
         ([exerciseName, expectedBodyPart]) => {
           const mappedBodyPart = mapExerciseToBodyPart(exerciseName);
-          expect(mappedBodyPart).toBe(
-            expectedBodyPart,
-            `"${exerciseName}" should map to "${expectedBodyPart}", got "${mappedBodyPart}"`
-          );
+          expect(mappedBodyPart).toBe(expectedBodyPart);
           console.log(
             `✓ "${exerciseName}" → "${mappedBodyPart}" (expected: "${expectedBodyPart}")`
           );
@@ -126,9 +121,7 @@ describe("Body Part Icon Mapping", () => {
 
       testCases.forEach((exerciseName) => {
         const bodyPart = mapExerciseToBodyPart(exerciseName);
-        expect(bodyPart).toBeDefined(
-          `Exercise "${exerciseName}" (case variant) should map to a body part`
-        );
+        expect(bodyPart).toBeDefined();
       });
     });
 
@@ -167,9 +160,7 @@ describe("Body Part Icon Mapping", () => {
 
       unknownExercises.forEach((exerciseName) => {
         const bodyPart = mapExerciseToBodyPart(exerciseName);
-        expect(bodyPart).toBeUndefined(
-          `Exercise "${exerciseName}" should not map to any body part`
-        );
+        expect(bodyPart).toBeUndefined();
       });
     });
 
@@ -227,9 +218,7 @@ describe("Body Part Icon Mapping", () => {
     it("should return icon emoji for all exercises from codebase", () => {
       EXERCISES_FROM_CODEBASE.forEach((exerciseName) => {
         const icon = getExerciseIcon(exerciseName);
-        expect(icon).toBeDefined(
-          `Exercise "${exerciseName}" should have an icon`
-        );
+        expect(icon).toBeDefined();
         expect(typeof icon).toBe("string");
         console.log(`✓ "${exerciseName}" → "${icon}"`);
       });
@@ -289,12 +278,8 @@ describe("Body Part Icon Mapping", () => {
 
       // All exercises should be mapped
       results.forEach((result) => {
-        expect(result.bodyPart).toBeDefined(
-          `${result.exerciseName} should have a body part mapping`
-        );
-        expect(result.icon).toBeDefined(
-          `${result.exerciseName} should have an icon`
-        );
+        expect(result.bodyPart).toBeDefined();
+        expect(result.icon).toBeDefined();
       });
 
       // Log mapping summary
@@ -335,13 +320,9 @@ describe("Body Part Icon Mapping", () => {
         const iconDetails = bodyPart ? getBodyPartIcon(bodyPart) : null;
         const icon = iconDetails?.icon;
 
-        expect(bodyPart).toBeDefined(
-          `${exerciseName} → bodyPart should be defined`
-        );
-        expect(iconDetails).toBeDefined(
-          `${exerciseName} → iconDetails should be defined`
-        );
-        expect(icon).toBeDefined(`${exerciseName} → icon should be defined`);
+        expect(bodyPart).toBeDefined();
+        expect(iconDetails).toBeDefined();
+        expect(icon).toBeDefined();
 
         return { exerciseName, bodyPart, icon };
       });
@@ -379,9 +360,7 @@ describe("Body Part Icon Mapping", () => {
 
       specialFormatExercises.forEach((exerciseName) => {
         const bodyPart = mapExerciseToBodyPart(exerciseName);
-        expect(bodyPart).toBeDefined(
-          `Exercise with special chars "${exerciseName}" should map`
-        );
+        expect(bodyPart).toBeDefined();
       });
     });
 

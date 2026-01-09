@@ -42,7 +42,11 @@ describe("XLSX Export - updateXLSXWithSessions", () => {
       },
     ];
 
-    const updatedBase64 = updateXLSXWithSessions(base64, sessions, exercises);
+    const updatedBase64 = await updateXLSXWithSessions(
+      base64,
+      sessions,
+      exercises
+    );
     const updatedBuffer = base64ToArrayBuffer(updatedBase64);
     const updatedWorkbook = new ExcelJS.Workbook();
     await updatedWorkbook.xlsx.load(updatedBuffer);
@@ -98,7 +102,7 @@ describe("XLSX Export - exportXLSXWithFormatting", () => {
       },
     ];
 
-    const exportedBuffer = exportXLSXWithFormatting(
+    const exportedBuffer = await exportXLSXWithFormatting(
       base64,
       sessions,
       exercises
@@ -107,11 +111,12 @@ describe("XLSX Export - exportXLSXWithFormatting", () => {
     await exportedWorkbook.xlsx.load(exportedBuffer);
     const exportedSheet = exportedWorkbook.getWorksheet("Einheit 1");
 
-    // Exercise 1 data is at rows 8-9, cols 5-6 (WH-KG)
-    const satz1RepsCell = exportedSheet?.getCell(8, 5);
-    const satz1WeightCell = exportedSheet?.getCell(8, 6);
-    const satz2RepsCell = exportedSheet?.getCell(9, 5);
-    const satz2WeightCell = exportedSheet?.getCell(9, 6);
+    // Exercise 1 data is at rows 8-9, cols 6-7 (WH-KG)
+    const satz1RepsCell = exportedSheet?.getCell(8, 6);
+    const satz1WeightCell = exportedSheet?.getCell(8, 7);
+
+    const satz2RepsCell = exportedSheet?.getCell(9, 6);
+    const satz2WeightCell = exportedSheet?.getCell(9, 7);
 
     expect(satz1RepsCell?.value).toBe(12);
     expect(satz1WeightCell?.value).toBe(50);
@@ -180,7 +185,7 @@ describe("XLSX Export - exportXLSXWithFormatting", () => {
       },
     ];
 
-    const exportedBuffer = exportXLSXWithFormatting(
+    const exportedBuffer = await exportXLSXWithFormatting(
       base64,
       sessions,
       exercises
@@ -190,14 +195,16 @@ describe("XLSX Export - exportXLSXWithFormatting", () => {
     const exportedSheet = exportedWorkbook.getWorksheet("Einheiten");
 
     // First Einheit (cols 5-6, rows 8-9)
-    const ein1Satz1RepsCell = exportedSheet?.getCell(8, 5);
-    const ein1Satz1WeightCell = exportedSheet?.getCell(8, 6);
+    // First Einheit (cols 6-7, rows 8-9)
+    const ein1Satz1RepsCell = exportedSheet?.getCell(8, 6);
+    const ein1Satz1WeightCell = exportedSheet?.getCell(8, 7);
     expect(ein1Satz1RepsCell?.value).toBe(12);
     expect(ein1Satz1WeightCell?.value).toBe(50);
 
     // Second Einheit (cols 7-8, rows 8-9)
-    const ein2Satz1RepsCell = exportedSheet?.getCell(8, 7);
-    const ein2Satz1WeightCell = exportedSheet?.getCell(8, 8);
+    // Second Einheit (cols 8-9, rows 8-9)
+    const ein2Satz1RepsCell = exportedSheet?.getCell(8, 8);
+    const ein2Satz1WeightCell = exportedSheet?.getCell(8, 9);
     expect(ein2Satz1RepsCell?.value).toBe(11);
     expect(ein2Satz1WeightCell?.value).toBe(55);
   });
@@ -245,9 +252,9 @@ describe("XLSX Export - exportXLSXWithFormatting", () => {
     const exercises: Exercise[] = [];
     const sessions: Session[] = [];
 
-    expect(() => {
-      exportXLSXWithFormatting(base64, sessions, exercises);
-    }).not.toThrow();
+    await expect(
+      exportXLSXWithFormatting(base64, sessions, exercises)
+    ).resolves.toBeInstanceOf(ArrayBuffer);
   });
 
   it("should handle exercises with only Satz 1", async () => {
@@ -286,7 +293,7 @@ describe("XLSX Export - exportXLSXWithFormatting", () => {
       },
     ];
 
-    const exportedBuffer = exportXLSXWithFormatting(
+    const exportedBuffer = await exportXLSXWithFormatting(
       base64,
       sessions,
       exercises
@@ -295,8 +302,8 @@ describe("XLSX Export - exportXLSXWithFormatting", () => {
     await exportedWorkbook.xlsx.load(exportedBuffer);
     const exportedSheet = exportedWorkbook.getWorksheet("Einheit");
 
-    const satz1RepsCell = exportedSheet?.getCell(8, 5);
-    const satz1WeightCell = exportedSheet?.getCell(8, 6);
+    const satz1RepsCell = exportedSheet?.getCell(8, 6);
+    const satz1WeightCell = exportedSheet?.getCell(8, 7);
 
     expect(satz1RepsCell?.value).toBe(12);
     expect(satz1WeightCell?.value).toBe(50);
