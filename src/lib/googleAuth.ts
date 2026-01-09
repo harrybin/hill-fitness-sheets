@@ -1,7 +1,7 @@
 // Google OAuth and Drive API integration
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-const SCOPES = "https://www.googleapis.com/auth/drive.readonly";
+const SCOPES = "https://www.googleapis.com/auth/drive.file";
 
 export interface GoogleAuthToken {
   access_token: string;
