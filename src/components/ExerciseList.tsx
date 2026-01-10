@@ -4,7 +4,7 @@ import { CompletedExerciseCard } from "./CompletedExerciseCard";
 import { IncompleteExerciseCard } from "./IncompleteExerciseCard";
 import { XLSXImportSection } from "./XLSXImportSection";
 import { useApp } from "@/contexts/AppContext";
-import { arrayBufferToBase64 } from "@/lib/utils";
+import { arrayBufferToBase64, toISODate } from "@/lib/utils";
 
 interface ExerciseListProps {
   exercises: Exercise[];
@@ -40,13 +40,13 @@ export function ExerciseList({
   };
 
   const todayDateString = new Date().toISOString().split("T")[0];
-  const selectedDateClean = selectedDate?.replace(" ?", "").trim();
+  const selectedDateClean = selectedDate ? toISODate(selectedDate) : undefined;
 
   // Determine if this is an old session:
   // Only old sessions (not today) should have the different background color
   const isOldSession = currentSession
     ? currentSession.date !== todayDateString
-    : selectedDateClean && selectedDateClean !== todayDateString;
+    : !!(selectedDateClean && selectedDateClean !== todayDateString);
 
   const getExerciseStatus = (exerciseId: string) => {
     const entry = currentSession?.entries.find(
@@ -77,8 +77,10 @@ export function ExerciseList({
 
     const today = new Date().toISOString().split("T")[0];
     const previousSessions = [...allSessions]
-      .filter((s) => s.date !== today && s.entries && s.entries.length > 0)
-      .sort((a, b) => b.date.localeCompare(a.date));
+      .filter(
+        (s) => toISODate(s.date) !== today && s.entries && s.entries.length > 0
+      )
+      .sort((a, b) => toISODate(b.date).localeCompare(toISODate(a.date)));
 
     for (const session of previousSessions) {
       const entry = session.entries.find((e) => e.exerciseId === exerciseId);

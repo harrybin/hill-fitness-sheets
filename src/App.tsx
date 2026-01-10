@@ -4,6 +4,7 @@ import { Exercise } from "@/lib/types";
 import { ExerciseList } from "@/components/ExerciseList";
 import { TrainingEntryView } from "@/components/TrainingEntryView";
 import { SessionHistory } from "@/components/SessionHistory";
+import { toISODate } from "@/lib/utils";
 import { SettingsDialog } from "@/components/SettingsDialog";
 import { AboutDialog } from "@/components/AboutDialog";
 import { PWAInstallBanner } from "@/components/PWAInstallBanner";
@@ -41,7 +42,7 @@ function App() {
   const [scrollPosition, setScrollPosition] = useState(0);
 
   const today = new Date().toISOString().split("T")[0];
-  const selectedDateClean = selectedDate || today;
+  const selectedDateClean = toISODate(selectedDate || today);
   const currentSession = sessions.find((s) => s.date === selectedDateClean);
 
   const handleCompleteEntry = (entry: any, date: string) => {
@@ -72,7 +73,7 @@ function App() {
               allSessions={sessions}
               selectedDate={selectedDateClean}
               onSelectSession={(date) => {
-                setSelectedDate(date);
+                setSelectedDate(toISODate(date));
                 setSelectedExercise(null);
               }}
             />

@@ -1,6 +1,6 @@
 ﻿import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { Exercise, Session, TrainingEntry } from "./types";
+import { Exercise, Session } from "./types";
 
 // Re-exports from specialized XLSX modules
 export { parseXLSX } from "./xlsxImport";
@@ -9,6 +9,51 @@ export { updateXLSXWithSessions, exportXLSXWithFormatting } from "./xlsxExport";
 // Utility function: combine class names with Tailwind merge
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+// Normalize various date string formats to ISO YYYY-MM-DD
+export function toISODate(dateString: string): string {
+  if (!dateString) return "";
+  const trimmed = dateString.replace(" ?", "").trim();
+  // Already ISO
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+  // German format DD.MM.YYYY
+  const deMatch = trimmed.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+  if (deMatch) {
+    const [_, dd, mm, yyyy] = deMatch;
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  // Fallback: extract YYYY, MM, DD in any order
+  const y = trimmed.match(/(\d{4})/);
+  const m = trimmed.match(/(?:^|\D)(\d{2})(?:\D|$)/);
+  const d = trimmed.match(/(?:^|\D)(\d{2})(?:\D|$)/);
+  if (y && m && d) {
+    const yyyy = y[1];
+    const mm = m[1];
+    const dd = d[1];
+    if (/^\d{4}$/.test(yyyy) && /^\d{2}$/.test(mm) && /^\d{2}$/.test(dd)) {
+      return `${yyyy}-${mm}-${dd}`;
+    }
+  }
+  return trimmed;
+}
+
+// Format a date string to German DD.MM.YYYY for display
+export function formatDateDE(dateString: string): string {
+  const iso = toISODate(dateString);
+  const parts = iso.split("-");
+  if (parts.length === 3) {
+    const y = parseInt(parts[0]);
+    const m = parseInt(parts[1]) - 1;
+    const d = parseInt(parts[2]);
+    const dt = new Date(y, m, d);
+    return dt.toLocaleDateString("de-DE", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  }
+  return dateString;
 }
 
 // Convert base64 string to ArrayBuffer

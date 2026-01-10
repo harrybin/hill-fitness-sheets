@@ -1,7 +1,7 @@
 import { createContext, useContext, ReactNode, useEffect, useRef } from "react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Exercise, Session, AppSettings, TrainingEntry } from "@/lib/types";
-import { parseXLSX, base64ToArrayBuffer } from "@/lib/utils";
+import { parseXLSX, base64ToArrayBuffer, toISODate } from "@/lib/utils";
 
 interface AppContextValue {
   exercises: Exercise[];
@@ -54,6 +54,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [settings?.importedFile, exercises, setExercises, setSessions]);
 
+  // Migration: normalize any legacy session/date formats to ISO on load
+  useEffect(() => {
+    try {
+      const prev = sessions || [];
+      const normalized = prev.map((s) => ({
+        ...s,
+        date: toISODate(s.date),
+        entries: (s.entries || []).map((e) => ({
+          ...e,
+          date: toISODate(e.date),
+        })),
+      }));
+      const changed =
+        normalized.length !== prev.length ||
+        normalized.some((s, i) => s.date !== prev[i].date);
+      if (changed) {
+        setSessions(normalized);
+      }
+    } catch (err) {
+      console.warn("Session date normalization skipped:", err);
+    }
+  }, [sessions, setSessions]);
+
   // Note: We no longer sync sessions back to importedFile during normal operation.
   // The original template is preserved as-is in importedFile.data.
   // Sessions are only written to the XLSX during the explicit export operation
@@ -84,8 +107,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const completeEntry = (entry: TrainingEntry, date: string) => {
     setSessions((prevSessions) => {
       const prev = prevSessions || [];
-      // Date is now clean (no "?" marker), just use it directly
-      const sessionIndex = prev.findIndex((s) => s.date === date);
+      const cleanDate = toISODate(date);
+      const sessionIndex = prev.findIndex((s) => s.date === cleanDate);
       let updatedSessions: Session[];
 
       if (sessionIndex >= 0) {
@@ -100,7 +123,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           updatedSessions[sessionIndex].entries.push(entry);
         }
       } else {
-        updatedSessions = [...prev, { date: date, entries: [entry] }];
+        updatedSessions = [...prev, { date: cleanDate, entries: [entry] }];
       }
 
       return updatedSessions;
@@ -110,8 +133,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateEntry = (entry: TrainingEntry, date: string) => {
     setSessions((prevSessions) => {
       const prev = prevSessions || [];
-      // Date is now clean (no "?" marker), just use it directly
-      const sessionIndex = prev.findIndex((s) => s.date === date);
+      const cleanDate = toISODate(date);
+      const sessionIndex = prev.findIndex((s) => s.date === cleanDate);
       let updatedSessions: Session[];
 
       if (sessionIndex >= 0) {
@@ -125,7 +148,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
           // Remove session if no entries
           if (updatedSessions[sessionIndex].entries.length === 0) {
-            updatedSessions = prev.filter((s) => s.date !== date);
+            updatedSessions = prev.filter((s) => s.date !== cleanDate);
           }
         } else {
           const entryIndex = updatedSessions[sessionIndex].entries.findIndex(

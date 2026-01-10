@@ -105,21 +105,19 @@ export async function exportXLSXWithFormatting(
 
     if (einheitSheets.length > 0) {
       const worksheet = einheitSheets[0];
-
-      // Find Einheit columns first to know how many sessions we can export
-      // Strategy:
-      // 1) Prefer explicit WH/KG pairs found in header area
-      // 2) Fallback to detecting "Einheit:" header columns
+      // Find Einheit columns: look for WH/KG column pairs
+      // Strategy: Find all "WH" cells and check if the next cell is "KG"
       const einheitCols: Record<number, { whCol: number; kgCol: number }> = {};
-      // Pass 1: WH/KG pairs
+
+      // Scan all header rows (1-20) for WH/KG pairs
       worksheet.eachRow((row, rowNumber) => {
         if (rowNumber <= 20) {
           row.eachCell((cell, colNumber) => {
-            const thisText = getCellText(cell.value).toLowerCase().trim();
-            const nextText = getCellText(row.getCell(colNumber + 1).value)
-              .toLowerCase()
-              .trim();
-            if (thisText === "wh" && nextText === "kg") {
+            const cellValue = getCellText(cell.value).toLowerCase().trim();
+            const nextCell = row.getCell(colNumber + 1);
+            const nextValue = getCellText(nextCell.value).toLowerCase().trim();
+
+            if (cellValue === "wh" && nextValue === "kg") {
               einheitCols[colNumber] = {
                 whCol: colNumber,
                 kgCol: colNumber + 1,
@@ -128,102 +126,62 @@ export async function exportXLSXWithFormatting(
           });
         }
       });
-      // Pass 2: Einheit header fallback if none found
-      if (Object.keys(einheitCols).length === 0) {
+
+      if (Object.keys(einheitCols).length > 0) {
+        // Determine number of sessions to export based on detected Einheit columns
+        const maxSessions = Object.keys(einheitCols).length;
+
+        // Take up to maxSessions most recent sessions
+        const recentSessions = sessions
+          .sort((a, b) => b.date.localeCompare(a.date))
+          .slice(0, maxSessions)
+          .reverse(); // Reverse to get chronological order
+
+        const chunk = recentSessions;
+
+        // removed debug log: exporting sessions summary
+
+        // Find exercise start row
+        // Look for "Satz 1" / "Satz: 1" text, which indicates the start of actual exercise data rows
+        // This is more reliable than looking for "Sätze:" header
+        let startIndex = 0;
         worksheet.eachRow((row, rowNumber) => {
-          if (rowNumber <= 20) {
-            row.eachCell((cell, colNumber) => {
-              const cellValue = getCellText(cell.value).toLowerCase();
-              if (cellValue.includes("einheit")) {
-                einheitCols[colNumber] = {
-                  whCol: colNumber,
-                  kgCol: colNumber + 1,
-                };
+          if (startIndex === 0) {
+            row.eachCell((cell) => {
+              const v = getCellText(cell.value).toLowerCase();
+              if (
+                v.includes("satz") &&
+                (v.includes(": 1") || v.includes(" 1"))
+              ) {
+                startIndex = rowNumber;
               }
             });
           }
         });
-      }
 
-      const maxSessions = Math.max(
-        Object.keys(einheitCols).length,
-        8 // Default to 8 if no columns found
-      );
-
-      // Take up to maxSessions most recent sessions
-      const recentSessions = sessions
-        .sort((a, b) => b.date.localeCompare(a.date))
-        .slice(0, maxSessions)
-        .reverse(); // Reverse to get chronological order
-
-      const chunk = recentSessions;
-
-      // Find exercise start row
-      // Primary: row that contains a "Sätze"/"Satz" header anywhere → data starts next row
-      // Fallback: row with "Übungen"/"Exercises"/"Muskel" in column B → data starts next row
-      let startIndex = 0;
-      let saetzeRow = 0;
-      worksheet.eachRow((row, rowNumber) => {
-        if (saetzeRow) return;
-        row.eachCell((cell) => {
-          const v = getCellText(cell.value).toLowerCase();
-          if (
-            v.includes("sätze") ||
-            v.includes("satze") ||
-            v.includes("satz")
-          ) {
-            saetzeRow = rowNumber;
-          }
-        });
-      });
-      if (saetzeRow) {
-        startIndex = saetzeRow + 1;
-      } else {
-        worksheet.eachRow((row, rowNumber) => {
-          const cellB = row.getCell(2);
-          const cellValue = getCellText(cellB.value).toLowerCase().trim();
-          const normalized = cellValue
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "");
-          if (
-            normalized === "ubungen" ||
-            normalized === "exercises" ||
-            normalized === "muskel"
-          ) {
-            startIndex = rowNumber + 1;
-          }
-        });
-      }
-
-      if (Object.keys(einheitCols).length === 0) {
-        // Fallback: derive Einheit columns from the "Satz" header column
-        let baseCol = 0;
-        worksheet.eachRow((row, rowNumber) => {
-          if (baseCol !== 0 || rowNumber > 30) return;
-          row.eachCell((cell, colNumber) => {
-            const v = getCellText(cell.value).toLowerCase();
-            if (
-              v.includes("sätze") ||
-              v.includes("satze") ||
-              v.includes("satz")
-            ) {
-              baseCol = colNumber;
+        if (startIndex === 0) {
+          // Fallback: find "Sätze:" in a row that has exercise data (where column 1 or 2 has a number or text)
+          worksheet.eachRow((row, rowNumber) => {
+            if (startIndex === 0 && rowNumber > 7) {
+              let hasSatze = false;
+              let hasExerciseId = false;
+              row.eachCell((cell, colNumber) => {
+                const v = getCellText(cell.value).toLowerCase();
+                if (v === "sätze:" || v === "satze:") hasSatze = true;
+                if (colNumber === 1) {
+                  const numVal = Number(getCellText(cell.value));
+                  if (!isNaN(numVal) && numVal > 0) hasExerciseId = true;
+                }
+              });
+              if (hasSatze && hasExerciseId) {
+                startIndex = rowNumber;
+              }
             }
           });
-        });
-        if (baseCol > 0) {
-          const fallbackPairs = 8; // assume up to 8 sessions
-          for (let i = 0; i < fallbackPairs; i++) {
-            const wh = baseCol + 1 + i * 2; // WH starts one column to the right of "Sätze"
-            const kg = wh + 1;
-            einheitCols[wh] = { whCol: wh, kgCol: kg };
-          }
-        } else {
-          console.warn("No Einheit columns found in first sheet");
         }
-      }
 
-      if (Object.keys(einheitCols).length > 0) {
+        // removed debug log: exercise start row
+
         // Find Datum row (row with "Datum" label)
         let datumRowIdx = -1;
         worksheet.eachRow((row, rowNumber) => {
@@ -238,76 +196,40 @@ export async function exportXLSXWithFormatting(
           }
         });
 
-        // Determine the base 'Sätze' column to align WH/KG pairs reliably
-        let saetzeColBase = -1;
-        worksheet.eachRow((row, rowNumber) => {
-          if (saetzeColBase !== -1 || rowNumber > 40) return;
-          row.eachCell((cell, colNumber) => {
-            const v = getCellText(cell.value).toLowerCase();
-            if (
-              v.includes("sätze") ||
-              v.includes("satze") ||
-              v.includes("satz")
-            ) {
-              saetzeColBase = colNumber;
-            }
-          });
-        });
+        // removed debug log: datum row index
 
         // Process each session in this chunk
         const sortedCols = Object.keys(einheitCols)
           .map((k) => parseInt(k))
           .sort((a, b) => a - b);
 
-        // Ensure at least 8 visible "Einheit:" headers for detection in tests
-        const headerEinheitRow = worksheet.getRow(4);
-        for (let sIdx = 0; sIdx < maxSessions; sIdx++) {
-          const colIdx =
-            sortedCols[sIdx] ??
-            (saetzeColBase > 0 ? saetzeColBase + 1 + sIdx * 2 : undefined);
-          const whWriteCol =
-            saetzeColBase > 0 ? saetzeColBase + 1 + sIdx * 2 : colIdx ?? 0;
-          if (whWriteCol > 1) {
-            const hdrCell = headerEinheitRow.getCell(whWriteCol);
-            const text = getCellText(hdrCell.value).toLowerCase();
-            if (!text.includes("einheit")) hdrCell.value = "Einheit:";
-          }
-        }
-        headerEinheitRow.commit();
-
-        // For compatibility with tests that rely on row.eachCell index order,
-        // ensure header rows have contiguous non-empty cells up to the max KG column
-        const maxWriteCol =
-          saetzeColBase > 0
-            ? saetzeColBase + (maxSessions - 1) * 2 + 1
-            : Math.max(...sortedCols, 0) + 1;
-        for (let r = 1; r <= Math.max(20, saetzeRow || 0); r++) {
-          const row = worksheet.getRow(r);
-          for (let c = 1; c <= maxWriteCol; c++) {
-            const cell = row.getCell(c);
-            if (cell.value === undefined || cell.value === null) {
-              cell.value = ""; // fill to keep eachCell iteration aligned
-            }
-          }
-          row.commit();
-        }
+        // removed debug log: sorted Einheit columns
 
         for (let sIdx = 0; sIdx < chunk.length; sIdx++) {
           const session = chunk[sIdx];
-          const colIdx = sortedCols[sIdx];
-          if (!colIdx) continue;
+          const whColNumber = sortedCols[sIdx];
+          if (!whColNumber) {
+            // warn: session had no column found (suppressed)
+            continue;
+          }
 
-          const colInfo = einheitCols[colIdx];
-          // Compute write columns using 'Sätze' base to avoid header misalignment
-          const whWriteCol =
-            saetzeColBase > 0 ? saetzeColBase + 1 + sIdx * 2 : colInfo.whCol;
-          const kgWriteCol = whWriteCol + 1;
+          const colInfo = einheitCols[whColNumber];
+          if (!colInfo) {
+            // warn: missing colInfo for computed column (suppressed)
+            continue;
+          }
+
+          const whWriteCol = colInfo.whCol;
+          const kgWriteCol = colInfo.kgCol;
+
+          // removed debug log: writing session columns
 
           // Write date to Datum row (same column as Einheit WH column)
           if (datumRowIdx > 0) {
             const dateCell = worksheet.getCell(datumRowIdx, whWriteCol);
             dateCell.value = new Date(session.date);
             dateCell.numFmt = "DD.MM.YYYY";
+            // removed debug log: date write confirmation
           }
 
           // Write exercise data
@@ -331,21 +253,13 @@ export async function exportXLSXWithFormatting(
               notesCell2.value = exercise.notes;
             }
 
-            // Before writing, ensure cells are not merged across Satz 1/2 so values remain independent
+            // Ensure WH (reps) cells are independent per row
             try {
               worksheet.unMergeCells(
                 exerciseRowIdx1,
                 whWriteCol,
                 exerciseRowIdx2,
                 whWriteCol
-              );
-            } catch {}
-            try {
-              worksheet.unMergeCells(
-                exerciseRowIdx1,
-                kgWriteCol,
-                exerciseRowIdx2,
-                kgWriteCol
               );
             } catch {}
 
@@ -359,6 +273,18 @@ export async function exportXLSXWithFormatting(
               repsCell.numFmt = "0"; // Ensure numeric format
               weightCell.value = Number(set1.weight);
               weightCell.numFmt = "0.0"; // Ensure numeric format with decimal
+
+              // Merge KG cell across Satz 1 and Satz 2 rows so weight appears once for both
+              try {
+                worksheet.mergeCells(
+                  exerciseRowIdx1,
+                  kgWriteCol,
+                  exerciseRowIdx2,
+                  kgWriteCol
+                );
+              } catch {}
+
+              // removed debug log: satz 1 write confirmation
             }
 
             // Satz 2 (Set 2)
@@ -367,17 +293,13 @@ export async function exportXLSXWithFormatting(
               const repsCell = worksheet.getCell(exerciseRowIdx2, whWriteCol);
               repsCell.value = Number(set2.reps);
               repsCell.numFmt = "0";
-              const weightCell2 = worksheet.getCell(
-                exerciseRowIdx2,
-                kgWriteCol
-              );
-              // Use explicit weight if provided, else inherit from Satz 1
-              const weight2 = set2.weight ?? sortedSets[0]?.weight ?? null;
-              weightCell2.value = weight2 !== null ? Number(weight2) : null;
-              weightCell2.numFmt = "0.0";
+              // Do NOT write a separate KG value for Satz 2.
+              // The KG cell is merged across both rows and uses Satz 1 weight.
             }
           });
         }
+      } else {
+        console.warn("❌ No Einheit columns found!");
       }
     }
 

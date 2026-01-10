@@ -1,4 +1,4 @@
-import { getTopSkippedExercises } from "../lib/utils";
+import { getTopSkippedExercises, formatDateDE } from "../lib/utils";
 import React, { useState } from "react";
 import {
   Dialog,
@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/dialog";
 import {
   getMonthlyTrainingFrequency,
-  getExercisePRs,
   getExerciseVolumeHistory,
   getExerciseProgression,
 } from "../lib/utils";
@@ -37,7 +36,6 @@ export const StatsDashboard: React.FC<StatsDashboardProps> = ({
     ex: Exercise;
   }>(null);
   const monthlyFreq = getMonthlyTrainingFrequency(sessions);
-  const prs = getExercisePRs(sessions);
   const volumeHistory = getExerciseVolumeHistory(sessions);
   const progression = getExerciseProgression(sessions);
 
@@ -264,7 +262,9 @@ export const StatsDashboard: React.FC<StatsDashboardProps> = ({
                       : volumeHistory[modal.ex.id] || []
                     ).map((v, i) => (
                       <tr key={i}>
-                        <td className="border px-2 py-1">{v.date}</td>
+                        <td className="border px-2 py-1">
+                          {formatDateDE(v.date)}
+                        </td>
                         <td className="border px-2 py-1">{v.volume}</td>
                       </tr>
                     ))}
@@ -277,7 +277,9 @@ export const StatsDashboard: React.FC<StatsDashboardProps> = ({
                       : progression[modal.ex.id] || []
                     ).map((p, i) => (
                       <tr key={i}>
-                        <td className="border px-2 py-1">{p.date}</td>
+                        <td className="border px-2 py-1">
+                          {formatDateDE(p.date)}
+                        </td>
                         <td className="border px-2 py-1">{p.maxWeight}</td>
                       </tr>
                     ))}

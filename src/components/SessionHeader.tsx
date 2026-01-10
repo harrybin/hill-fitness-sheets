@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
+import { cn, toISODate } from "@/lib/utils";
 
 interface SessionHistoryProps {
   session?: Session;
@@ -29,7 +29,8 @@ export function SessionHistory({
 
   const todayDateString = new Date().toISOString().split("T")[0];
   const currentDateString = selectedDate || todayDateString;
-  const isOldSession = currentDateString !== todayDateString;
+  const currentDateISO = toISODate(currentDateString);
+  const isOldSession = currentDateISO !== todayDateString;
 
   // Check if current session has interpolated date
   const isCurrentSessionInterpolated = session?.dateInterpolated || false;
@@ -60,10 +61,10 @@ export function SessionHistory({
   const previousSession = (allSessions || [])
     .filter((s) => {
       const hasEntries = s.entries && s.entries.length > 0;
-      const isBeforeToday = s.date < currentDateString;
+      const isBeforeToday = toISODate(s.date) < currentDateISO;
       return hasEntries && isBeforeToday;
     })
-    .sort((a, b) => b.date.localeCompare(a.date))[0];
+    .sort((a, b) => toISODate(b.date).localeCompare(toISODate(a.date)))[0];
 
   let lastTrainingDate: string | null = null;
 
@@ -114,7 +115,7 @@ export function SessionHistory({
 
   const sessionsWithEntries = (allSessions || [])
     .filter((s) => s.entries && s.entries.length > 0)
-    .sort((a, b) => b.date.localeCompare(a.date));
+    .sort((a, b) => toISODate(b.date).localeCompare(toISODate(a.date)));
 
   return (
     <>
@@ -164,7 +165,8 @@ export function SessionHistory({
                       className={cn(
                         "bg-card border border-border rounded-lg p-4 transition-colors",
                         onSelectSession && "hover:bg-accent/50 cursor-pointer",
-                        selectedDate === s.date && "ring-2 ring-primary"
+                        toISODate(selectedDate || "") === toISODate(s.date) &&
+                          "ring-2 ring-primary"
                       )}
                     >
                       <div className="flex items-center justify-between">

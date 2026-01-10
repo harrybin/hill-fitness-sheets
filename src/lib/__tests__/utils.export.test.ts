@@ -62,8 +62,9 @@ describe("XLSX Export - updateXLSXWithSessions", () => {
 describe("XLSX Export - exportXLSXWithFormatting", () => {
   it("should fill Einheit columns with session data", async () => {
     // Create sheet data:
-    // Cols 0-4: Exercise metadata (Nr, Übung, Notiz, WH-Zahl, Sätze)
-    // Cols 5-6: Einheit 1 (WH, KG)
+    // Cols 1-4: Exercise metadata (Nr, Übung, Notiz, WH-Zahl)
+    // Col 5: Sätze indicator
+    // Cols 6-7: Einheit 1 (WH, KG)
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet("Einheit 1");
 
@@ -71,9 +72,9 @@ describe("XLSX Export - exportXLSXWithFormatting", () => {
     sheet.addRow(["Metadata1"]);
     sheet.addRow([]);
     sheet.addRow([]);
-    sheet.addRow(["", "", "", "", "Einheit:", 1]); // Row 4
-    sheet.addRow(["Nr.", "Übungen", "Notiz", "WH-Zahl", "WH", "KG"]); // Headers Row 5
-    sheet.addRow(["Datum:", "", "", "", 45000]); // Row 6
+    sheet.addRow(["", "", "", "", "", "Einheit:", 1]); // Row 4
+    sheet.addRow(["Nr.", "Übungen", "Notiz", "WH-Zahl", "Sätze:", "WH", "KG"]); // Headers Row 5
+    sheet.addRow(["Datum:", "", "", "", "", 45000]); // Row 6
     sheet.addRow(["Nr.", "Übungen", "Notiz", "WH-Zahl", "Sätze:"]); // Row 7
     sheet.addRow([1, "Bankdrücken", "", "10-12", "Satz: 1"]); // Row 8: Ex1 Satz1
     sheet.addRow(["", "", "", "", "Satz: 2"]); // Row 9: Ex1 Satz2
@@ -131,18 +132,19 @@ describe("XLSX Export - exportXLSXWithFormatting", () => {
     sheet.addRow(["Metadata"]);
     sheet.addRow([]);
     sheet.addRow([]);
-    sheet.addRow(["", "", "", "", "Einheit:", "", "Einheit:"]); // Cols 5, 7: Einheit headers
+    sheet.addRow(["", "", "", "", "", "Einheit:", "", "Einheit:"]); // Cols 6, 8: Einheit headers
     sheet.addRow([
       "Nr.",
       "Übungen",
       "Notiz",
       "WH-Zahl",
+      "Sätze:",
       "WH",
       "KG",
       "WH",
       "KG",
     ]); // Col labels
-    sheet.addRow(["Datum:", "", "", "", 45000, "", 45005]); // Cols 5, 7: dates
+    sheet.addRow(["Datum:", "", "", "", "", 45000, "", 45005]); // Cols 6, 8: dates
     sheet.addRow(["Nr.", "Übungen", "Notiz", "WH-Zahl", "Sätze:"]); // Real headers
     sheet.addRow([1, "Bankdrücken", "", "10-12", "Satz: 1"]); // Row 8: Ex1 Satz1
     sheet.addRow(["", "", "", "", "Satz: 2"]); // Row 9: Ex1 Satz2
@@ -265,9 +267,9 @@ describe("XLSX Export - exportXLSXWithFormatting", () => {
     sheet.addRow(["Metadata"]);
     sheet.addRow([]);
     sheet.addRow([]);
-    sheet.addRow(["", "", "", "", "Einheit:", ""]); // Col 5: Einheit header
-    sheet.addRow(["Nr.", "Übungen", "Notiz", "WH-Zahl", "WH", "KG"]); // Headers
-    sheet.addRow(["Datum:", "", "", "", 45000]); // Col 5: Date
+    sheet.addRow(["", "", "", "", "", "Einheit:", ""]); // Col 6: Einheit header
+    sheet.addRow(["Nr.", "Übungen", "Notiz", "WH-Zahl", "Sätze:", "WH", "KG"]); // Headers
+    sheet.addRow(["Datum:", "", "", "", "", 45000]); // Col 6: Date
     sheet.addRow(["Nr.", "Übungen", "Notiz", "WH-Zahl", "Sätze:"]); // Real headers
     sheet.addRow([1, "Bankdrücken", "", "10-12", "Satz: 1"]); // Row 8: Ex1 Satz1
     sheet.addRow(["", "", "", "", "Satz: 2"]); // Row 9: Ex1 Satz2
