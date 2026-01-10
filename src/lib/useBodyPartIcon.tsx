@@ -105,7 +105,7 @@ export const BodyPartIconComponent: FC<BodyPartIconProps> = ({
           bodyColor="oklch(0.50 0 0)"
           hoverColor="#f97316"
           highlightedColors={["#f97316"]}
-          style={{ width: "100%", height: "100%" }}
+          style={{ width: "100%", height: "200%" }}
         />
       </StyleSheetManager>
     </div>
