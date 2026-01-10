@@ -31,4 +31,4 @@ pids
 .file-manifest
 .devcontainer/
 
-#.playwright-mcp
+.playwright-mcp
