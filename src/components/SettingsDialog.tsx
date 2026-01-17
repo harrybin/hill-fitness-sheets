@@ -30,13 +30,14 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { settings, setSettings, loadFromXLSX, sessions, exercises } = useApp();
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
-  const handleImport = async (arrayBuffer: ArrayBuffer, fileName: string) => {
+  const handleImport = async (arrayBuffer: ArrayBuffer, fileName: string, googleSheetUrl?: string) => {
     const result = await loadFromXLSX(arrayBuffer);
 
     const fileData = arrayBufferToBase64(arrayBuffer);
 
     setSettings((prev) => ({
       ...prev,
+      googleSheetUrl: googleSheetUrl || prev.googleSheetUrl,
       importedFile: {
         name: fileName,
         data: fileData,

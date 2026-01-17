@@ -30,6 +30,7 @@ export interface AppSettings {
   trainingGoal?: string;
   legalNotice?: string;
   notes?: string;
+  googleSheetUrl?: string;
   importedFile?: {
     name: string;
     data: string;

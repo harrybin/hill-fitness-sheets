@@ -22,7 +22,8 @@ import {
 interface XLSXImportSectionProps {
   onImport: (
     arrayBuffer: ArrayBuffer,
-    fileName: string
+    fileName: string,
+    googleSheetUrl?: string
   ) => void | Promise<void | { exerciseCount: number; sessionCount: number }>;
   showLocalUpload?: boolean;
   className?: string;
@@ -148,7 +149,7 @@ export function XLSXImportSection({
           );
           const fileName = `sheet_${new Date().getTime()}.xlsx`;
 
-          const result = await onImport(arrayBuffer, fileName);
+          const result = await onImport(arrayBuffer, fileName, driveUrl);
 
           if (result && "exerciseCount" in result && "sessionCount" in result) {
             toast.success(
@@ -194,7 +195,7 @@ export function XLSXImportSection({
       const arrayBuffer = await response.arrayBuffer();
       const fileName = `sheet_${new Date().getTime()}.xlsx`;
 
-      const result = await onImport(arrayBuffer, fileName);
+      const result = await onImport(arrayBuffer, fileName, driveUrl);
 
       if (result && "exerciseCount" in result && "sessionCount" in result) {
         toast.success(
