@@ -30,7 +30,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { settings, setSettings, loadFromXLSX, sessions, exercises } = useApp();
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
-  const handleImport = async (arrayBuffer: ArrayBuffer, fileName: string, googleSheetUrl?: string) => {
+  const handleImport = async (
+    arrayBuffer: ArrayBuffer,
+    fileName: string,
+    googleSheetUrl?: string,
+  ) => {
     const result = await loadFromXLSX(arrayBuffer);
 
     const fileData = arrayBufferToBase64(arrayBuffer);
@@ -64,7 +68,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       const arrayBuffer = await exportXLSXWithFormatting(
         settings.importedFile.data,
         sessions,
-        exercises
+        exercises,
       );
 
       const blob = new Blob([arrayBuffer], {
@@ -137,7 +141,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                       </div>
                       <div className="text-xs text-muted-foreground mt-0.5 leading-tight">
                         {new Date(
-                          settings.importedFile.lastModified
+                          settings.importedFile.lastModified,
                         ).toLocaleDateString("de-DE", {
                           day: "2-digit",
                           month: "2-digit",

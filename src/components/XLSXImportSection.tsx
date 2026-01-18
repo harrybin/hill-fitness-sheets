@@ -23,7 +23,7 @@ interface XLSXImportSectionProps {
   onImport: (
     arrayBuffer: ArrayBuffer,
     fileName: string,
-    googleSheetUrl?: string
+    googleSheetUrl?: string,
   ) => void | Promise<void | { exerciseCount: number; sessionCount: number }>;
   showLocalUpload?: boolean;
   className?: string;
@@ -81,7 +81,7 @@ export function XLSXImportSection({
   };
 
   const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -100,7 +100,7 @@ export function XLSXImportSection({
           `Importiert: ${result.sessionCount} Trainings / ${result.exerciseCount} Übungen`,
           {
             description: file.name,
-          }
+          },
         );
       } else {
         toast.success("Importiert", {
@@ -145,7 +145,7 @@ export function XLSXImportSection({
         try {
           const arrayBuffer = await downloadFileFromDrive(
             fileId,
-            googleToken.access_token
+            googleToken.access_token,
           );
           const fileName = `sheet_${new Date().getTime()}.xlsx`;
 
@@ -156,7 +156,7 @@ export function XLSXImportSection({
               `Importiert: ${result.sessionCount} Trainings / ${result.exerciseCount} Übungen (Drive API)`,
               {
                 description: fileName,
-              }
+              },
             );
           } else {
             toast.success("Erfolgreich importiert (Drive API)", {
@@ -202,7 +202,7 @@ export function XLSXImportSection({
           `Importiert: ${result.sessionCount} Trainings / ${result.exerciseCount} Übungen`,
           {
             description: fileName,
-          }
+          },
         );
       } else {
         toast.success("Erfolgreich importiert", {
