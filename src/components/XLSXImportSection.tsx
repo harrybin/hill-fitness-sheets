@@ -40,7 +40,7 @@ export function XLSXImportSection({
   initialDriveUrl = "",
 }: XLSXImportSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [driveUrl, setDriveUrl] = useState(initialDriveUrl);
+  const [driveUrl, setDriveUrl] = useState(initialDriveUrl || "");
   const [isDownloading, setIsDownloading] = useState(false);
   const [googleToken, setGoogleToken] = useState<GoogleAuthToken | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);

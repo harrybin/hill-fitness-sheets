@@ -230,10 +230,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 onImport={handleImport}
                 showLocalUpload={true}
                 initialDriveUrl={
-                  settings.googleSheetImportStatus?.authenticated &&
-                  settings.googleSheetImportStatus?.success
-                    ? settings.googleSheetImportStatus?.url || ""
-                    : ""
+                  settings.googleSheetImportStatus?.url ||
+                  (settings as Record<string, unknown>).googleSheetUrl?.toString?.() ||
+                  ""
                 }
               />
 
@@ -267,8 +266,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                       <DownloadSimple size={14} />
                       Export
                     </Button>
-                    {settings.googleSheetImportStatus?.success &&
-                      settings.googleSheetImportStatus?.authenticated &&
+                    {settings.googleSheetImportStatus?.authenticated &&
                       settings.googleSheetImportStatus?.url && (
                         <Button
                           onClick={uploadToGoogleSheet}
