@@ -30,7 +30,13 @@ export interface AppSettings {
   trainingGoal?: string;
   legalNotice?: string;
   notes?: string;
-  googleSheetUrl?: string;
+  googleSheetImportStatus?: {
+    url?: string;
+    authenticated?: boolean;
+    source?: "drive-api" | "public-download";
+    success?: boolean;
+    lastImportedAt?: number;
+  };
   importedFile?: {
     name: string;
     data: string;

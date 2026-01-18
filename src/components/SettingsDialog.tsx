@@ -34,21 +34,45 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     arrayBuffer: ArrayBuffer,
     fileName: string,
     googleSheetUrl?: string,
+    options?: {
+      authenticated?: boolean;
+      source?: "drive-api" | "public-download";
+    },
   ) => {
     const result = await loadFromXLSX(arrayBuffer);
 
     const fileData = arrayBufferToBase64(arrayBuffer);
 
-    setSettings((prev) => ({
-      ...prev,
-      googleSheetUrl: googleSheetUrl || prev.googleSheetUrl,
-      importedFile: {
-        name: fileName,
-        data: fileData,
-        lastModified: Date.now(),
-        size: arrayBuffer.byteLength,
-      },
-    }));
+    setSettings((prev) => {
+      const { googleSheetUrl: legacySheetUrl, ...rest } = prev as Record<
+        string,
+        unknown
+      >;
+
+      const resolvedSheetUrl =
+        googleSheetUrl ||
+        prev.googleSheetImportStatus?.url ||
+        (legacySheetUrl as string | undefined);
+
+      return {
+        ...(rest as typeof prev),
+        googleSheetImportStatus: resolvedSheetUrl
+          ? {
+              url: resolvedSheetUrl,
+              authenticated: options?.authenticated,
+              source: options?.source,
+              success: true,
+              lastImportedAt: Date.now(),
+            }
+          : prev.googleSheetImportStatus,
+        importedFile: {
+          name: fileName,
+          data: fileData,
+          lastModified: Date.now(),
+          size: arrayBuffer.byteLength,
+        },
+      };
+    });
 
     onOpenChange(false);
 
