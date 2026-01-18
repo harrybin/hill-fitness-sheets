@@ -267,7 +267,7 @@ export function XLSXImportSection({
         <div className="flex gap-2 justify-center">
           <Button
             onClick={handleGoogleSignOut}
-            variant="ghost"
+            variant="outline"
             size="sm"
             className="gap-2"
           >
@@ -338,6 +338,7 @@ export function XLSXImportSection({
         >
           <Download size={20} />
           {isDownloading ? "Importiere..." : "Import/Download"}
+          <GoogleLogo size={20} />
         </Button>
       </div>
       <div className="border-t mt-5 mb-5" /> {/* Separator/Divider */}

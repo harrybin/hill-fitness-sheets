@@ -11,7 +11,13 @@ import {
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { DownloadSimple, FileArrowUp, Trash } from "@phosphor-icons/react";
+import {
+  DownloadSimple,
+  FileArrowUp,
+  Trash,
+  ArrowUpRight,
+  GoogleLogo,
+} from "@phosphor-icons/react";
 import { toast } from "sonner";
 // import QRCodeSVG from "react-qr-code";
 import {
@@ -262,7 +268,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                       onClick={uploadToGoogleSheet}
                       variant="default"
                       size="sm"
-                      className="w-full gap-1.5 text-xs h-8"
+                      className="gap-2 w-full"
                       disabled={
                         !settings.googleSheetImportStatus?.authenticated ||
                         !settings.googleSheetImportStatus?.url
@@ -270,7 +276,29 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                     >
                       <FileArrowUp size={14} />
                       Sync zurück
+                      <GoogleLogo size={20} />
                     </Button>
+                    <Button
+                      onClick={() => {
+                        const url = settings.googleSheetImportStatus?.url;
+                        if (url) {
+                          window.open(url, "_blank");
+                        }
+                      }}
+                      variant="link"
+                      size="sm"
+                      className="gap-2 w-full "
+                      disabled={
+                        !settings.googleSheetImportStatus?.authenticated ||
+                        !settings.googleSheetImportStatus?.url
+                      }
+                    >
+                      <ArrowUpRight size={14} />
+                      Öffnen
+                      <GoogleLogo size={20} />
+                    </Button>
+
+                    <Separator className="my-6" />
                     <Button
                       onClick={exportStoredFile}
                       variant="outline"
@@ -279,7 +307,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                       data-testid="export-xlsx-button"
                     >
                       <DownloadSimple size={14} />
-                      Export
+                      XLSX Export Lokal
                     </Button>
                   </div>
                   <Separator className="my-6" />
@@ -288,9 +316,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                   </div>
                   <Button
                     onClick={() => setShowClearConfirm(true)}
-                    variant="outline"
+                    variant="destructive"
                     size="sm"
-                    className="w-full gap-1.5 text-xs h-8 text-destructive hover:text-destructive"
+                    className="w-full gap-1.5"
                     data-testid="clear-cache-button"
                   >
                     <Trash size={14} />

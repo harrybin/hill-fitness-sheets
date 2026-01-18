@@ -45,7 +45,7 @@ export function CompletedExerciseCard({
           {entry.sets.map((set, idx) => (
             <div key={idx} className="flex items-center gap-2">
               <Badge variant="secondary" className="font-mono">
-                Satz {set.setNumber}
+                # {set.setNumber}
               </Badge>
               <span className="font-mono font-bold text-base">{set.reps}</span>
             </div>
