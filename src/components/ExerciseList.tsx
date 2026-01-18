@@ -4,7 +4,7 @@ import { CompletedExerciseCard } from "./CompletedExerciseCard";
 import { IncompleteExerciseCard } from "./IncompleteExerciseCard";
 import { XLSXImportSection } from "./XLSXImportSection";
 import { useApp } from "@/contexts/AppContext";
-import { arrayBufferToBase64, toISODate } from "@/lib/utils";
+import { toISODate } from "@/lib/utils";
 
 interface ExerciseListProps {
   exercises: Exercise[];
@@ -23,22 +23,6 @@ export function ExerciseList({
 }: ExerciseListProps) {
   const { loadFromXLSX, setSettings } = useApp();
 
-  const handleImport = async (arrayBuffer: ArrayBuffer, fileName: string) => {
-    // Use same pattern as SettingsDialog: return result for toast
-    const result = await loadFromXLSX(arrayBuffer);
-    const fileData = arrayBufferToBase64(arrayBuffer);
-    setSettings((prev) => ({
-      ...prev,
-      importedFile: {
-        name: fileName,
-        data: fileData,
-        lastModified: Date.now(),
-        size: arrayBuffer.byteLength,
-      },
-    }));
-    return result;
-  };
-
   const todayDateString = new Date().toISOString().split("T")[0];
   const selectedDateClean = selectedDate ? toISODate(selectedDate) : undefined;
 
@@ -50,7 +34,7 @@ export function ExerciseList({
 
   const getExerciseStatus = (exerciseId: string) => {
     const entry = currentSession?.entries.find(
-      (e) => e.exerciseId === exerciseId
+      (e) => e.exerciseId === exerciseId,
     );
 
     // Show entry if it exists AND (has sets OR is marked as skipped)
@@ -78,7 +62,7 @@ export function ExerciseList({
     const today = new Date().toISOString().split("T")[0];
     const previousSessions = [...allSessions]
       .filter(
-        (s) => toISODate(s.date) !== today && s.entries && s.entries.length > 0
+        (s) => toISODate(s.date) !== today && s.entries && s.entries.length > 0,
       )
       .sort((a, b) => toISODate(b.date).localeCompare(toISODate(a.date)));
 
@@ -101,7 +85,7 @@ export function ExerciseList({
       ex.name &&
       ex.name.trim() !== "" &&
       ex.name !== "undefined" &&
-      ex.name.toLowerCase() !== "undefined"
+      ex.name.toLowerCase() !== "undefined",
   );
 
   if (validExercises.length === 0) {
@@ -114,10 +98,7 @@ export function ExerciseList({
           (Dies kann jeder Zeit über die Einstellungen wiederholt werden.)
         </p>
         <div className="border-t mt-5 mb-5" /> {/* Separator/Divider */}
-        <XLSXImportSection
-          onImport={handleImport}
-          className="w-full max-w-md"
-        />
+        <XLSXImportSection className="w-full max-w-md" />
       </div>
     );
   }

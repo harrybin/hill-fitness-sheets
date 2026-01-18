@@ -8,10 +8,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { toast } from "sonner";
+import { useApp } from "@/contexts/AppContext";
+import { arrayBufferToBase64 } from "@/lib/utils";
 import {
   initGoogleAuth,
   requestGoogleAuth,
   downloadFileFromDrive,
+  fetchExercisesFromSheetsAPI,
   loadToken,
   saveToken,
   clearToken,
@@ -19,22 +22,17 @@ import {
 } from "@/lib/googleAuth";
 
 interface XLSXImportSectionProps {
-  onImport: (
-    arrayBuffer: ArrayBuffer,
-    fileName: string,
-    googleSheetUrl?: string,
-    options?: {
-      authenticated?: boolean;
-      source?: "drive-api" | "public-download";
-    },
-  ) => void | Promise<void | { exerciseCount: number; sessionCount: number }>;
+  onAfterImport?: (result: {
+    exerciseCount: number;
+    sessionCount: number;
+  }) => void;
   showLocalUpload?: boolean;
   className?: string;
   initialDriveUrl?: string;
 }
 
 export function XLSXImportSection({
-  onImport,
+  onAfterImport,
   showLocalUpload = true,
   className = "",
   initialDriveUrl = "",
@@ -44,6 +42,60 @@ export function XLSXImportSection({
   const [isDownloading, setIsDownloading] = useState(false);
   const [googleToken, setGoogleToken] = useState<GoogleAuthToken | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const { loadFromXLSX, setSettings } = useApp();
+
+  // Centralized import + persistence logic
+  const doImport = async (
+    arrayBuffer: ArrayBuffer,
+    fileName: string,
+    googleSheetUrl?: string,
+    options?: {
+      authenticated?: boolean;
+      source?: "drive-api" | "sheets-api" | "public-download";
+    },
+  ) => {
+    const result = await loadFromXLSX(arrayBuffer);
+    const fileData = arrayBufferToBase64(arrayBuffer);
+
+    setSettings((prev) => {
+      const { googleSheetUrl: legacySheetUrl, ...rest } = prev as Record<
+        string,
+        unknown
+      >;
+      const resolvedSheetUrl =
+        googleSheetUrl ||
+        (prev as any)?.googleSheetImportStatus?.url ||
+        (legacySheetUrl as string | undefined);
+
+      return {
+        ...(rest as typeof prev),
+        googleSheetImportStatus:
+          googleSheetUrl || resolvedSheetUrl
+            ? {
+                url: googleSheetUrl || resolvedSheetUrl,
+                authenticated:
+                  options?.authenticated ??
+                  (prev as any)?.googleSheetImportStatus?.authenticated ??
+                  false,
+                source:
+                  options?.source ??
+                  (prev as any)?.googleSheetImportStatus?.source,
+                success: true,
+                lastImportedAt: Date.now(),
+              }
+            : (prev as any)?.googleSheetImportStatus,
+        importedFile: {
+          name: fileName,
+          data: fileData,
+          lastModified: Date.now(),
+          size: arrayBuffer.byteLength,
+        },
+      } as any;
+    });
+
+    if (onAfterImport) onAfterImport(result);
+    return result;
+  };
   useEffect(() => {
     // Load saved token
     const savedToken = loadToken();
@@ -96,7 +148,7 @@ export function XLSXImportSection({
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const result = await onImport(arrayBuffer, file.name);
+      const result = await doImport(arrayBuffer, file.name);
 
       if (
         result &&
@@ -148,29 +200,76 @@ export function XLSXImportSection({
     try {
       setIsDownloading(true);
 
-      // Try Google Drive API if authenticated
-      if (googleToken) {
+      // Ensure authentication before attempting import
+      let token = googleToken;
+      if (!token) {
         try {
-          const arrayBuffer = await downloadFileFromDrive(
-            fileId,
-            googleToken.access_token,
-          );
+          setIsAuthenticating(true);
+          token = await requestGoogleAuth();
+          setGoogleToken(token);
+          saveToken(token);
+          toast.success("Mit Google angemeldet", {
+            description: "Import wird gestartet...",
+          });
+        } catch (authError) {
+          toast.error("Anmeldung erforderlich", {
+            description:
+              authError instanceof Error
+                ? authError.message
+                : "Google Authentifizierung erforderlich für privaten Import",
+          });
+          setIsAuthenticating(false);
+          setIsDownloading(false);
+          return;
+        } finally {
+          setIsAuthenticating(false);
+        }
+      }
+
+      // Try Google Drive API if authenticated
+      if (token) {
+        try {
+          let arrayBuffer: ArrayBuffer;
+          let source: "drive-api" | "sheets-api" | "public-download" =
+            "drive-api";
+
+          // First, try Sheets API for native Google Sheets files (more direct)
+          try {
+            arrayBuffer = await fetchExercisesFromSheetsAPI(
+              fileId,
+              token.access_token,
+            );
+            source = "sheets-api";
+            console.log("Successfully imported using Sheets API");
+          } catch (sheetsError) {
+            // Fallback to Drive API if Sheets API fails
+            console.error("Sheets API failed, trying Drive API:", sheetsError);
+            arrayBuffer = await downloadFileFromDrive(
+              fileId,
+              token.access_token,
+            );
+          }
+
           const fileName = `sheet_${new Date().getTime()}.xlsx`;
 
-          const result = await onImport(arrayBuffer, fileName, driveUrl, {
+          const result = await doImport(arrayBuffer, fileName, driveUrl, {
             authenticated: true,
-            source: "drive-api",
+            source,
           });
 
           if (result && "exerciseCount" in result && "sessionCount" in result) {
+            const apiLabel =
+              source === "sheets-api" ? "(Sheets API)" : "(Drive API)";
             toast.success(
-              `Importiert: ${result.sessionCount} Trainings / ${result.exerciseCount} Übungen (Drive API)`,
+              `Importiert: ${result.sessionCount} Trainings / ${result.exerciseCount} Übungen ${apiLabel}`,
               {
                 description: fileName,
               },
             );
           } else {
-            toast.success("Erfolgreich importiert (Drive API)", {
+            const apiLabel =
+              source === "sheets-api" ? "(Sheets API)" : "(Drive API)";
+            toast.success(`Erfolgreich importiert ${apiLabel}`, {
               description: fileName,
             });
           }
@@ -178,7 +277,7 @@ export function XLSXImportSection({
           setDriveUrl("");
           return;
         } catch (driveError) {
-          console.error("Drive API failed, trying fallback:", driveError);
+          console.error("Google APIs failed, trying fallback:", driveError);
           // Keep the link visible after authenticated imports for quick re-sync
           if (
             driveError instanceof Error &&
@@ -206,7 +305,7 @@ export function XLSXImportSection({
       const arrayBuffer = await response.arrayBuffer();
       const fileName = `sheet_${new Date().getTime()}.xlsx`;
 
-      const result = await onImport(arrayBuffer, fileName, driveUrl, {
+      const result = await doImport(arrayBuffer, fileName, driveUrl, {
         authenticated: false,
         source: "public-download",
       });
@@ -225,7 +324,7 @@ export function XLSXImportSection({
       }
 
       setDriveUrl("");
-    } catch (error) {
+    } catch (_error) {
       // Fallback to browser download if all else fails
       const downloadUrl = `https://docs.google.com/spreadsheets/d/${fileId}/export?format=xlsx`;
       // Keep link so user sees which sheet was used
@@ -253,36 +352,10 @@ export function XLSXImportSection({
 
   return (
     <div className={`space-y-3 ${className}`}>
-      {!googleToken ? (
-        <Button
-          onClick={handleGoogleAuth}
-          disabled={isAuthenticating}
-          variant="outline"
-          className="gap-2 w-full"
-        >
-          <GoogleLogo size={20} />
-          {isAuthenticating ? "Anmeldung..." : "Mit Google anmelden (optional)"}
-        </Button>
-      ) : (
-        <div className="flex gap-2 justify-center">
-          <Button
-            onClick={handleGoogleSignOut}
-            variant="outline"
-            size="sm"
-            className="gap-2"
-          >
-            <GoogleLogo size={16} />
-            Abmelden
-          </Button>
-          <span className="text-xs text-muted-foreground flex items-center">
-            ✓ Angemeldet
-          </span>
-        </div>
-      )}
       <p className="text-xs text-muted-foreground text-center">
-        Wenn Sie sich nicht anmelden, kann der Link dennoch eingefügt werden,
-        dann wird der Download über den Browser statt in der App erfolgen und
-        die Datei kann danach manuell als lokale XLSX Datei importiert werden.
+        Wenn die Anmeldung bei Google für die App nicht möglich ist, wird der
+        Download über den Browser statt in der App erfolgen und die Datei kann
+        danach manuell als lokale XLSX Datei importiert werden.
       </p>
       <div className="flex gap-2">
         <Input

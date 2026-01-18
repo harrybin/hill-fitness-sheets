@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 export function useLocalStorage<T>(
   key: string,
-  initialValue: T
+  initialValue: T,
 ): [T, (value: T | ((prev: T) => T)) => void] {
   // Get from localStorage or use initial value
   const [storedValue, setStoredValue] = useState<T>(() => {
@@ -18,10 +18,14 @@ export function useLocalStorage<T>(
   // Update localStorage when value changes
   const setValue = (value: T | ((prev: T) => T)) => {
     try {
-      const valueToStore =
-        value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      window.localStorage.setItem(key, JSON.stringify(valueToStore));
+      // Use React's functional updater to ensure we always base updates
+      // on the latest state, even when multiple set calls happen quickly.
+      setStoredValue((prev) => {
+        const valueToStore =
+          value instanceof Function ? (value as (p: T) => T)(prev) : value;
+        window.localStorage.setItem(key, JSON.stringify(valueToStore));
+        return valueToStore;
+      });
     } catch (error) {
       console.error(`Error setting localStorage key "${key}":`, error);
     }

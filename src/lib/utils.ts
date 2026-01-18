@@ -5,46 +5,7 @@ import { Exercise, Session } from "./types";
 // Re-exports from specialized XLSX modules
 export { parseXLSX } from "./xlsxImport";
 export { updateXLSXWithSessions, exportXLSXWithFormatting } from "./xlsxExport";
-
-// Upload an XLSX buffer to an existing Google Drive file (e.g., Sheets) via multipart PATCH
-export async function uploadXLSXToGoogleDrive(params: {
-  fileId: string;
-  arrayBuffer: ArrayBuffer;
-  accessToken: string;
-}) {
-  const boundary = `-------314159265358979323846${Date.now()}`;
-  const delimiter = `\r\n--${boundary}\r\n`;
-  const close = `\r\n--${boundary}--`;
-  const metadata = {
-    mimeType: "application/vnd.google-apps.spreadsheet",
-  };
-
-  const multipartBody = new Blob(
-    [
-      `${delimiter}Content-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}`,
-      `${delimiter}Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet\r\n\r\n`,
-      params.arrayBuffer,
-      close,
-    ],
-    { type: `multipart/related; boundary=${boundary}` },
-  );
-
-  const response = await fetch(
-    `https://www.googleapis.com/upload/drive/v3/files/${params.fileId}?uploadType=multipart&supportsAllDrives=true`,
-    {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${params.accessToken}`,
-      },
-      body: multipartBody,
-    },
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || `Upload fehlgeschlagen (${response.status})`);
-  }
-}
+export { exportToGoogleSheetDirectly } from "./googleSheetsExport";
 
 // Utility function: combine class names with Tailwind merge
 export function cn(...inputs: ClassValue[]) {

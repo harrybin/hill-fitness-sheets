@@ -21,15 +21,15 @@ import {
 import { toast } from "sonner";
 // import QRCodeSVG from "react-qr-code";
 import {
-  arrayBufferToBase64,
   exportXLSXWithFormatting,
-  uploadXLSXToGoogleDrive,
+  exportToGoogleSheetDirectly,
 } from "@/lib/utils";
 import {
   initGoogleAuth,
   loadToken,
   requestGoogleAuth,
   saveToken,
+  clearToken,
   type GoogleAuthToken,
 } from "@/lib/googleAuth";
 
@@ -38,63 +38,13 @@ interface SettingsDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-interface ImportResult {
-  exerciseCount: number;
-  sessionCount: number;
-}
+// Import result is handled within XLSXImportSection; optional after-import callback closes dialog
 
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { settings, setSettings, loadFromXLSX, sessions, exercises } = useApp();
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
-  const handleImport = async (
-    arrayBuffer: ArrayBuffer,
-    fileName: string,
-    googleSheetUrl?: string,
-    options?: {
-      authenticated?: boolean;
-      source?: "drive-api" | "public-download";
-    },
-  ) => {
-    const result = await loadFromXLSX(arrayBuffer);
-
-    const fileData = arrayBufferToBase64(arrayBuffer);
-
-    setSettings((prev) => {
-      const { googleSheetUrl: legacySheetUrl, ...rest } = prev as Record<
-        string,
-        unknown
-      >;
-
-      const resolvedSheetUrl =
-        googleSheetUrl ||
-        prev.googleSheetImportStatus?.url ||
-        (legacySheetUrl as string | undefined);
-
-      return {
-        ...(rest as typeof prev),
-        googleSheetImportStatus: resolvedSheetUrl
-          ? {
-              url: resolvedSheetUrl,
-              authenticated: options?.authenticated,
-              source: options?.source,
-              success: true,
-              lastImportedAt: Date.now(),
-            }
-          : prev.googleSheetImportStatus,
-        importedFile: {
-          name: fileName,
-          data: fileData,
-          lastModified: Date.now(),
-          size: arrayBuffer.byteLength,
-        },
-      };
-    });
-
-    onOpenChange(false);
-
-    return result;
-  };
+  // XLSXImportSection now handles import+persistence; we only close the dialog after import
 
   const exportStoredFile = async () => {
     if (!settings.importedFile) {
@@ -148,17 +98,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     }
 
     const match = status.url.match(/\/d\/([a-zA-Z0-9-_]+)/);
-    const fileId = match?.[1];
-    if (!fileId) {
+    const spreadsheetId = match?.[1];
+    if (!spreadsheetId) {
       toast.error("Ungültiger Link", {
         description: "Konnte die Sheet-ID nicht erkennen",
-      });
-      return;
-    }
-
-    if (!settings.importedFile) {
-      toast.error("Keine Basisdatei", {
-        description: "Bitte zuerst eine XLSX-Datei importieren",
       });
       return;
     }
@@ -176,29 +119,64 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     try {
       const token = await ensureToken();
 
-      // Reuse existing export logic to build the XLSX content
-      const arrayBuffer = await exportXLSXWithFormatting(
-        settings.importedFile.data,
+      // Use Google Sheets API to directly write data to the spreadsheet
+      await exportToGoogleSheetDirectly({
+        spreadsheetId,
         sessions,
         exercises,
-      );
-
-      await uploadXLSXToGoogleDrive({
-        fileId,
-        arrayBuffer,
         accessToken: token.access_token,
       });
 
       toast.success("Sync abgeschlossen", {
-        description: "Google Sheet wurde aktualisiert",
+        description: "Daten wurden direkt in Google Sheets geschrieben",
       });
     } catch (error) {
-      toast.error("Sync fehlgeschlagen", {
-        description:
-          error instanceof Error
-            ? error.message
-            : "Konnte nicht zu Google Sheets schreiben",
-      });
+      const errorMsg =
+        error instanceof Error
+          ? error.message
+          : "Konnte nicht zu Google Sheets schreiben";
+
+      // If error mentions missing authorization, offer to re-authenticate
+      if (errorMsg.includes("Berechtigung") || errorMsg.includes("403")) {
+        toast.error("Re-Authentifizierung erforderlich", {
+          description: errorMsg,
+          action: {
+            label: "Neu anmelden",
+            onClick: async () => {
+              try {
+                clearToken();
+                await initGoogleAuth();
+                const newToken = await requestGoogleAuth();
+                saveToken(newToken);
+
+                // Retry the upload
+                await exportToGoogleSheetDirectly({
+                  spreadsheetId,
+                  sessions,
+                  exercises,
+                  accessToken: newToken.access_token,
+                });
+
+                toast.success("Sync abgeschlossen", {
+                  description:
+                    "Daten wurden direkt in Google Sheets geschrieben",
+                });
+              } catch (retryError) {
+                toast.error("Sync fehlgeschlagen", {
+                  description:
+                    retryError instanceof Error
+                      ? retryError.message
+                      : "Konnte nicht zu Google Sheets schreiben",
+                });
+              }
+            },
+          },
+        });
+      } else {
+        toast.error("Sync fehlgeschlagen", {
+          description: errorMsg,
+        });
+      }
     }
   };
 
@@ -233,7 +211,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             <Label className="text-sm">Google Sheets Datei</Label>
             <div className="space-y-2">
               <XLSXImportSection
-                onImport={handleImport}
+                onAfterImport={() => onOpenChange(false)}
                 showLocalUpload={true}
                 initialDriveUrl={
                   settings.googleSheetImportStatus?.url ||
