@@ -42,9 +42,7 @@ export function XLSXImportSection({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [driveUrl, setDriveUrl] = useState(initialDriveUrl);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [googleToken, setGoogleToken] = useState<GoogleAuthToken | null>(
-    null,
-  );
+  const [googleToken, setGoogleToken] = useState<GoogleAuthToken | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   useEffect(() => {
     // Load saved token
@@ -181,7 +179,7 @@ export function XLSXImportSection({
           return;
         } catch (driveError) {
           console.error("Drive API failed, trying fallback:", driveError);
-            // Keep the link visible after authenticated imports for quick re-sync
+          // Keep the link visible after authenticated imports for quick re-sync
           if (
             driveError instanceof Error &&
             driveError.message.includes("401")
@@ -230,7 +228,7 @@ export function XLSXImportSection({
     } catch (error) {
       // Fallback to browser download if all else fails
       const downloadUrl = `https://docs.google.com/spreadsheets/d/${fileId}/export?format=xlsx`;
-        // Keep link so user sees which sheet was used
+      // Keep link so user sees which sheet was used
       const link = document.createElement("a");
       link.href = downloadUrl;
       link.download = `sheet_${new Date().getTime()}.xlsx`;
