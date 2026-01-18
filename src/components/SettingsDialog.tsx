@@ -257,7 +257,20 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                       </div>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      onClick={uploadToGoogleSheet}
+                      variant="default"
+                      size="sm"
+                      className="w-full gap-1.5 text-xs h-8"
+                      disabled={
+                        !settings.googleSheetImportStatus?.authenticated ||
+                        !settings.googleSheetImportStatus?.url
+                      }
+                    >
+                      <FileArrowUp size={14} />
+                      Sync zurück
+                    </Button>
                     <Button
                       onClick={exportStoredFile}
                       variant="outline"
@@ -268,18 +281,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                       <DownloadSimple size={14} />
                       Export
                     </Button>
-                    {settings.googleSheetImportStatus?.authenticated &&
-                      settings.googleSheetImportStatus?.url && (
-                        <Button
-                          onClick={uploadToGoogleSheet}
-                          variant="default"
-                          size="sm"
-                          className="w-full gap-1.5 text-xs h-8"
-                        >
-                          <FileArrowUp size={14} />
-                          Sync zurück
-                        </Button>
-                      )}
                   </div>
                   <Separator className="my-6" />
                   <div className="text-sm font-semibold text-foreground truncate">
