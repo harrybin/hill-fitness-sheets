@@ -11,10 +11,21 @@ import {
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { FileArrowDown, DownloadSimple, Trash } from "@phosphor-icons/react";
+import { DownloadSimple, FileArrowUp, Trash } from "@phosphor-icons/react";
 import { toast } from "sonner";
 // import QRCodeSVG from "react-qr-code";
-import { arrayBufferToBase64, exportXLSXWithFormatting } from "@/lib/utils";
+import {
+  arrayBufferToBase64,
+  exportXLSXWithFormatting,
+  uploadXLSXToGoogleDrive,
+} from "@/lib/utils";
+import {
+  initGoogleAuth,
+  loadToken,
+  requestGoogleAuth,
+  saveToken,
+  type GoogleAuthToken,
+} from "@/lib/googleAuth";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -121,6 +132,70 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     }
   };
 
+  const uploadToGoogleSheet = async () => {
+    const status = settings.googleSheetImportStatus;
+    if (!status?.url || !status.authenticated || !status.success) {
+      toast.error("Kein Google Sheet", {
+        description: "Nur möglich nach authentifiziertem Google-Import",
+      });
+      return;
+    }
+
+    const match = status.url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    const fileId = match?.[1];
+    if (!fileId) {
+      toast.error("Ungültiger Link", {
+        description: "Konnte die Sheet-ID nicht erkennen",
+      });
+      return;
+    }
+
+    if (!settings.importedFile) {
+      toast.error("Keine Basisdatei", {
+        description: "Bitte zuerst eine XLSX-Datei importieren",
+      });
+      return;
+    }
+
+    const ensureToken = async (): Promise<GoogleAuthToken> => {
+      let token = loadToken();
+      if (!token) {
+        await initGoogleAuth();
+        token = await requestGoogleAuth();
+        saveToken(token);
+      }
+      return token;
+    };
+
+    try {
+      const token = await ensureToken();
+
+      // Reuse existing export logic to build the XLSX content
+      const arrayBuffer = await exportXLSXWithFormatting(
+        settings.importedFile.data,
+        sessions,
+        exercises,
+      );
+
+      await uploadXLSXToGoogleDrive({
+        fileId,
+        arrayBuffer,
+        accessToken: token.access_token,
+      });
+
+      toast.success("Sync abgeschlossen", {
+        description: "Google Sheet wurde aktualisiert",
+      });
+    } catch (error) {
+      toast.error("Sync fehlgeschlagen", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "Konnte nicht zu Google Sheets schreiben",
+      });
+    }
+  };
+
   const handleClearApp = () => {
     try {
       localStorage.clear();
@@ -175,16 +250,31 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                       </div>
                     </div>
                   </div>
-                  <Button
-                    onClick={exportStoredFile}
-                    variant="outline"
-                    size="sm"
-                    className="w-full gap-1.5 text-xs h-8"
-                    data-testid="export-xlsx-button"
-                  >
-                    <DownloadSimple size={14} />
-                    Export
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={exportStoredFile}
+                      variant="outline"
+                      size="sm"
+                      className="w-full gap-1.5 text-xs h-8"
+                      data-testid="export-xlsx-button"
+                    >
+                      <DownloadSimple size={14} />
+                      Export
+                    </Button>
+                    {settings.googleSheetImportStatus?.success &&
+                      settings.googleSheetImportStatus?.authenticated &&
+                      settings.googleSheetImportStatus?.url && (
+                        <Button
+                          onClick={uploadToGoogleSheet}
+                          variant="default"
+                          size="sm"
+                          className="w-full gap-1.5 text-xs h-8"
+                        >
+                          <FileArrowUp size={14} />
+                          Sync zurück
+                        </Button>
+                      )}
+                  </div>
                   <Separator className="my-6" />
                   <div className="text-sm font-semibold text-foreground truncate">
                     App Daten

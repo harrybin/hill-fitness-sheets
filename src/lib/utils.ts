@@ -6,6 +6,46 @@ import { Exercise, Session } from "./types";
 export { parseXLSX } from "./xlsxImport";
 export { updateXLSXWithSessions, exportXLSXWithFormatting } from "./xlsxExport";
 
+// Upload an XLSX buffer to an existing Google Drive file (e.g., Sheets) via multipart PATCH
+export async function uploadXLSXToGoogleDrive(params: {
+  fileId: string;
+  arrayBuffer: ArrayBuffer;
+  accessToken: string;
+}) {
+  const boundary = `-------314159265358979323846${Date.now()}`;
+  const delimiter = `\r\n--${boundary}\r\n`;
+  const close = `\r\n--${boundary}--`;
+  const metadata = {
+    mimeType: "application/vnd.google-apps.spreadsheet",
+  };
+
+  const multipartBody = new Blob(
+    [
+      `${delimiter}Content-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}`,
+      `${delimiter}Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet\r\n\r\n`,
+      params.arrayBuffer,
+      close,
+    ],
+    { type: `multipart/related; boundary=${boundary}` },
+  );
+
+  const response = await fetch(
+    `https://www.googleapis.com/upload/drive/v3/files/${params.fileId}?uploadType=multipart&supportsAllDrives=true`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${params.accessToken}`,
+      },
+      body: multipartBody,
+    },
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || `Upload fehlgeschlagen (${response.status})`);
+  }
+}
+
 // Utility function: combine class names with Tailwind merge
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -101,7 +141,7 @@ export function arrayBufferToBase64(buffer: ArrayBuffer): string {
 export function getTopSkippedExercises(
   allSessions: Session[],
   exercises: Exercise[],
-  limit: number = 10
+  limit: number = 10,
 ): {
   name: string;
   count: number;
@@ -127,7 +167,7 @@ export function getTopSkippedExercises(
 
 // Get training frequency by month - returns Record<month, count>
 export function getMonthlyTrainingFrequency(
-  allSessions: Session[]
+  allSessions: Session[],
 ): Record<string, number> {
   const frequencyMap: Record<string, number> = {};
 
@@ -141,7 +181,7 @@ export function getMonthlyTrainingFrequency(
 
 // Get daily training frequency
 export function getDailyTrainingFrequency(
-  allSessions: Session[]
+  allSessions: Session[],
 ): Record<string, number> {
   const frequencyMap: Record<string, number> = {};
 
@@ -155,7 +195,7 @@ export function getDailyTrainingFrequency(
 // Get exercise volume history (sets × reps × weight)
 // Returns: Record<exerciseId, array of {date, volume}>
 export function getExerciseVolumeHistory(
-  allSessions: Session[]
+  allSessions: Session[],
 ): Record<string, { date: string; volume: number }[]> {
   const result: Record<string, { date: string; volume: number }[]> = {};
 
@@ -165,7 +205,7 @@ export function getExerciseVolumeHistory(
 
       const volume = entry.sets.reduce(
         (sum, set) => sum + (set.weight || 0) * (set.reps || 0),
-        0
+        0,
       );
 
       if (!result[entry.exerciseId]) {
@@ -181,7 +221,7 @@ export function getExerciseVolumeHistory(
 // Get personal records by exercise
 // Returns: Record<exerciseId, {date, weight, reps}>
 export function getExercisePRs(
-  allSessions: Session[]
+  allSessions: Session[],
 ): Record<string, { date: string; weight: number; reps: number }> {
   const prs: Record<string, { date: string; weight: number; reps: number }> =
     {};
@@ -213,7 +253,7 @@ export function getExercisePRs(
 // Get exercise progression data
 // Returns: Record<exerciseId, array of {date, maxWeight, avgWeight, avgReps}>
 export function getExerciseProgression(
-  allSessions: Session[]
+  allSessions: Session[],
 ): Record<
   string,
   { date: string; maxWeight: number; avgWeight: number; avgReps: number }[]
