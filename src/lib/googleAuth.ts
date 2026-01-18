@@ -1,7 +1,7 @@
 // Google OAuth and Drive API integration
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-const SCOPES = "https://www.googleapis.com/auth/drive.file";
+const SCOPES = "https://www.googleapis.com/auth/drive.readonly";
 
 export interface GoogleAuthToken {
   access_token: string;
@@ -86,8 +86,14 @@ export async function downloadFileFromDrive(
     },
   });
 
-  if (!metadataResponse.ok) {
-    throw new Error(
+  if (!metadataResponse.ok) {    if (metadataResponse.status === 404) {
+      throw new Error(
+        `Datei nicht gefunden (404). Stellen Sie sicher, dass:\n` +
+        `1. Die Datei mit Ihrem Google-Konto geteilt ist\n` +
+        `2. Sie sich mit dem richtigen Konto angemeldet haben\n` +
+        `3. Die Datei-ID korrekt ist`
+      );
+    }    throw new Error(
       `Drive API Fehler: ${metadataResponse.status} ${metadataResponse.statusText}`
     );
   }
