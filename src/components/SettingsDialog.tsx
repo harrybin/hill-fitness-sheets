@@ -231,7 +231,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 showLocalUpload={true}
                 initialDriveUrl={
                   settings.googleSheetImportStatus?.url ||
-                  (settings as Record<string, unknown>).googleSheetUrl?.toString?.() ||
+                  (
+                    settings as Record<string, unknown>
+                  ).googleSheetUrl?.toString?.() ||
                   ""
                 }
               />
