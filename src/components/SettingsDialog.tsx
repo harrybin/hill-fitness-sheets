@@ -120,16 +120,40 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       const token = await ensureToken();
 
       // Use Google Sheets API to directly write data to the spreadsheet
-      await exportToGoogleSheetDirectly({
+      const syncResults = await exportToGoogleSheetDirectly({
         spreadsheetId,
         sessions,
         exercises,
         accessToken: token.access_token,
       });
 
-      toast.success("Sync abgeschlossen", {
-        description: "Daten wurden direkt in Google Sheets geschrieben",
-      });
+      // Build summary message
+      const successCount = syncResults.successfulSessions.length;
+      const failCount = syncResults.failedSessions.length;
+      const partialCount = syncResults.partialExercises.length;
+
+      let message = `${successCount} Sessions synchronisiert`;
+      if (failCount > 0 || partialCount > 0) {
+        if (failCount > 0) message += `, ${failCount} Sessions fehlgeschlagen`;
+        if (partialCount > 0)
+          message += `, ${partialCount} Übungen übersprungen`;
+
+        toast.warning("Sync teilweise erfolgreich", {
+          description: message,
+        });
+
+        // Log details about what failed
+        if (failCount > 0) {
+          console.warn("Fehlgeschlagene Sessions:", syncResults.failedSessions);
+        }
+        if (partialCount > 0) {
+          console.warn("Übersprungene Übungen:", syncResults.partialExercises);
+        }
+      } else {
+        toast.success("Sync erfolgreich abgeschlossen", {
+          description: message,
+        });
+      }
     } catch (error) {
       const errorMsg =
         error instanceof Error

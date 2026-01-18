@@ -10,9 +10,22 @@ export async function exportToGoogleSheetDirectly(params: {
   sessions: Session[];
   exercises: Exercise[];
   accessToken: string;
-}): Promise<void> {
+}): Promise<{
+  successfulSessions: string[];
+  failedSessions: { date: string; error: string }[];
+  partialExercises: {
+    sessionDate: string;
+    exerciseName: string;
+    error: string;
+  }[];
+}> {
   try {
     const { spreadsheetId, sessions, exercises, accessToken } = params;
+
+    console.log("🔄 Starting Google Sheets export");
+    console.log(`  Spreadsheet ID: ${spreadsheetId}`);
+    console.log(`  Sessions: ${sessions.length}`);
+    console.log(`  Exercises: ${exercises.length}`);
 
     // Step 1: Get spreadsheet metadata to find sheet IDs and Einheit columns
     const metadataResponse = await fetch(
@@ -58,7 +71,7 @@ export async function exportToGoogleSheetDirectly(params: {
 
     // Step 2: Get the data from the sheet to find Einheit columns and exercise rows
     const dataResponse = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${sheetTitle}!A1:Z100`,
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/'${encodeURIComponent(sheetTitle)}'!A1:Z100`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -133,10 +146,17 @@ export async function exportToGoogleSheetDirectly(params: {
       throw new Error("Übungs-Startreihe nicht gefunden");
     }
 
-    // Step 4: Prepare update requests
-    const updateRequests: any[] = [];
+    // Track which exercises and sessions succeeded
+    const syncResults = {
+      successfulSessions: [] as string[],
+      failedSessions: [] as { date: string; error: string }[],
+      partialExercises: [] as {
+        sessionDate: string;
+        exerciseName: string;
+        error: string;
+      }[],
+    };
 
-    // Sort sessions by date (most recent first), take as many as we have columns
     const maxSessions = Object.keys(einheitCols).length;
     const recentSessions = sessions
       .sort((a, b) => b.date.localeCompare(a.date))
@@ -147,102 +167,169 @@ export async function exportToGoogleSheetDirectly(params: {
       .map((k) => parseInt(k))
       .sort((a, b) => a - b);
 
-    // Process each session
+    const exercisesToExport = exercises;
+
+    // Process each session separately for robustness
     for (let sIdx = 0; sIdx < recentSessions.length; sIdx++) {
-      const session = recentSessions[sIdx];
-      const whColNumber = sortedCols[sIdx];
-      if (!whColNumber) continue;
+      try {
+        const session = recentSessions[sIdx];
+        const whColNumber = sortedCols[sIdx];
+        if (!whColNumber) continue;
 
-      const colInfo = einheitCols[whColNumber];
-      if (!colInfo) continue;
+        const colInfo = einheitCols[whColNumber];
+        if (!colInfo) continue;
 
-      const whWriteCol = colInfo.whCol;
-      const kgWriteCol = colInfo.kgCol;
+        const whWriteCol = colInfo.whCol;
+        const kgWriteCol = colInfo.kgCol;
 
-      // Write date to Datum row
-      if (datumRow > 0) {
-        const cellRange = `${numberToLetter(whWriteCol)}${datumRow}`;
-        // Format date as DD.MM.YYYY for German format
-        const [year, month, day] = session.date.split("-");
-        const formattedDate = `${day}.${month}.${year}`;
-        updateRequests.push({
-          range: `${sheetTitle}!${cellRange}`,
-          values: [[formattedDate]],
+        // Write date once at the beginning
+        if (datumRow > 0) {
+          const cellRange = `${numberToLetter(whWriteCol)}${datumRow}`;
+          const [year, month, day] = session.date.split("-");
+          const formattedDate = `${day}.${month}.${year}`;
+
+          try {
+            const dateBody = {
+              data: [
+                {
+                  range: `'${sheetTitle}'!${cellRange}`,
+                  values: [[formattedDate]],
+                },
+              ],
+              valueInputOption: "RAW",
+            };
+
+            await fetch(
+              `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchUpdate`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(dateBody),
+              },
+            );
+          } catch (e) {
+            console.debug("Date write error:", e);
+          }
+        }
+
+        // Send requests by exercise group (each exercise waits for its batch)
+        for (const exercise of exercisesToExport) {
+          const exerciseIdx = exercisesToExport.indexOf(exercise);
+          try {
+            const entry = session.entries.find(
+              (e) => e.exerciseId === exercise.id,
+            );
+            const sortedSets = entry
+              ? [...entry.sets].sort((a, b) => a.setNumber - b.setNumber)
+              : [];
+
+            // Build this exercise's requests
+            const exerciseRequests: any[] = [];
+
+            const exerciseRowIdx1 = startRow + exerciseIdx * 2;
+            const exerciseRowIdx2 = startRow + exerciseIdx * 2 + 1;
+
+            // Set 1 (Satz 1)
+            if (sortedSets.length > 0) {
+              const set1 = sortedSets[0];
+
+              const repsCellRange = `${numberToLetter(whWriteCol)}${exerciseRowIdx1}`;
+              const weightCellRange = `${numberToLetter(kgWriteCol)}${exerciseRowIdx1}`;
+
+              exerciseRequests.push({
+                range: `'${sheetTitle}'!${repsCellRange}`,
+                values: [[Number(set1.reps)]],
+              });
+
+              exerciseRequests.push({
+                range: `'${sheetTitle}'!${weightCellRange}`,
+                values: [[Number(set1.weight)]],
+              });
+            }
+
+            // Set 2 (Satz 2)
+            if (sortedSets.length > 1) {
+              const set2 = sortedSets[1];
+              const repsCellRange = `${numberToLetter(whWriteCol)}${exerciseRowIdx2}`;
+
+              exerciseRequests.push({
+                range: `'${sheetTitle}'!${repsCellRange}`,
+                values: [[Number(set2.reps)]],
+              });
+            }
+
+            // Send and wait for this exercise's batch
+            if (exerciseRequests.length > 0) {
+              const exerciseResponse = await fetch(
+                `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchUpdate`,
+                {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    data: exerciseRequests,
+                    valueInputOption: "RAW",
+                  }),
+                },
+              );
+
+              if (!exerciseResponse.ok) {
+                const errorText = await exerciseResponse.text();
+                if (
+                  !errorText.includes("geschützte Zelle") &&
+                  !errorText.includes("protected")
+                ) {
+                  syncResults.partialExercises.push({
+                    sessionDate: session.date,
+                    exerciseName: exercise.name,
+                    error: `API error: ${errorText.substring(0, 100)}`,
+                  });
+                }
+              }
+            }
+          } catch (exerciseError) {
+            const errorMsg =
+              exerciseError instanceof Error
+                ? exerciseError.message
+                : "Unknown error";
+            syncResults.partialExercises.push({
+              sessionDate: session.date,
+              exerciseName: exercise.name,
+              error: errorMsg,
+            });
+          }
+        }
+
+        // Mark session as successful
+        syncResults.successfulSessions.push(session.date);
+      } catch (sessionError) {
+        const errorMsg =
+          sessionError instanceof Error
+            ? sessionError.message
+            : "Unbekannter Fehler";
+        syncResults.failedSessions.push({
+          date: recentSessions[sIdx]?.date || "unknown",
+          error: errorMsg,
         });
       }
-
-      // Write exercise data
-      exercises.forEach((exercise, exerciseIdx) => {
-        const entry = session.entries.find((e) => e.exerciseId === exercise.id);
-        const sortedSets = entry
-          ? [...entry.sets].sort((a, b) => a.setNumber - b.setNumber)
-          : [];
-
-        const exerciseRowIdx1 = startRow + exerciseIdx * 2;
-        const exerciseRowIdx2 = startRow + exerciseIdx * 2 + 1;
-
-        // Set 1 (Satz 1)
-        if (sortedSets.length > 0) {
-          const set1 = sortedSets[0];
-
-          const repsCellRange = `${numberToLetter(whWriteCol)}${exerciseRowIdx1}`;
-          const weightCellRange = `${numberToLetter(kgWriteCol)}${exerciseRowIdx1}`;
-
-          updateRequests.push({
-            range: `${sheetTitle}!${repsCellRange}`,
-            values: [[Number(set1.reps)]],
-          });
-
-          updateRequests.push({
-            range: `${sheetTitle}!${weightCellRange}`,
-            values: [[Number(set1.weight)]],
-          });
-        }
-
-        // Set 2 (Satz 2)
-        if (sortedSets.length > 1) {
-          const set2 = sortedSets[1];
-          const repsCellRange = `${numberToLetter(whWriteCol)}${exerciseRowIdx2}`;
-
-          updateRequests.push({
-            range: `${sheetTitle}!${repsCellRange}`,
-            values: [[Number(set2.reps)]],
-          });
-
-          // Do NOT write a separate KG value for Satz 2 - use Satz 1 weight
-        }
-      });
     }
 
-    // Step 5: Execute batchUpdate
-    if (updateRequests.length > 0) {
-      const updateResponse = await fetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchUpdate`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            data: updateRequests,
-            valueInputOption: "RAW",
-          }),
-        },
-      );
-
-      if (!updateResponse.ok) {
-        const errorText = await updateResponse.text();
-        throw new Error(
-          `Google Sheets API Fehler: ${updateResponse.status} - ${errorText}`,
-        );
-      }
-    }
+    // Return results summary
+    console.log("✅ Export complete:", {
+      successfulSessions: syncResults.successfulSessions.length,
+      failedSessions: syncResults.failedSessions.length,
+      partialExercises: syncResults.partialExercises.length,
+    });
+    return syncResults;
   } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error("Unbekannter Fehler beim Export zu Google Sheets");
+    const errorMsg =
+      error instanceof Error ? error.message : "Unbekannter Fehler";
+    throw new Error(`Google Sheets Export Fehler: ${errorMsg}`);
   }
 }
 
