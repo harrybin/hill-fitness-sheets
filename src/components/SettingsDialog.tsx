@@ -229,6 +229,12 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               <XLSXImportSection
                 onImport={handleImport}
                 showLocalUpload={true}
+                initialDriveUrl={
+                  settings.googleSheetImportStatus?.authenticated &&
+                  settings.googleSheetImportStatus?.success
+                    ? settings.googleSheetImportStatus?.url || ""
+                    : ""
+                }
               />
 
               {settings.importedFile && (

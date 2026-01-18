@@ -8,7 +8,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { toast } from "sonner";
-import { arrayBufferToBase64 } from "@/lib/utils";
 import {
   initGoogleAuth,
   requestGoogleAuth,
@@ -31,19 +30,22 @@ interface XLSXImportSectionProps {
   ) => void | Promise<void | { exerciseCount: number; sessionCount: number }>;
   showLocalUpload?: boolean;
   className?: string;
+  initialDriveUrl?: string;
 }
 
 export function XLSXImportSection({
   onImport,
   showLocalUpload = true,
   className = "",
+  initialDriveUrl = "",
 }: XLSXImportSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [driveUrl, setDriveUrl] = useState("");
+  const [driveUrl, setDriveUrl] = useState(initialDriveUrl);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [googleToken, setGoogleToken] = useState<GoogleAuthToken | null>(null);
+  const [googleToken, setGoogleToken] = useState<GoogleAuthToken | null>(
+    null,
+  );
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-
   useEffect(() => {
     // Load saved token
     const savedToken = loadToken();
@@ -56,6 +58,10 @@ export function XLSXImportSection({
       console.error("Google Auth initialization failed:", error);
     });
   }, []);
+
+  useEffect(() => {
+    setDriveUrl(initialDriveUrl || "");
+  }, [initialDriveUrl]);
 
   const handleGoogleAuth = async () => {
     try {
@@ -175,7 +181,7 @@ export function XLSXImportSection({
           return;
         } catch (driveError) {
           console.error("Drive API failed, trying fallback:", driveError);
-          // Token might be expired
+            // Keep the link visible after authenticated imports for quick re-sync
           if (
             driveError instanceof Error &&
             driveError.message.includes("401")
@@ -224,7 +230,7 @@ export function XLSXImportSection({
     } catch (error) {
       // Fallback to browser download if all else fails
       const downloadUrl = `https://docs.google.com/spreadsheets/d/${fileId}/export?format=xlsx`;
-
+        // Keep link so user sees which sheet was used
       const link = document.createElement("a");
       link.href = downloadUrl;
       link.download = `sheet_${new Date().getTime()}.xlsx`;
