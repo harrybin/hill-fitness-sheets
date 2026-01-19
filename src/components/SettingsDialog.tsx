@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { XLSXImportSection } from "./XLSXImportSection";
+import { SyncProgressDialog } from "./SyncProgressDialog";
 import {
   Dialog,
   DialogContent,
@@ -43,8 +44,12 @@ interface SettingsDialogProps {
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { settings, setSettings, loadFromXLSX, sessions, exercises } = useApp();
   const [showClearConfirm, setShowClearConfirm] = useState(false);
-
-  // XLSXImportSection now handles import+persistence; we only close the dialog after import
+  const [showSyncProgress, setShowSyncProgress] = useState(false);
+  const [exercisesProcessed, setExercisesProcessed] = useState(0);
+  const [currentExercise, setCurrentExercise] = useState("");
+  const [sessionsCompleted, setSessionsCompleted] = useState(0);
+  const [totalSessionsSync, setTotalSessionsSync] = useState(0);
+  const [totalExercisesSync, setTotalExercisesSync] = useState(0);
 
   const exportStoredFile = async () => {
     if (!settings.importedFile) {
@@ -117,15 +122,37 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     };
 
     try {
+      setShowSyncProgress(true);
+      setExercisesProcessed(0);
+      setSessionsCompleted(0);
+      setCurrentExercise("");
+      setTotalSessionsSync(0);
+      setTotalExercisesSync(0);
+
       const token = await ensureToken();
 
-      // Use Google Sheets API to directly write data to the spreadsheet
+      // Use Google Sheets API to directly write data to the spreadsheet with progress callback
       const syncResults = await exportToGoogleSheetDirectly({
         spreadsheetId,
         sessions,
         exercises,
         accessToken: token.access_token,
+        onProgress: ({
+          sessionIndex,
+          totalSessions,
+          exerciseIndex,
+          totalExercises,
+          exerciseName,
+        }) => {
+          setTotalSessionsSync(totalSessions);
+          setTotalExercisesSync(totalExercises);
+          setSessionsCompleted(sessionIndex + 1);
+          setExercisesProcessed(exerciseIndex + 1);
+          setCurrentExercise(exerciseName);
+        },
       });
+
+      setShowSyncProgress(false);
 
       // Build summary message
       const successCount = syncResults.successfulSessions.length;
@@ -155,6 +182,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         });
       }
     } catch (error) {
+      setShowSyncProgress(false);
       const errorMsg =
         error instanceof Error
           ? error.message
@@ -168,6 +196,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             label: "Neu anmelden",
             onClick: async () => {
               try {
+                setShowSyncProgress(true);
                 clearToken();
                 await initGoogleAuth();
                 const newToken = await requestGoogleAuth();
@@ -180,6 +209,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                   exercises,
                   accessToken: newToken.access_token,
                 });
+
+                setShowSyncProgress(false);
 
                 toast.success("Sync abgeschlossen", {
                   description:
@@ -406,6 +437,15 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      <SyncProgressDialog
+        open={showSyncProgress}
+        exercisesProcessed={exercisesProcessed}
+        totalExercises={totalExercisesSync || exercises.length}
+        currentExercise={currentExercise}
+        sessionsCompleted={sessionsCompleted}
+        totalSessions={totalSessionsSync || sessions.length}
+      />
     </Dialog>
   );
 }

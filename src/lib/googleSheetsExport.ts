@@ -10,6 +10,13 @@ export async function exportToGoogleSheetDirectly(params: {
   sessions: Session[];
   exercises: Exercise[];
   accessToken: string;
+  onProgress?: (info: {
+    sessionIndex: number;
+    totalSessions: number;
+    exerciseIndex: number;
+    totalExercises: number;
+    exerciseName: string;
+  }) => void;
 }): Promise<{
   successfulSessions: string[];
   failedSessions: { date: string; error: string }[];
@@ -20,7 +27,8 @@ export async function exportToGoogleSheetDirectly(params: {
   }[];
 }> {
   try {
-    const { spreadsheetId, sessions, exercises, accessToken } = params;
+    const { spreadsheetId, sessions, exercises, accessToken, onProgress } =
+      params;
 
     console.log("🔄 Starting Google Sheets export");
     console.log(`  Spreadsheet ID: ${spreadsheetId}`);
@@ -163,6 +171,8 @@ export async function exportToGoogleSheetDirectly(params: {
       .slice(0, maxSessions)
       .reverse(); // Reverse to get chronological order
 
+    const totalSessions = recentSessions.length;
+
     const sortedCols = Object.keys(einheitCols)
       .map((k) => parseInt(k))
       .sort((a, b) => a - b);
@@ -216,8 +226,12 @@ export async function exportToGoogleSheetDirectly(params: {
         }
 
         // Send requests by exercise group (each exercise waits for its batch)
-        for (const exercise of exercisesToExport) {
-          const exerciseIdx = exercisesToExport.indexOf(exercise);
+        for (
+          let exerciseIdx = 0;
+          exerciseIdx < exercisesToExport.length;
+          exerciseIdx++
+        ) {
+          const exercise = exercisesToExport[exerciseIdx];
           try {
             const entry = session.entries.find(
               (e) => e.exerciseId === exercise.id,
@@ -225,6 +239,17 @@ export async function exportToGoogleSheetDirectly(params: {
             const sortedSets = entry
               ? [...entry.sets].sort((a, b) => a.setNumber - b.setNumber)
               : [];
+
+            // Progress callback before starting this exercise
+            if (onProgress) {
+              onProgress({
+                sessionIndex: sIdx,
+                totalSessions,
+                exerciseIndex: exerciseIdx,
+                totalExercises: exercisesToExport.length,
+                exerciseName: exercise.name,
+              });
+            }
 
             // Build this exercise's requests
             const exerciseRequests: any[] = [];
