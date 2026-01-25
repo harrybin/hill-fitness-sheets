@@ -1,8 +1,7 @@
 // Google OAuth and Drive API integration
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-const SCOPES =
-  "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file";
+const SCOPES = "https://www.googleapis.com/auth/spreadsheets";
 
 export interface GoogleAuthToken {
   access_token: string;
